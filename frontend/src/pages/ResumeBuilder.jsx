@@ -19,7 +19,9 @@ function ResumeBuilder() {
                   email: '',
                   phone: '',
                   linkedin: '',
-                  github: ''
+                  github: '',
+                  leetcode: '',
+                  portfolio: ''
             },
             summary: '',
             education: [],
@@ -198,7 +200,7 @@ function ResumeBuilder() {
                   <div className="builder-form">
                         {/* Step 1: Personal Information */}
                         {currentStep === 1 && (
-                              <div className="form-step">
+                              <div className="form-step fade-in">
                                     <h2>Step 1: Personal Information</h2>
                                     <div className="form-group">
                                           <label>Full Name *</label>
@@ -260,12 +262,36 @@ function ResumeBuilder() {
                                                 placeholder="https://github.com/yourusername"
                                           />
                                     </div>
+                                    <div className="form-group">
+                                          <label>LeetCode</label>
+                                          <input
+                                                type="url"
+                                                value={formData.personal_info.leetcode}
+                                                onChange={(e) => setFormData({
+                                                      ...formData,
+                                                      personal_info: { ...formData.personal_info, leetcode: e.target.value }
+                                                })}
+                                                placeholder="https://leetcode.com/yourusername"
+                                          />
+                                    </div>
+                                    <div className="form-group">
+                                          <label>Portfolio Website</label>
+                                          <input
+                                                type="url"
+                                                value={formData.personal_info.portfolio}
+                                                onChange={(e) => setFormData({
+                                                      ...formData,
+                                                      personal_info: { ...formData.personal_info, portfolio: e.target.value }
+                                                })}
+                                                placeholder="https://yourportfolio.com"
+                                          />
+                                    </div>
                               </div>
                         )}
 
                         {/* Step 2: Professional Summary */}
                         {currentStep === 2 && (
-                              <div className="form-step">
+                              <div className="form-step fade-in">
                                     <h2>Step 2: Professional Summary</h2>
                                     <div className="form-group">
                                           <label>Summary (50-150 words recommended)</label>
@@ -282,7 +308,7 @@ function ResumeBuilder() {
 
                         {/* Step 3: Education */}
                         {currentStep === 3 && (
-                              <div className="form-step">
+                              <div className="form-step fade-in">
                                     <h2>Step 3: Education</h2>
                                     {formData.education.map((edu, index) => (
                                           <div key={index} className="repeatable-item">
@@ -335,7 +361,7 @@ function ResumeBuilder() {
 
                         {/* Step 4: Skills */}
                         {currentStep === 4 && (
-                              <div className="form-step">
+                              <div className="form-step fade-in">
                                     <h2>Step 4: Skills</h2>
                                     <div className="skills-list">
                                           {formData.skills.map((skill, index) => (
@@ -351,7 +377,7 @@ function ResumeBuilder() {
 
                         {/* Step 5: Projects */}
                         {currentStep === 5 && (
-                              <div className="form-step">
+                              <div className="form-step fade-in">
                                     <h2>Step 5: Projects</h2>
                                     {formData.projects.map((project, index) => (
                                           <div key={index} className="repeatable-item">
@@ -393,7 +419,7 @@ function ResumeBuilder() {
 
                         {/* Step 6: Experience (Optional) */}
                         {currentStep === 6 && (
-                              <div className="form-step">
+                              <div className="form-step fade-in">
                                     <h2>Step 6: Experience (Optional)</h2>
                                     {formData.experience.map((exp, index) => (
                                           <div key={index} className="repeatable-item">
@@ -444,7 +470,7 @@ function ResumeBuilder() {
 
                         {/* Step 7: Certifications (Optional) */}
                         {currentStep === 7 && (
-                              <div className="form-step">
+                              <div className="form-step fade-in">
                                     <h2>Step 7: Certifications (Optional)</h2>
                                     <div className="certifications-list">
                                           {formData.certifications.map((cert, index) => (

@@ -5,7 +5,7 @@
 }
 
 .builder-header {
-      background: var(--white);
+      background: var(--card-bg);
       padding: 1.5rem 5%;
       box-shadow: var(--shadow-sm);
       display: flex;
@@ -14,6 +14,7 @@
       position: sticky;
       top: 0;
       z-index: 100;
+      transition: background-color 0.3s ease;
 }
 
 .builder-header h1 {
@@ -21,13 +22,14 @@
 }
 
 .score-display {
-      background: var(--white);
+      background: var(--card-bg);
       padding: 1.5rem;
       margin: 2rem auto 1rem;
       max-width: 900px;
       border-radius: 12px;
       box-shadow: var(--shadow-sm);
       text-align: center;
+      transition: background-color 0.3s ease;
 }
 
 .score-display h3 {
@@ -59,7 +61,7 @@
       width: 50px;
       height: 50px;
       border-radius: 50%;
-      background: var(--white);
+      background: var(--card-bg);
       border: 3px solid var(--border);
       display: flex;
       align-items: center;
@@ -83,11 +85,12 @@
 }
 
 .form-step {
-      background: var(--white);
+      background: var(--card-bg);
       padding: 3rem;
       border-radius: 16px;
       box-shadow: var(--shadow-md);
       margin-bottom: 2rem;
+      transition: background-color 0.3s ease, box-shadow 0.3s ease;
 }
 
 .form-step h2 {

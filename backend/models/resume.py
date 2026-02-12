@@ -8,6 +8,9 @@ class PersonalInfo(BaseModel):
     phone: str
     linkedin: Optional[str] = ""
     github: Optional[str] = ""
+    leetcode: Optional[str] = ""
+    portfolio: Optional[str] = ""
+    profile_photo: Optional[str] = ""  # Base64 encoded image or URL
 
 class Education(BaseModel):
     degree: str
