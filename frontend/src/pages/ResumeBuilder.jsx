@@ -81,7 +81,11 @@ function ResumeBuilder() {
                         navigate(`/resume/edit/${response.data.id}`);
                   }
             } catch (error) {
-                  alert('Failed to save resume');
+                  console.error('Save error:', error);
+                  const errorMessage = error.response?.data?.detail
+                        ? JSON.stringify(error.response.data.detail)
+                        : 'Failed to save resume. Please check your connection or try again.';
+                  alert(errorMessage);
             }
             setLoading(false);
       };
