@@ -4,6 +4,7 @@ import { useAuth } from '../context/AuthContext';
 import axios from 'axios';
 import config from '../config';
 import '../styles/ResumeBuilder.css';
+import '../styles/ResumeBuilderExtra.css';
 
 function ResumeBuilder() {
       const { id } = useParams();
@@ -21,7 +22,8 @@ function ResumeBuilder() {
                   linkedin: '',
                   github: '',
                   leetcode: '',
-                  portfolio: ''
+                  portfolio: '',
+                  profile_photo: ''
             },
             summary: '',
             education: [],
@@ -42,8 +44,20 @@ function ResumeBuilder() {
                   const response = await axios.get(`${config.API_BASE_URL}/resumes/${id}`, {
                         headers: getAuthHeader()
                   });
-                  setFormData(response.data);
-                  setScore(response.data.score);
+
+                  // Handle backward compatibility for certifications
+                  const data = response.data;
+                  if (data.certifications && data.certifications.length > 0) {
+                        data.certifications = data.certifications.map(cert => {
+                              if (typeof cert === 'string') {
+                                    return { name: cert, file_data: '', issued_by: '', date: '' };
+                              }
+                              return cert;
+                        });
+                  }
+
+                  setFormData(data);
+                  setScore(data.score);
             } catch (error) {
                   console.error('Failed to fetch resume');
             }
@@ -78,6 +92,26 @@ function ResumeBuilder() {
 
       const prevStep = () => {
             if (currentStep > 1) setCurrentStep(currentStep - 1);
+      };
+
+      const handlePhotoUpload = (e) => {
+            const file = e.target.files[0];
+            if (file && file.type.startsWith('image/')) {
+                  if (file.size > 2 * 1024 * 1024) {
+                        alert('Photo size should be less than 2MB');
+                        return;
+                  }
+                  const reader = new FileReader();
+                  reader.onloadend = () => {
+                        setFormData({
+                              ...formData,
+                              personal_info: { ...formData.personal_info, profile_photo: reader.result }
+                        });
+                  };
+                  reader.readAsDataURL(file);
+            } else {
+                  alert('Please select a valid image file');
+            }
       };
 
       const addEducation = () => {
@@ -120,7 +154,13 @@ function ResumeBuilder() {
       const addProject = () => {
             setFormData({
                   ...formData,
-                  projects: [...formData.projects, { title: '', technologies: '', description: '' }]
+                  projects: [...formData.projects, {
+                        title: '',
+                        technologies: '',
+                        description: '',
+                        repository_url: '',
+                        live_demo_url: ''
+                  }]
             });
       };
 
@@ -158,13 +198,21 @@ function ResumeBuilder() {
       };
 
       const addCertification = () => {
-            const cert = prompt('Enter certification:');
-            if (cert) {
-                  setFormData({
-                        ...formData,
-                        certifications: [...formData.certifications, cert]
-                  });
-            }
+            setFormData({
+                  ...formData,
+                  certifications: [...formData.certifications, {
+                        name: '',
+                        file_data: '',
+                        issued_by: '',
+                        date: ''
+                  }]
+            });
+      };
+
+      const updateCertification = (index, field, value) => {
+            const newCerts = [...formData.certifications];
+            newCerts[index][field] = value;
+            setFormData({ ...formData, certifications: newCerts });
       };
 
       const removeCertification = (index) => {
@@ -172,6 +220,23 @@ function ResumeBuilder() {
                   ...formData,
                   certifications: formData.certifications.filter((_, i) => i !== index)
             });
+      };
+
+      const handleCertificateUpload = (index, e) => {
+            const file = e.target.files[0];
+            if (file) {
+                  if (file.size > 2 * 1024 * 1024) {
+                        alert('File size should be less than 2MB');
+                        return;
+                  }
+                  const reader = new FileReader();
+                  reader.onloadend = () => {
+                        const newCerts = [...formData.certifications];
+                        newCerts[index].file_data = reader.result;
+                        setFormData({ ...formData, certifications: newCerts });
+                  };
+                  reader.readAsDataURL(file);
+            }
       };
 
       return (
@@ -202,6 +267,24 @@ function ResumeBuilder() {
                         {currentStep === 1 && (
                               <div className="form-step fade-in">
                                     <h2>Step 1: Personal Information</h2>
+                                    <div className="form-group">
+                                          <label>Profile Photo (Optional)</label>
+                                          <div className="photo-upload-container">
+                                                {formData.personal_info.profile_photo && (
+                                                      <img
+                                                            src={formData.personal_info.profile_photo}
+                                                            alt="Profile"
+                                                            className="profile-photo-preview"
+                                                      />
+                                                )}
+                                                <input
+                                                      type="file"
+                                                      accept="image/*"
+                                                      onChange={handlePhotoUpload}
+                                                      className="file-input"
+                                                />
+                                          </div>
+                                    </div>
                                     <div className="form-group">
                                           <label>Full Name *</label>
                                           <input
@@ -399,6 +482,26 @@ function ResumeBuilder() {
                                                             placeholder="React, Node.js, MongoDB"
                                                       />
                                                 </div>
+                                                <div className="form-row">
+                                                      <div className="form-group">
+                                                            <label>Repository URL</label>
+                                                            <input
+                                                                  type="url"
+                                                                  value={project.repository_url}
+                                                                  onChange={(e) => updateProject(index, 'repository_url', e.target.value)}
+                                                                  placeholder="https://github.com/username/repo"
+                                                            />
+                                                      </div>
+                                                      <div className="form-group">
+                                                            <label>Live Demo URL</label>
+                                                            <input
+                                                                  type="url"
+                                                                  value={project.live_demo_url}
+                                                                  onChange={(e) => updateProject(index, 'live_demo_url', e.target.value)}
+                                                                  placeholder="https://project-demo.com"
+                                                            />
+                                                      </div>
+                                                </div>
                                                 <div className="form-group">
                                                       <label>Description (Include measurable results)</label>
                                                       <textarea
@@ -472,14 +575,52 @@ function ResumeBuilder() {
                         {currentStep === 7 && (
                               <div className="form-step fade-in">
                                     <h2>Step 7: Certifications (Optional)</h2>
-                                    <div className="certifications-list">
-                                          {formData.certifications.map((cert, index) => (
-                                                <div key={index} className="cert-item">
-                                                      • {cert}
-                                                      <button onClick={() => removeCertification(index)} className="btn-text">Remove</button>
+                                    {formData.certifications.map((cert, index) => (
+                                          <div key={index} className="repeatable-item">
+                                                <div className="form-group">
+                                                      <label>Certification Name</label>
+                                                      <input
+                                                            type="text"
+                                                            value={cert.name}
+                                                            onChange={(e) => updateCertification(index, 'name', e.target.value)}
+                                                            placeholder="AWS Certified Solutions Architect"
+                                                      />
                                                 </div>
-                                          ))}
-                                    </div>
+                                                <div className="form-group">
+                                                      <label>Upload Certificate (Image/PDF)</label>
+                                                      <input
+                                                            type="file"
+                                                            accept="image/*,.pdf"
+                                                            onChange={(e) => handleCertificateUpload(index, e)}
+                                                            className="file-input"
+                                                      />
+                                                      {cert.file_data && <span className="file-success">✅ File uploaded</span>}
+                                                </div>
+                                                <div className="form-row">
+                                                      <div className="form-group">
+                                                            <label>Issued By</label>
+                                                            <input
+                                                                  type="text"
+                                                                  value={cert.issued_by}
+                                                                  onChange={(e) => updateCertification(index, 'issued_by', e.target.value)}
+                                                                  placeholder="Amazon Web Services"
+                                                            />
+                                                      </div>
+                                                      <div className="form-group">
+                                                            <label>Date</label>
+                                                            <input
+                                                                  type="text"
+                                                                  value={cert.date}
+                                                                  onChange={(e) => updateCertification(index, 'date', e.target.value)}
+                                                                  placeholder="Jan 2024"
+                                                            />
+                                                      </div>
+                                                </div>
+                                                <button onClick={() => removeCertification(index)} className="btn btn-sm btn-danger">
+                                                      Remove
+                                                </button>
+                                          </div>
+                                    ))}
                                     <button onClick={addCertification} className="btn btn-secondary">+ Add Certification</button>
                               </div>
                         )}

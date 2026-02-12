@@ -22,12 +22,20 @@ class Project(BaseModel):
     title: str
     technologies: str
     description: str
+    repository_url: Optional[str] = ""
+    live_demo_url: Optional[str] = ""
 
 class Experience(BaseModel):
     company: str
     role: str
     duration: str
     description: str
+
+class Certification(BaseModel):
+    name: str
+    file_data: Optional[str] = ""  # Base64 encoded certificate
+    issued_by: Optional[str] = ""
+    date: Optional[str] = ""
 
 class ScoreBreakdown(BaseModel):
     summary: float = 0
@@ -44,7 +52,7 @@ class ResumeCreate(BaseModel):
     skills: List[str] = []
     projects: List[Project] = []
     experience: List[Experience] = []
-    certifications: List[str] = []
+    certifications: List[Certification] = []
 
 class ResumeUpdate(BaseModel):
     personal_info: Optional[PersonalInfo] = None
@@ -53,7 +61,7 @@ class ResumeUpdate(BaseModel):
     skills: Optional[List[str]] = None
     projects: Optional[List[Project]] = None
     experience: Optional[List[Experience]] = None
-    certifications: Optional[List[str]] = None
+    certifications: Optional[List[Certification]] = None
 
 class ResumeResponse(BaseModel):
     id: str
@@ -64,7 +72,7 @@ class ResumeResponse(BaseModel):
     skills: List[str]
     projects: List[Project]
     experience: List[Experience]
-    certifications: List[str]
+    certifications: List[Certification]
     score: float
     score_breakdown: ScoreBreakdown
     suggestions: List[str]
