@@ -324,23 +324,49 @@ async def download_resume(resume_id: str, user_id: str = Depends(get_current_use
     
     try:
         resume = await db.resumes.find_one({"_id": ObjectId(resume_id), "user_id": user_id})
-    except:
+    except Exception as e:
+        print(f"Error finding resume: {str(e)}")
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Invalid resume ID")
     
     if not resume:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Resume not found")
     
-    # Get PDF preferences with defaults
-    pdf_preferences = resume.get("pdf_preferences", {"background_color": "#ffffff", "accent_color": "#1a73e8"})
-    
-    # Generate PDF
-    pdf_buffer = pdf_generator.generate_resume_pdf(resume, resume["score"], pdf_preferences)
-    
-    # Return PDF as downloadable file
-    filename = f"{resume['personal_info']['name'].replace(' ', '_')}_Resume.pdf"
-    
-    return StreamingResponse(
-        pdf_buffer,
-        media_type="application/pdf",
-        headers={"Content-Disposition": f"attachment; filename={filename}"}
-    )
+    try:
+        # Get PDF preferences with defaults
+        pdf_preferences = resume.get("pdf_preferences", {"background_color": "#ffffff", "accent_color": "#1a73e8"})
+        
+        # Sanitize certifications - remove large base64 file_data before PDF generation
+        # We only use file_url in the PDF, not the actual file data
+        resume_for_pdf = resume.copy()
+        if resume_for_pdf.get("certifications"):
+            sanitized_certs = []
+            for cert in resume_for_pdf["certifications"]:
+                if isinstance(cert, dict):
+                    # Create a copy without the large file_data
+                    cert_copy = {k: v for k, v in cert.items() if k != 'file_data'}
+                    sanitized_certs.append(cert_copy)
+                else:
+                    sanitized_certs.append(cert)
+            resume_for_pdf["certifications"] = sanitized_certs
+        
+        # Generate PDF
+        pdf_buffer = pdf_generator.generate_resume_pdf(resume_for_pdf, resume["score"], pdf_preferences)
+        
+        # Return PDF as downloadable file
+        filename = f"{resume['personal_info']['name'].replace(' ', '_')}_Resume.pdf"
+        
+        return StreamingResponse(
+            pdf_buffer,
+            media_type="application/pdf",
+            headers={"Content-Disposition": f"attachment; filename={filename}"}
+        )
+    except Exception as e:
+        # Log the actual error for debugging
+        print(f"PDF Generation Error: {str(e)}")
+        import traceback
+        traceback.print_exc()
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Failed to generate PDF: {str(e)}"
+        )
+

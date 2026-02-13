@@ -34,6 +34,7 @@ class Experience(BaseModel):
 class Certification(BaseModel):
     name: str
     file_data: Optional[str] = ""  # Base64 encoded certificate
+    file_url: Optional[str] = ""  # URL for certificate file (optional)
     issued_by: Optional[str] = ""
     date: Optional[str] = ""
 

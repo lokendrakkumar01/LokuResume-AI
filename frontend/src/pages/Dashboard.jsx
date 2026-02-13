@@ -67,7 +67,9 @@ function Dashboard() {
                   link.click();
                   link.remove();
             } catch (error) {
-                  alert('Failed to generate PDF');
+                  console.error('PDF Download Error:', error);
+                  const errorMessage = error.response?.data?.detail || 'Failed to generate PDF';
+                  alert(errorMessage);
             }
       };
 

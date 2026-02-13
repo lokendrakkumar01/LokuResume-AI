@@ -333,9 +333,10 @@ class PDFGenerator:
                     
                     cert_text = f"• {' '.join(cert_parts)}"
                     
-                    # Add certificate file link if available
-                    if cert.get('file_data') or cert.get('file_url'):
-                        cert_url = cert.get('file_url', '#')
+                    # Add certificate file link if file_url is available
+                    # Note: file_data contains base64 encoded certificate, but we only link if URL exists
+                    if cert.get('file_url'):
+                        cert_url = cert.get('file_url')
                         cert_text += f" <a href='{cert_url}' color='{accent_color}'>[View Certificate]</a>"
                     
                     # Add skills learned if available
