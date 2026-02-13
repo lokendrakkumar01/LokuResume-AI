@@ -383,10 +383,15 @@ class PDFGenerator:
                 # Platform name and link
                 platform = profile.get('platform', '')
                 link = profile.get('link', '')
+                headline = profile.get('headline', '')
                 
                 profile_text = f"<b>{platform}:</b> "
+                if headline:
+                    profile_text += f"{headline} "
+                
                 if link:
-                    profile_text += f"<a href='{link}' color='{accent_color}'>{link}</a>"
+                    link_text = "[View Profile]" if headline else link
+                    profile_text += f"<a href='{link}' color='{accent_color}'>{link_text}</a>"
                 
                 elements.append(Paragraph(profile_text, bullet_style))
             

@@ -151,7 +151,7 @@ function ResumeBuilder() {
       const addCodingProfile = () => {
             setFormData({
                   ...formData,
-                  coding_profiles: [...(formData.coding_profiles || []), { platform: '', link: '' }]
+                  coding_profiles: [...(formData.coding_profiles || []), { platform: '', link: '', headline: '' }]
             });
       };
 
@@ -841,6 +841,15 @@ function ResumeBuilder() {
                                                             value={profile.link}
                                                             onChange={(e) => updateCodingProfile(index, 'link', e.target.value)}
                                                             placeholder="https://auth.geeksforgeeks.org/user/..."
+                                                      />
+                                                </div>
+                                                <div className="form-group">
+                                                      <label>Headline / Stats (Optional)</label>
+                                                      <input
+                                                            type="text"
+                                                            value={profile.headline || ''}
+                                                            onChange={(e) => updateCodingProfile(index, 'headline', e.target.value)}
+                                                            placeholder="e.g. Max Rating: 1800 | 500+ Solved"
                                                       />
                                                 </div>
                                                 <button onClick={() => removeCodingProfile(index)} className="btn btn-sm btn-danger">

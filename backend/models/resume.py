@@ -50,6 +50,7 @@ class Achievement(BaseModel):
 class CodingProfile(BaseModel):
     platform: str
     link: str
+    headline: Optional[str] = ""  # e.g. "Max Rating: 1600" or "5 Star"
 
 class PDFPreferences(BaseModel):
     background_color: str

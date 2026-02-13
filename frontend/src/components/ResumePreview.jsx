@@ -152,7 +152,10 @@ function ResumePreview({ formData, onClose }) {
                                                       {formData.coding_profiles.map((profile, index) => (
                                                             <div key={index} className="section-item profile-item">
                                                                   <span className="profile-platform"><strong>{profile.platform}:</strong></span>
-                                                                  <a href={profile.link} target="_blank" rel="noopener noreferrer" className="profile-link">{profile.link}</a>
+                                                                  {profile.headline && <span className="profile-headline"> {profile.headline} </span>}
+                                                                  <a href={profile.link} target="_blank" rel="noopener noreferrer" className="profile-link">
+                                                                        {profile.link && (profile.headline ? '[View Profile]' : profile.link)}
+                                                                  </a>
                                                             </div>
                                                       ))}
                                                 </div>
