@@ -346,6 +346,23 @@ class PDFGenerator:
             
             elements.append(Spacer(1, 0.05*inch))
         
+        # Achievements Section
+        if resume.get('achievements') and len(resume['achievements']) > 0:
+            elements.append(Paragraph("<b>Achievements & Awards</b>", section_header_style))
+            
+            for achievement in resume['achievements']:
+                # Achievement title
+                achievement_title = f"<b>{achievement.get('title', '')}</b>"
+                if achievement.get('date'):
+                    achievement_title += f" <i>({achievement['date']})</i>"
+                elements.append(Paragraph(achievement_title, subsection_style))
+                
+                # Description
+                if achievement.get('description'):
+                    elements.append(Paragraph(achievement['description'], body_style))
+                
+                elements.append(Spacer(1, 0.04*inch))
+        
         # Footer (minimal)
         elements.append(Spacer(1, 0.15*inch))
         footer_text = f"<i>Generated: {datetime.now().strftime('%B %Y')}</i>"

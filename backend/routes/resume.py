@@ -330,8 +330,11 @@ async def download_resume(resume_id: str, user_id: str = Depends(get_current_use
     if not resume:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Resume not found")
     
+    # Get PDF preferences with defaults
+    pdf_preferences = resume.get("pdf_preferences", {"background_color": "#ffffff", "accent_color": "#1a73e8"})
+    
     # Generate PDF
-    pdf_buffer = pdf_generator.generate_resume_pdf(resume, resume["score"])
+    pdf_buffer = pdf_generator.generate_resume_pdf(resume, resume["score"], pdf_preferences)
     
     # Return PDF as downloadable file
     filename = f"{resume['personal_info']['name'].replace(' ', '_')}_Resume.pdf"
