@@ -134,10 +134,16 @@ class PDFGenerator:
         
         # Name and contact info
         name = personal_info['name']
-        name_para = Paragraph(f"<b>{name}</b>", name_style)
         
-        # Title/Role (if available in summary)
-        title_para = Paragraph("Full-Stack Developer | MERN & Java | Web Applications", title_style)
+        # Name and Title
+        name_para = Paragraph(personal_info['name'], name_style)
+        
+        # Use user-provided headline or default fallback if empty
+        headline_text = personal_info.get('headline', '')
+        if not headline_text:
+            headline_text = "Full-Stack Developer | MERN & Java | Web Applications"
+            
+        title_para = Paragraph(headline_text, title_style)
         
         # Contact information with clickable links
         contact_lines = []

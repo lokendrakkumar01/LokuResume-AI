@@ -25,6 +25,7 @@ function ResumeBuilder() {
                   github: '',
                   leetcode: '',
                   portfolio: '',
+                  headline: '',
                   profile_photo: ''
             },
             summary: '',
@@ -372,6 +373,18 @@ function ResumeBuilder() {
                                                       className="file-input"
                                                 />
                                           </div>
+                                    </div>
+                                    <div className="form-group">
+                                          <label>Headline / Professional Title</label>
+                                          <input
+                                                type="text"
+                                                value={formData.personal_info.headline || ''}
+                                                onChange={(e) => setFormData({
+                                                      ...formData,
+                                                      personal_info: { ...formData.personal_info, headline: e.target.value }
+                                                })}
+                                                placeholder="e.g. Full-Stack Developer | MERN & Java"
+                                          />
                                     </div>
                                     <div className="form-group">
                                           <label>Full Name *</label>

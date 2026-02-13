@@ -25,7 +25,7 @@ function ResumePreview({ formData, onClose }) {
                                           )}
                                           <div className="header-info">
                                                 <h1 className="name">{personal_info.name || 'Your Name'}</h1>
-                                                <p className="title">Full-Stack Developer | MERN & Java | Web Applications</p>
+                                                <p className="title">{personal_info.headline || 'Full-Stack Developer | MERN & Java | Web Applications'}</p>
                                                 <div className="contact-links">
                                                       {personal_info.email && <span>{personal_info.email}</span>}
                                                       {personal_info.phone && <span>{personal_info.phone}</span>}

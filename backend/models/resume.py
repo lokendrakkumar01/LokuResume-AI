@@ -10,6 +10,7 @@ class PersonalInfo(BaseModel):
     github: Optional[str] = ""
     leetcode: Optional[str] = ""
     portfolio: Optional[str] = ""
+    headline: Optional[str] = ""  # Custom headline/title
     profile_photo: Optional[str] = ""  # Base64 encoded image or URL
 
 class Education(BaseModel):
