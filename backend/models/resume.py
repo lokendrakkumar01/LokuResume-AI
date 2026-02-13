@@ -38,10 +38,12 @@ class Certification(BaseModel):
     issued_by: Optional[str] = ""
     date: Optional[str] = ""
 
+
 class Achievement(BaseModel):
     title: str
     description: str
     date: Optional[str] = ""
+    link: Optional[str] = ""  # URL for achievement proof/details
 
 class PDFPreferences(BaseModel):
     background_color: str = "#ffffff"

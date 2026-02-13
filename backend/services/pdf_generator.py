@@ -111,6 +111,21 @@ class PDFGenerator:
             leading=9
         )
         
+        # Creator credit style
+        creator_style = ParagraphStyle(
+            'CreatorStyle',
+            parent=styles['Normal'],
+            fontSize=10,
+            textColor=colors.HexColor(accent_color),
+            spaceAfter=8,
+            alignment=TA_CENTER,
+            fontName='Helvetica-Bold'
+        )
+        
+        # Add creator credit at top
+        elements.append(Paragraph("<b>Created by Lokendra Kumar</b>", creator_style))
+        elements.append(Spacer(1, 0.1*inch))
+        
         # Header Section with Profile Photo
         personal_info = resume['personal_info']
         
@@ -362,11 +377,32 @@ class PDFGenerator:
                 if achievement.get('description'):
                     elements.append(Paragraph(achievement['description'], body_style))
                 
+                # Add link if available
+                if achievement.get('link'):
+                    link_text = f"<a href='{achievement['link']}' color='{accent_color}'>[View Details]</a>"
+                    elements.append(Paragraph(link_text, contact_style))
+                
                 elements.append(Spacer(1, 0.04*inch))
         
-        # Footer (minimal)
+        # Footer with credits
         elements.append(Spacer(1, 0.15*inch))
-        footer_text = f"<i>Generated: {datetime.now().strftime('%B %Y')}</i>"
+        
+        # Creator credit line
+        creator_footer = "<b>Created by Lokendra Kumar</b>"
+        footer_creator_style = ParagraphStyle(
+            'FooterCreator',
+            parent=styles['Normal'],
+            fontSize=9,
+            textColor=colors.HexColor(accent_color),
+            alignment=TA_CENTER,
+            fontName='Helvetica-Bold',
+            spaceAfter=3
+        )
+        elements.append(Paragraph(creator_footer, footer_creator_style))
+        
+        # Copyright and date
+        current_year = datetime.now().year
+        footer_text = f"<i>© {current_year} LokuResume AI. All rights reserved.</i>"
         footer_style = ParagraphStyle(
             'Footer',
             parent=styles['Normal'],

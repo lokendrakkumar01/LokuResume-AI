@@ -57,7 +57,11 @@ function ResumeBuilder() {
                   if (data.certifications && data.certifications.length > 0) {
                         data.certifications = data.certifications.map(cert => {
                               if (typeof cert === 'string') {
-                                    return { name: cert, file_data: '', issued_by: '', date: '' };
+                                    return { name: cert, file_data: '', file_url: '', issued_by: '', date: '' };
+                              }
+                              // Ensure file_url exists for older data
+                              if (!cert.hasOwnProperty('file_url')) {
+                                    cert.file_url = '';
                               }
                               return cert;
                         });
@@ -222,6 +226,7 @@ function ResumeBuilder() {
                   certifications: [...formData.certifications, {
                         name: '',
                         file_data: '',
+                        file_url: '',
                         issued_by: '',
                         date: ''
                   }]
@@ -264,7 +269,8 @@ function ResumeBuilder() {
                   achievements: [...formData.achievements, {
                         title: '',
                         description: '',
-                        date: ''
+                        date: '',
+                        link: ''
                   }]
             });
       };
@@ -684,6 +690,16 @@ function ResumeBuilder() {
                                                       />
                                                       {cert.file_data && <span className="file-success">✅ File uploaded</span>}
                                                 </div>
+                                                <div className="form-group">
+                                                      <label>Certificate URL (Optional)</label>
+                                                      <input
+                                                            type="url"
+                                                            value={cert.file_url || ''}
+                                                            onChange={(e) => updateCertification(index, 'file_url', e.target.value)}
+                                                            placeholder="https://example.com/certificate.pdf"
+                                                      />
+                                                      <small>Provide a link to your certificate (e.g., Coursera, Udemy, etc.)</small>
+                                                </div>
                                                 <div className="form-row">
                                                       <div className="form-group">
                                                             <label>Issued By</label>
@@ -746,6 +762,16 @@ function ResumeBuilder() {
                                                             onChange={(e) => updateAchievement(index, 'date', e.target.value)}
                                                             placeholder="March 2024"
                                                       />
+                                                </div>
+                                                <div className="form-group">
+                                                      <label>Link/URL (Optional)</label>
+                                                      <input
+                                                            type="url"
+                                                            value={achievement.link || ''}
+                                                            onChange={(e) => updateAchievement(index, 'link', e.target.value)}
+                                                            placeholder="https://example.com/achievement-proof"
+                                                      />
+                                                      <small>Provide a link to news article, certificate, or proof</small>
                                                 </div>
                                                 <button onClick={() => removeAchievement(index)} className="btn btn-sm btn-danger">
                                                       Remove
