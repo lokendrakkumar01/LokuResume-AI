@@ -1,4 +1,5 @@
 import React, { createContext, useState, useContext, useEffect } from 'react';
+import { Navigate } from 'react-router-dom';
 import axios from 'axios';
 import config from '../config';
 
@@ -94,8 +95,7 @@ export const ProtectedRoute = ({ children }) => {
       }
 
       if (!token) {
-            window.location.href = '/login';
-            return null;
+            return <Navigate to="/login" replace />;
       }
 
       return children;
