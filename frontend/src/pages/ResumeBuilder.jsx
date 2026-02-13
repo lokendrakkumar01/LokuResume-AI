@@ -62,6 +62,14 @@ function ResumeBuilder() {
                         });
                   }
 
+                  // Handle backward compatibility for pdf_preferences
+                  if (!data.pdf_preferences) {
+                        data.pdf_preferences = {
+                              background_color: '#ffffff',
+                              accent_color: '#1a73e8'
+                        };
+                  }
+
                   setFormData(data);
                   setScore(data.score);
             } catch (error) {
