@@ -136,8 +136,26 @@ function ResumePreview({ formData, onClose }) {
                                                             <h4>{achievement.title}</h4>
                                                             {achievement.date && <p className="duration"><em>{achievement.date}</em></p>}
                                                             <p>{achievement.description}</p>
+                                                            {achievement.link && (
+                                                                  <p><a href={achievement.link} target="_blank" rel="noopener noreferrer">View Achievement</a></p>
+                                                            )}
                                                       </div>
                                                 ))}
+                                          </div>
+                                    )}
+
+                                    {/* Coding Profiles */}
+                                    {formData.coding_profiles && formData.coding_profiles.length > 0 && (
+                                          <div className="resume-section">
+                                                <h3>Problem Solving & Coding Profiles</h3>
+                                                <div className="coding-profiles-list">
+                                                      {formData.coding_profiles.map((profile, index) => (
+                                                            <div key={index} className="section-item profile-item">
+                                                                  <span className="profile-platform"><strong>{profile.platform}:</strong></span>
+                                                                  <a href={profile.link} target="_blank" rel="noopener noreferrer" className="profile-link">{profile.link}</a>
+                                                            </div>
+                                                      ))}
+                                                </div>
                                           </div>
                                     )}
                               </div>

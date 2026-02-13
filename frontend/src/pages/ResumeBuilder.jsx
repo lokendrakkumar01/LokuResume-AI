@@ -27,8 +27,10 @@ function ResumeBuilder() {
                   problem_solving: '',
                   portfolio: '',
                   headline: '',
+                  problem_solving: '',  // Keep for backward compatibility/single link preference
                   profile_photo: ''
             },
+            coding_profiles: [], // List of { platform: '', link: '' }
             summary: '',
             education: [],
             skills: [],
@@ -112,7 +114,7 @@ function ResumeBuilder() {
       };
 
       const nextStep = () => {
-            if (currentStep < 8) setCurrentStep(currentStep + 1);
+            if (currentStep < 10) setCurrentStep(currentStep + 1);
       };
 
       const prevStep = () => {
@@ -144,6 +146,25 @@ function ResumeBuilder() {
                   ...formData,
                   education: [...formData.education, { degree: '', college: '', year: '', grade: '' }]
             });
+      };
+
+      const addCodingProfile = () => {
+            setFormData({
+                  ...formData,
+                  coding_profiles: [...(formData.coding_profiles || []), { platform: '', link: '' }]
+            });
+      };
+
+      const removeCodingProfile = (index) => {
+            const newProfiles = [...formData.coding_profiles];
+            newProfiles.splice(index, 1);
+            setFormData({ ...formData, coding_profiles: newProfiles });
+      };
+
+      const updateCodingProfile = (index, field, value) => {
+            const newProfiles = [...formData.coding_profiles];
+            newProfiles[index][field] = value;
+            setFormData({ ...formData, coding_profiles: newProfiles });
       };
 
       const updateEducation = (index, field, value) => {
@@ -344,7 +365,7 @@ function ResumeBuilder() {
                   )}
 
                   <div className="progress-bar">
-                        {[1, 2, 3, 4, 5, 6, 7, 8].map((step) => (
+                        {[1, 2, 3, 4, 5, 6, 7, 8, 9, 10].map((step) => (
                               <div key={step} className={`progress-step ${currentStep >= step ? 'active' : ''}`}>
                                     {step}
                               </div>
@@ -796,11 +817,72 @@ function ResumeBuilder() {
                               </div>
                         )}
 
+                        {/* Step 9: Problem Solving & Coding Profiles */}
+                        {currentStep === 9 && (
+                              <div className="form-step fade-in">
+                                    <h2>👨‍💻 Step 9: Problem Solving & Coding Profiles</h2>
+                                    <p className="step-description">Add your profiles from various coding platforms (e.g., LeetCode, GFG, CodeChef, HackerRank)</p>
+
+                                    {(formData.coding_profiles || []).map((profile, index) => (
+                                          <div key={index} className="repeatable-item">
+                                                <div className="form-group">
+                                                      <label>Platform Name</label>
+                                                      <input
+                                                            type="text"
+                                                            value={profile.platform}
+                                                            onChange={(e) => updateCodingProfile(index, 'platform', e.target.value)}
+                                                            placeholder="e.g. GeeksforGeeks"
+                                                      />
+                                                </div>
+                                                <div className="form-group">
+                                                      <label>Profile Link</label>
+                                                      <input
+                                                            type="url"
+                                                            value={profile.link}
+                                                            onChange={(e) => updateCodingProfile(index, 'link', e.target.value)}
+                                                            placeholder="https://auth.geeksforgeeks.org/user/..."
+                                                      />
+                                                </div>
+                                                <button onClick={() => removeCodingProfile(index)} className="btn btn-sm btn-danger">
+                                                      Remove
+                                                </button>
+                                          </div>
+                                    ))}
+                                    <button onClick={addCodingProfile} className="btn btn-secondary">+ Add Platform</button>
+
+                                    <div style={{ marginTop: '20px', padding: '15px', background: '#f8f9fa', borderRadius: '8px' }}>
+                                          <p style={{ margin: 0, fontSize: '0.9rem' }}><strong>Note:</strong> You can also use the default LeetCode field in Step 1 if you prefer.</p>
+                                    </div>
+                              </div>
+                        )}
+
+                        {/* Step 10: Final Review */}
+                        {currentStep === 10 && (
+                              <div className="form-step fade-in">
+                                    <h2>👀 Step 10: Final Review</h2>
+                                    <p className="step-description">Review your information and save your resume</p>
+
+                                    <div className="review-section">
+                                          <div className="review-card">
+                                                <h3>✨ Ready to Finish!</h3>
+                                                <p>You have completed all sections. Click "Save Resume" to generate your score and download the PDF.</p>
+                                                <button
+                                                      onClick={() => setShowPreview(true)}
+                                                      className="btn btn-secondary"
+                                                      style={{ marginTop: '1rem' }}
+                                                >
+                                                      Preview Resume
+                                                </button>
+                                          </div>
+                                    </div>
+                              </div>
+                        )}
+
                         <div className="form-navigation">
                               {currentStep > 1 && (
                                     <button onClick={prevStep} className="btn btn-secondary">Previous</button>
                               )}
-                              {currentStep < 8 && (
+                              {currentStep < 10 && (
                                     <button onClick={nextStep} className="btn btn-primary">Next</button>
                               )}
                               <button onClick={handleSave} className="btn btn-success" disabled={loading}>

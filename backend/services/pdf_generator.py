@@ -373,6 +373,25 @@ class PDFGenerator:
                 
                 elements.append(Spacer(1, 0.04*inch))
         
+                elements.append(Spacer(1, 0.04*inch))
+        
+        # Coding Profiles Section
+        if resume.get('coding_profiles') and len(resume['coding_profiles']) > 0:
+            elements.append(Paragraph("<b>Problem Solving & Coding Profiles</b>", section_header_style))
+            
+            for profile in resume['coding_profiles']:
+                # Platform name and link
+                platform = profile.get('platform', '')
+                link = profile.get('link', '')
+                
+                profile_text = f"<b>{platform}:</b> "
+                if link:
+                    profile_text += f"<a href='{link}' color='{accent_color}'>{link}</a>"
+                
+                elements.append(Paragraph(profile_text, bullet_style))
+            
+            elements.append(Spacer(1, 0.05*inch))
+        
         # Footer with copyright
         elements.append(Spacer(1, 0.15*inch))
         

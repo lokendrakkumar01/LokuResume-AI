@@ -47,9 +47,27 @@ class Achievement(BaseModel):
     date: Optional[str] = ""
     link: Optional[str] = ""  # URL for achievement proof/details
 
+class CodingProfile(BaseModel):
+    platform: str
+    link: str
+
 class PDFPreferences(BaseModel):
-    background_color: str = "#ffffff"
-    accent_color: str = "#1a73e8"
+    background_color: str
+    accent_color: str
+
+class Resume(BaseModel):
+    id: Optional[str] = None
+    user_id: Optional[str] = None
+    personal_info: PersonalInfo
+    education: List[Education]
+    experience: List[Experience]
+    projects: List[Project]
+    skills: List[str]
+    certifications: List[Certification]
+    achievements: List[Achievement]
+    coding_profiles: List[CodingProfile] = []  # New section for coding profiles
+    pdf_preferences: Optional[PDFPreferences] = None
+    created_at: datetime = datetime.now()
 
 class ScoreBreakdown(BaseModel):
     summary: float = 0
