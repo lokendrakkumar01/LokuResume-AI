@@ -16,32 +16,39 @@ function ResumeBuilder() {
       const [score, setScore] = useState(null);
       const [showPreview, setShowPreview] = useState(false);
 
-      const [formData, setFormData] = useState({
-            personal_info: {
-                  name: '',
-                  email: '',
-                  phone: '',
-                  linkedin: '',
-                  github: '',
-                  leetcode: '',
-                  problem_solving: '',
-                  portfolio: '',
-                  headline: '',
-                  problem_solving: '',  // Keep for backward compatibility/single link preference
-                  profile_photo: ''
-            },
-            coding_profiles: [], // List of { platform: '', link: '' }
-            summary: '',
-            education: [],
-            skills: [],
-            projects: [],
-            experience: [],
-            certifications: [],
-            achievements: [],
-            pdf_preferences: {
-                  background_color: '#ffffff',
-                  accent_color: '#1a73e8'
+      const [formData, setFormData] = useState(() => {
+            // Try to load from local storage if available
+            const savedData = localStorage.getItem('resume_draft');
+            if (savedData && !id) {
+                  return JSON.parse(savedData);
             }
+            return {
+                  personal_info: {
+                        name: '',
+                        email: '',
+                        phone: '',
+                        linkedin: '',
+                        github: '',
+                        leetcode: '',
+                        problem_solving: '',
+                        portfolio: '',
+                        headline: '',
+                        problem_solving: '',  // Keep for backward compatibility/single link preference
+                        profile_photo: ''
+                  },
+                  coding_profiles: [], // List of { platform: '', link: '' }
+                  summary: '',
+                  education: [],
+                  skills: [],
+                  projects: [],
+                  experience: [],
+                  certifications: [],
+                  achievements: [],
+                  pdf_preferences: {
+                        background_color: '#ffffff',
+                        accent_color: '#1a73e8'
+                  }
+            };
       });
 
       useEffect(() => {
@@ -49,6 +56,13 @@ function ResumeBuilder() {
                   fetchResume();
             }
       }, [id]);
+
+      // Auto-save to local storage whenever formData changes
+      useEffect(() => {
+            if (!id) {
+                  localStorage.setItem('resume_draft', JSON.stringify(formData));
+            }
+      }, [formData, id]);
 
       const fetchResume = async () => {
             try {
@@ -99,18 +113,32 @@ function ResumeBuilder() {
                         const response = await axios.post(`${config.API_BASE_URL}/resumes`, formData, {
                               headers: getAuthHeader()
                         });
+                        const newId = response.data.id;
                         setScore(response.data.score);
-                        alert('Resume created successfully!');
-                        navigate(`/resume/edit/${response.data.id}`);
+                        alert('Resume saved successfully!');
+
+                        // Clear local storage draft on successful save
+                        localStorage.removeItem('resume_draft');
+
+                        // Navigate to the edit page for the new resume to prevent creating duplicates on subsequent saves
+                        if (newId) {
+                              navigate(`/resume/edit/${newId}`);
+                        }
                   }
             } catch (error) {
-                  console.error('Save error:', error);
-                  const errorMessage = error.response?.data?.detail
-                        ? JSON.stringify(error.response.data.detail)
-                        : 'Failed to save resume. Please check your connection or try again.';
-                  alert(errorMessage);
+                  console.error('Failed to save resume', error);
+
+                  // Handle token expiration specifically
+                  if (error.response && error.response.status === 401) {
+                        // Ensure data is saved locally
+                        localStorage.setItem('resume_draft', JSON.stringify(formData));
+                        alert('Session expired! Your work has been saved locally. Please logout, login again, and return to this page to restore your work.');
+                  } else {
+                        alert('Failed to save resume. Please try again.');
+                  }
+            } finally {
+                  setLoading(false);
             }
-            setLoading(false);
       };
 
       const nextStep = () => {
