@@ -33,6 +33,7 @@ function ResumeBuilder() {
             projects: [],
             experience: [],
             certifications: [],
+            achievements: [],
             pdf_preferences: {
                   background_color: '#ffffff',
                   accent_color: '#1a73e8'
@@ -105,7 +106,7 @@ function ResumeBuilder() {
       };
 
       const nextStep = () => {
-            if (currentStep < 7) setCurrentStep(currentStep + 1);
+            if (currentStep < 8) setCurrentStep(currentStep + 1);
       };
 
       const prevStep = () => {
@@ -257,6 +258,30 @@ function ResumeBuilder() {
             }
       };
 
+      const addAchievement = () => {
+            setFormData({
+                  ...formData,
+                  achievements: [...formData.achievements, {
+                        title: '',
+                        description: '',
+                        date: ''
+                  }]
+            });
+      };
+
+      const updateAchievement = (index, field, value) => {
+            const newAchievements = [...formData.achievements];
+            newAchievements[index][field] = value;
+            setFormData({ ...formData, achievements: newAchievements });
+      };
+
+      const removeAchievement = (index) => {
+            setFormData({
+                  ...formData,
+                  achievements: formData.achievements.filter((_, i) => i !== index)
+            });
+      };
+
       return (
             <div className="resume-builder">
                   <div className="builder-header">
@@ -311,7 +336,7 @@ function ResumeBuilder() {
                   )}
 
                   <div className="progress-bar">
-                        {[1, 2, 3, 4, 5, 6, 7].map((step) => (
+                        {[1, 2, 3, 4, 5, 6, 7, 8].map((step) => (
                               <div key={step} className={`progress-step ${currentStep >= step ? 'active' : ''}`}>
                                     {step}
                               </div>
@@ -688,11 +713,54 @@ function ResumeBuilder() {
                               </div>
                         )}
 
+                        {/* Step 8: Achievements (Optional) */}
+                        {currentStep === 8 && (
+                              <div className="form-step fade-in">
+                                    <h2>🏆 Step 8: Achievements & Awards (Optional)</h2>
+                                    <p className="step-description">Add your achievements, awards, and honors</p>
+                                    {formData.achievements.map((achievement, index) => (
+                                          <div key={index} className="repeatable-item">
+                                                <div className="form-group">
+                                                      <label>Achievement/Award Title</label>
+                                                      <input
+                                                            type="text"
+                                                            value={achievement.title}
+                                                            onChange={(e) => updateAchievement(index, 'title', e.target.value)}
+                                                            placeholder="Winner - National Hackathon 2024"
+                                                      />
+                                                </div>
+                                                <div className="form-group">
+                                                      <label>Description</label>
+                                                      <textarea
+                                                            value={achievement.description}
+                                                            onChange={(e) => updateAchievement(index, 'description', e.target.value)}
+                                                            rows={3}
+                                                            placeholder="Developed an AI-powered solution that won first place among 200+ teams..."
+                                                      />
+                                                </div>
+                                                <div className="form-group">
+                                                      <label>Date/Year</label>
+                                                      <input
+                                                            type="text"
+                                                            value={achievement.date}
+                                                            onChange={(e) => updateAchievement(index, 'date', e.target.value)}
+                                                            placeholder="March 2024"
+                                                      />
+                                                </div>
+                                                <button onClick={() => removeAchievement(index)} className="btn btn-sm btn-danger">
+                                                      Remove
+                                                </button>
+                                          </div>
+                                    ))}
+                                    <button onClick={addAchievement} className="btn btn-secondary">+ Add Achievement</button>
+                              </div>
+                        )}
+
                         <div className="form-navigation">
                               {currentStep > 1 && (
                                     <button onClick={prevStep} className="btn btn-secondary">Previous</button>
                               )}
-                              {currentStep < 7 && (
+                              {currentStep < 8 && (
                                     <button onClick={nextStep} className="btn btn-primary">Next</button>
                               )}
                               <button onClick={handleSave} className="btn btn-success" disabled={loading}>

@@ -2,7 +2,7 @@ import React from 'react';
 import '../styles/ResumePreview.css';
 
 function ResumePreview({ formData, onClose }) {
-      const { personal_info, summary, education, skills, projects, experience, certifications } = formData;
+      const { personal_info, summary, education, skills, projects, experience, certifications, achievements, pdf_preferences } = formData;
 
       return (
             <div className="preview-modal-overlay" onClick={onClose}>
@@ -13,7 +13,7 @@ function ResumePreview({ formData, onClose }) {
                         </div>
 
                         <div className="preview-content">
-                              <div className="resume-page">
+                              <div className="resume-page" style={{ backgroundColor: pdf_preferences?.background_color || '#ffffff' }}>
                                     {/* Header */}
                                     <div className="resume-header">
                                           {personal_info.profile_photo && (
@@ -123,6 +123,20 @@ function ResumePreview({ formData, onClose }) {
                                                             );
                                                       })}
                                                 </ul>
+                                          </div>
+                                    )}
+
+                                    {/* Achievements */}
+                                    {achievements && achievements.length > 0 && (
+                                          <div className="resume-section">
+                                                <h3>Achievements & Awards</h3>
+                                                {achievements.map((achievement, index) => (
+                                                      <div key={index} className="section-item">
+                                                            <h4>{achievement.title}</h4>
+                                                            {achievement.date && <p className="duration"><em>{achievement.date}</em></p>}
+                                                            <p>{achievement.description}</p>
+                                                      </div>
+                                                ))}
                                           </div>
                                     )}
                               </div>

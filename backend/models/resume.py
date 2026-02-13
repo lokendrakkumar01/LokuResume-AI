@@ -37,6 +37,15 @@ class Certification(BaseModel):
     issued_by: Optional[str] = ""
     date: Optional[str] = ""
 
+class Achievement(BaseModel):
+    title: str
+    description: str
+    date: Optional[str] = ""
+
+class PDFPreferences(BaseModel):
+    background_color: str = "#ffffff"
+    accent_color: str = "#1a73e8"
+
 class ScoreBreakdown(BaseModel):
     summary: float = 0
     skills: float = 0
@@ -53,6 +62,8 @@ class ResumeCreate(BaseModel):
     projects: List[Project] = []
     experience: List[Experience] = []
     certifications: List[Certification] = []
+    achievements: List[Achievement] = []
+    pdf_preferences: Optional[PDFPreferences] = None
 
 class ResumeUpdate(BaseModel):
     personal_info: Optional[PersonalInfo] = None
@@ -62,6 +73,8 @@ class ResumeUpdate(BaseModel):
     projects: Optional[List[Project]] = None
     experience: Optional[List[Experience]] = None
     certifications: Optional[List[Certification]] = None
+    achievements: Optional[List[Achievement]] = None
+    pdf_preferences: Optional[PDFPreferences] = None
 
 class ResumeResponse(BaseModel):
     id: str
@@ -73,6 +86,8 @@ class ResumeResponse(BaseModel):
     projects: List[Project]
     experience: List[Experience]
     certifications: List[Certification]
+    achievements: List[Achievement]
+    pdf_preferences: PDFPreferences
     score: float
     score_breakdown: ScoreBreakdown
     suggestions: List[str]
