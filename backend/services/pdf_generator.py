@@ -146,13 +146,9 @@ class PDFGenerator:
         if personal_info.get('phone'):
             contact_lines.append(f"<a href='tel:{personal_info['phone']}' color='{accent_color}'>{personal_info['phone']}</a>")
         if personal_info.get('github'):
-            github_url = personal_info['github']
-            github_display = github_url.replace('https://github.com/', '')
-            contact_lines.append(f"<a href='{github_url}' color='{accent_color}'>{github_display}</a>")
+            contact_lines.append(f"<a href='{personal_info['github']}' color='{accent_color}'>GitHub</a>")
         if personal_info.get('linkedin'):
-            linkedin_url = personal_info['linkedin']
-            linkedin_display = linkedin_url.replace('https://linkedin.com/in/', '').replace('https://www.linkedin.com/in/', '')
-            contact_lines.append(f"<a href='{linkedin_url}' color='{accent_color}'>{linkedin_display}</a>")
+            contact_lines.append(f"<a href='{personal_info['linkedin']}' color='{accent_color}'>LinkedIn</a>")
         if personal_info.get('leetcode'):
             contact_lines.append(f"<a href='{personal_info['leetcode']}' color='{accent_color}'>LeetCode</a>")
         if personal_info.get('portfolio'):
