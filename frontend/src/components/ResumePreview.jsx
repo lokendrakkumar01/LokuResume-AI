@@ -32,6 +32,7 @@ function ResumePreview({ formData, onClose }) {
                                                       {personal_info.github && <span>GitHub</span>}
                                                       {personal_info.linkedin && <span>LinkedIn</span>}
                                                       {personal_info.leetcode && <span>LeetCode</span>}
+                                                      {personal_info.problem_solving && <span>DSA</span>}
                                                 </div>
                                           </div>
                                     </div>

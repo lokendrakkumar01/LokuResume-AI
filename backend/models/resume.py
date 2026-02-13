@@ -11,6 +11,7 @@ class PersonalInfo(BaseModel):
     leetcode: Optional[str] = ""
     portfolio: Optional[str] = ""
     headline: Optional[str] = ""  # Custom headline/title
+    problem_solving: Optional[str] = ""  # Problem Solving & Data Structures link (e.g. GFG, HackerRank)
     profile_photo: Optional[str] = ""  # Base64 encoded image or URL
 
 class Education(BaseModel):

@@ -157,6 +157,8 @@ class PDFGenerator:
             contact_lines.append(f"<a href='{personal_info['linkedin']}' color='{accent_color}'>LinkedIn</a>")
         if personal_info.get('leetcode'):
             contact_lines.append(f"<a href='{personal_info['leetcode']}' color='{accent_color}'>LeetCode</a>")
+        if personal_info.get('problem_solving'):
+            contact_lines.append(f"<a href='{personal_info['problem_solving']}' color='{accent_color}'>DSA</a>")
         if personal_info.get('portfolio'):
             contact_lines.append(f"<a href='{personal_info['portfolio']}' color='{accent_color}'>Portfolio</a>")
         

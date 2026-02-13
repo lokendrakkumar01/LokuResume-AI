@@ -24,6 +24,7 @@ function ResumeBuilder() {
                   linkedin: '',
                   github: '',
                   leetcode: '',
+                  problem_solving: '',
                   portfolio: '',
                   headline: '',
                   profile_photo: ''
