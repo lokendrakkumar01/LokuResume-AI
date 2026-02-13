@@ -5,6 +5,7 @@ import axios from 'axios';
 import config from '../config';
 import '../styles/ResumeBuilder.css';
 import '../styles/ResumeBuilderExtra.css';
+import ResumePreview from '../components/ResumePreview';
 
 function ResumeBuilder() {
       const { id } = useParams();
@@ -13,6 +14,7 @@ function ResumeBuilder() {
       const [currentStep, setCurrentStep] = useState(1);
       const [loading, setLoading] = useState(false);
       const [score, setScore] = useState(null);
+      const [showPreview, setShowPreview] = useState(false);
 
       const [formData, setFormData] = useState({
             personal_info: {
@@ -30,7 +32,11 @@ function ResumeBuilder() {
             skills: [],
             projects: [],
             experience: [],
-            certifications: []
+            certifications: [],
+            pdf_preferences: {
+                  background_color: '#ffffff',
+                  accent_color: '#1a73e8'
+            }
       });
 
       useEffect(() => {
@@ -246,10 +252,48 @@ function ResumeBuilder() {
       return (
             <div className="resume-builder">
                   <div className="builder-header">
-                        <h1>{id ? 'Edit Resume' : 'Create Resume'}</h1>
-                        <button onClick={() => navigate('/dashboard')} className="btn btn-secondary">
-                              Back to Dashboard
-                        </button>
+                        <div className="header-left">
+                              <h1>{id ? 'Edit Resume' : 'Create Resume'}</h1>
+                        </div>
+                        <div className="header-actions">
+                              <button onClick={() => setShowPreview(true)} className="btn btn-preview">
+                                    👁️ Preview Resume
+                              </button>
+                              <button onClick={() => navigate('/dashboard')} className="btn btn-secondary">
+                                    Back to Dashboard
+                              </button>
+                        </div>
+                  </div>
+
+                  {/* PDF Customization */}
+                  <div className="pdf-customization">
+                        <h4>🎨 PDF Customization</h4>
+                        <div className="color-pickers">
+                              <div className="color-picker-group">
+                                    <label>Accent Color:</label>
+                                    <input
+                                          type="color"
+                                          value={formData.pdf_preferences.accent_color}
+                                          onChange={(e) => setFormData({
+                                                ...formData,
+                                                pdf_preferences: { ...formData.pdf_preferences, accent_color: e.target.value }
+                                          })}
+                                    />
+                                    <span className="color-value">{formData.pdf_preferences.accent_color}</span>
+                              </div>
+                              <div className="color-picker-group">
+                                    <label>Background Color:</label>
+                                    <input
+                                          type="color"
+                                          value={formData.pdf_preferences.background_color}
+                                          onChange={(e) => setFormData({
+                                                ...formData,
+                                                pdf_preferences: { ...formData.pdf_preferences, background_color: e.target.value }
+                                          })}
+                                    />
+                                    <span className="color-value">{formData.pdf_preferences.background_color}</span>
+                              </div>
+                        </div>
                   </div>
 
                   {score !== null && (
@@ -270,7 +314,8 @@ function ResumeBuilder() {
                         {/* Step 1: Personal Information */}
                         {currentStep === 1 && (
                               <div className="form-step fade-in">
-                                    <h2>Step 1: Personal Information</h2>
+                                    <h2>👤 Step 1: Personal Information</h2>
+                                    <p className="step-description">Add your contact details and professional links</p>
                                     <div className="form-group">
                                           <label>Profile Photo (Optional)</label>
                                           <div className="photo-upload-container">
@@ -379,7 +424,8 @@ function ResumeBuilder() {
                         {/* Step 2: Professional Summary */}
                         {currentStep === 2 && (
                               <div className="form-step fade-in">
-                                    <h2>Step 2: Professional Summary</h2>
+                                    <h2>📝 Step 2: Professional Summary</h2>
+                                    <p className="step-description">Write a compelling summary highlighting your key achievements</p>
                                     <div className="form-group">
                                           <label>Summary (50-150 words recommended)</label>
                                           <textarea
@@ -396,7 +442,8 @@ function ResumeBuilder() {
                         {/* Step 3: Education */}
                         {currentStep === 3 && (
                               <div className="form-step fade-in">
-                                    <h2>Step 3: Education</h2>
+                                    <h2>🎓 Step 3: Education</h2>
+                                    <p className="step-description">Add your educational qualifications</p>
                                     {formData.education.map((edu, index) => (
                                           <div key={index} className="repeatable-item">
                                                 <div className="form-group">
@@ -449,7 +496,8 @@ function ResumeBuilder() {
                         {/* Step 4: Skills */}
                         {currentStep === 4 && (
                               <div className="form-step fade-in">
-                                    <h2>Step 4: Skills</h2>
+                                    <h2>💼 Step 4: Skills</h2>
+                                    <p className="step-description">List your technical and soft skills</p>
                                     <div className="skills-list">
                                           {formData.skills.map((skill, index) => (
                                                 <div key={index} className="skill-tag">
@@ -465,7 +513,8 @@ function ResumeBuilder() {
                         {/* Step 5: Projects */}
                         {currentStep === 5 && (
                               <div className="form-step fade-in">
-                                    <h2>Step 5: Projects</h2>
+                                    <h2>🚀 Step 5: Projects</h2>
+                                    <p className="step-description">Showcase your technical projects with measurable results</p>
                                     {formData.projects.map((project, index) => (
                                           <div key={index} className="repeatable-item">
                                                 <div className="form-group">
@@ -527,7 +576,8 @@ function ResumeBuilder() {
                         {/* Step 6: Experience (Optional) */}
                         {currentStep === 6 && (
                               <div className="form-step fade-in">
-                                    <h2>Step 6: Experience (Optional)</h2>
+                                    <h2>💻 Step 6: Experience (Optional)</h2>
+                                    <p className="step-description">Add your professional work experience</p>
                                     {formData.experience.map((exp, index) => (
                                           <div key={index} className="repeatable-item">
                                                 <div className="form-group">
@@ -578,7 +628,8 @@ function ResumeBuilder() {
                         {/* Step 7: Certifications (Optional) */}
                         {currentStep === 7 && (
                               <div className="form-step fade-in">
-                                    <h2>Step 7: Certifications (Optional)</h2>
+                                    <h2>📜 Step 7: Certifications (Optional)</h2>
+                                    <p className="step-description">Add your professional certifications and credentials</p>
                                     {formData.certifications.map((cert, index) => (
                                           <div key={index} className="repeatable-item">
                                                 <div className="form-group">
@@ -641,6 +692,14 @@ function ResumeBuilder() {
                               </button>
                         </div>
                   </div>
+
+                  {/* Preview Modal */}
+                  {showPreview && (
+                        <ResumePreview
+                              formData={formData}
+                              onClose={() => setShowPreview(false)}
+                        />
+                  )}
             </div>
       );
 }

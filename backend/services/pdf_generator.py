@@ -12,12 +12,20 @@ import re
 class PDFGenerator:
     """Generate professional resume PDFs using ReportLab"""
     
-    def generate_resume_pdf(self, resume: dict, score: float) -> BytesIO:
+    def generate_resume_pdf(self, resume: dict, score: float, pdf_preferences: dict = None) -> BytesIO:
         """Generate a PDF resume from resume data"""
+        # Extract color preferences
+        if pdf_preferences is None:
+            pdf_preferences = {}
+        
+        bg_color = pdf_preferences.get('background_color', '#ffffff')
+        accent_color = pdf_preferences.get('accent_color', '#1a73e8')
+        
         buffer = BytesIO()
+        # Optimized for one page: tighter margins
         doc = SimpleDocTemplate(buffer, pagesize=letter,
-                              rightMargin=0.6*inch, leftMargin=0.6*inch,
-                              topMargin=0.5*inch, bottomMargin=0.5*inch)
+                              rightMargin=0.5*inch, leftMargin=0.5*inch,
+                              topMargin=0.4*inch, bottomMargin=0.4*inch)
         
         # Container for PDF elements
         elements = []
@@ -29,20 +37,20 @@ class PDFGenerator:
         name_style = ParagraphStyle(
             'NameStyle',
             parent=styles['Heading1'],
-            fontSize=22,
+            fontSize=18,
             textColor=colors.HexColor('#1a1a1a'),
-            spaceAfter=4,
+            spaceAfter=2,
             alignment=TA_LEFT,
             fontName='Helvetica-Bold',
-            leading=26
+            leading=20
         )
         
         title_style = ParagraphStyle(
             'TitleStyle',
             parent=styles['Normal'],
-            fontSize=11,
+            fontSize=9,
             textColor=colors.HexColor('#555555'),
-            spaceAfter=8,
+            spaceAfter=4,
             alignment=TA_LEFT,
             fontName='Helvetica'
         )
@@ -50,8 +58,8 @@ class PDFGenerator:
         contact_style = ParagraphStyle(
             'ContactStyle',
             parent=styles['Normal'],
-            fontSize=9,
-            textColor=colors.HexColor('#1a73e8'),
+            fontSize=8,
+            textColor=colors.HexColor(accent_color),
             spaceAfter=2,
             alignment=TA_LEFT,
             fontName='Helvetica'
@@ -60,47 +68,47 @@ class PDFGenerator:
         section_header_style = ParagraphStyle(
             'SectionHeader',
             parent=styles['Heading2'],
-            fontSize=12,
+            fontSize=10,
             textColor=colors.HexColor('#1a1a1a'),
-            spaceAfter=8,
-            spaceBefore=12,
+            spaceAfter=4,
+            spaceBefore=6,
             fontName='Helvetica-Bold',
             borderWidth=0,
             borderPadding=0,
             leftIndent=0,
-            leading=14
+            leading=12
         )
         
         subsection_style = ParagraphStyle(
             'SubsectionStyle',
             parent=styles['Normal'],
-            fontSize=10,
+            fontSize=8,
             textColor=colors.HexColor('#333333'),
-            spaceAfter=6,
+            spaceAfter=3,
             fontName='Helvetica-Bold',
-            leading=12
+            leading=10
         )
         
         body_style = ParagraphStyle(
             'BodyStyle',
             parent=styles['Normal'],
-            fontSize=9,
+            fontSize=8,
             textColor=colors.HexColor('#333333'),
-            spaceAfter=6,
+            spaceAfter=3,
             alignment=TA_JUSTIFY,
             fontName='Helvetica',
-            leading=12
+            leading=10
         )
         
         bullet_style = ParagraphStyle(
             'BulletStyle',
             parent=styles['Normal'],
-            fontSize=9,
+            fontSize=8,
             textColor=colors.HexColor('#333333'),
-            spaceAfter=4,
-            leftIndent=12,
+            spaceAfter=2,
+            leftIndent=10,
             fontName='Helvetica',
-            leading=11
+            leading=9
         )
         
         # Header Section with Profile Photo
@@ -134,21 +142,21 @@ class PDFGenerator:
         # Contact information with clickable links
         contact_lines = []
         if personal_info.get('email'):
-            contact_lines.append(f"<a href='mailto:{personal_info['email']}' color='#1a73e8'>{personal_info['email']}</a>")
+            contact_lines.append(f"<a href='mailto:{personal_info['email']}' color='{accent_color}'>{personal_info['email']}</a>")
         if personal_info.get('phone'):
-            contact_lines.append(f"<a href='tel:{personal_info['phone']}' color='#1a73e8'>{personal_info['phone']}</a>")
+            contact_lines.append(f"<a href='tel:{personal_info['phone']}' color='{accent_color}'>{personal_info['phone']}</a>")
         if personal_info.get('github'):
             github_url = personal_info['github']
             github_display = github_url.replace('https://github.com/', '')
-            contact_lines.append(f"<a href='{github_url}' color='#1a73e8'>{github_display}</a>")
+            contact_lines.append(f"<a href='{github_url}' color='{accent_color}'>{github_display}</a>")
         if personal_info.get('linkedin'):
             linkedin_url = personal_info['linkedin']
             linkedin_display = linkedin_url.replace('https://linkedin.com/in/', '').replace('https://www.linkedin.com/in/', '')
-            contact_lines.append(f"<a href='{linkedin_url}' color='#1a73e8'>{linkedin_display}</a>")
+            contact_lines.append(f"<a href='{linkedin_url}' color='{accent_color}'>{linkedin_display}</a>")
         if personal_info.get('leetcode'):
-            contact_lines.append(f"<a href='{personal_info['leetcode']}' color='#1a73e8'>LeetCode</a>")
+            contact_lines.append(f"<a href='{personal_info['leetcode']}' color='{accent_color}'>LeetCode</a>")
         if personal_info.get('portfolio'):
-            contact_lines.append(f"<a href='{personal_info['portfolio']}' color='#1a73e8'>Portfolio</a>")
+            contact_lines.append(f"<a href='{personal_info['portfolio']}' color='{accent_color}'>Portfolio</a>")
         
         contact_para = Paragraph(" | ".join(contact_lines), contact_style)
         
@@ -169,7 +177,7 @@ class PDFGenerator:
             elements.append(title_para)
             elements.append(contact_para)
         
-        elements.append(Spacer(1, 0.15*inch))
+        elements.append(Spacer(1, 0.08*inch))
         
         # Add horizontal line
         line_table = Table([['']], colWidths=[7*inch])
@@ -179,7 +187,7 @@ class PDFGenerator:
             ('BOTTOMPADDING', (0, 0), (-1, -1), 0),
         ]))
         elements.append(line_table)
-        elements.append(Spacer(1, 0.1*inch))
+        elements.append(Spacer(1, 0.05*inch))
         
         # Skills Section
         if resume.get('skills') and len(resume['skills']) > 0:
@@ -204,7 +212,7 @@ class PDFGenerator:
             if soft_skills:
                 elements.append(Paragraph("<b>Soft Skills:</b> " + ", ".join(soft_skills), body_style))
             
-            elements.append(Spacer(1, 0.1*inch))
+            elements.append(Spacer(1, 0.05*inch))
         
         # Technical Projects Section
         if resume.get('projects') and len(resume['projects']) > 0:
@@ -226,23 +234,22 @@ class PDFGenerator:
                 if project.get('description'):
                     elements.append(Paragraph(project['description'], body_style))
                 
-                # Links
                 links = []
                 if project.get('repository_url'):
-                    links.append(f"<a href='{project['repository_url']}' color='#1a73e8'>Repository</a>")
+                    links.append(f"<a href='{project['repository_url']}' color='{accent_color}'>Repository</a>")
                 if project.get('live_demo_url'):
-                    links.append(f"<a href='{project['live_demo_url']}' color='#1a73e8'>Live Demo</a>")
+                    links.append(f"<a href='{project['live_demo_url']}' color='{accent_color}'>Live Demo</a>")
                 if links:
                     elements.append(Paragraph(" | ".join(links), contact_style))
                 
-                elements.append(Spacer(1, 0.08*inch))
+                elements.append(Spacer(1, 0.04*inch))
         
         # Problem Solving & Data Structures (if LeetCode is present)
         if personal_info.get('leetcode'):
             elements.append(Paragraph("<b>Problem Solving &amp; Data Structures</b>", section_header_style))
-            elements.append(Paragraph("• <a href='" + personal_info['leetcode'] + "' color='#1a73e8'>LeetCode Profile</a>", bullet_style))
+            elements.append(Paragraph("• <a href='" + personal_info['leetcode'] + f"' color='{accent_color}'>LeetCode Profile</a>", bullet_style))
             elements.append(Paragraph("A dedicated Computer Science student with proven problem-solving skills and expertise in data structures and algorithms, demonstrated through developing scalable web applications using Java, JavaScript, and the MERN stack.", body_style))
-            elements.append(Spacer(1, 0.1*inch))
+            elements.append(Spacer(1, 0.05*inch))
         
         # Education Section
         if resume.get('education') and len(resume['education']) > 0:
@@ -303,7 +310,7 @@ class PDFGenerator:
                 if exp.get('description'):
                     elements.append(Paragraph(exp['description'], body_style))
                 
-                elements.append(Spacer(1, 0.08*inch))
+                elements.append(Spacer(1, 0.04*inch))
         
         # Certifications Section
         if resume.get('certifications') and len(resume['certifications']) > 0:
@@ -326,13 +333,18 @@ class PDFGenerator:
                     
                     cert_text = f"• {' '.join(cert_parts)}"
                     
+                    # Add certificate file link if available
+                    if cert.get('file_data') or cert.get('file_url'):
+                        cert_url = cert.get('file_url', '#')
+                        cert_text += f" <a href='{cert_url}' color='{accent_color}'>[View Certificate]</a>"
+                    
                     # Add skills learned if available
                     if cert.get('skills_learned'):
                         cert_text += f"<br/>  <i>Skills learned:</i> {cert['skills_learned']}"
                 
                 elements.append(Paragraph(cert_text, bullet_style))
             
-            elements.append(Spacer(1, 0.1*inch))
+            elements.append(Spacer(1, 0.05*inch))
         
         # Footer (minimal)
         elements.append(Spacer(1, 0.15*inch))
