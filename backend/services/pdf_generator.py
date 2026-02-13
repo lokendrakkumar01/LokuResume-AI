@@ -111,21 +111,6 @@ class PDFGenerator:
             leading=9
         )
         
-        # Creator credit style
-        creator_style = ParagraphStyle(
-            'CreatorStyle',
-            parent=styles['Normal'],
-            fontSize=10,
-            textColor=colors.HexColor(accent_color),
-            spaceAfter=8,
-            alignment=TA_CENTER,
-            fontName='Helvetica-Bold'
-        )
-        
-        # Add creator credit at top
-        elements.append(Paragraph("<b>Created by Lokendra Kumar</b>", creator_style))
-        elements.append(Spacer(1, 0.1*inch))
-        
         # Header Section with Profile Photo
         personal_info = resume['personal_info']
         
@@ -384,21 +369,8 @@ class PDFGenerator:
                 
                 elements.append(Spacer(1, 0.04*inch))
         
-        # Footer with credits
+        # Footer with copyright
         elements.append(Spacer(1, 0.15*inch))
-        
-        # Creator credit line
-        creator_footer = "<b>Created by Lokendra Kumar</b>"
-        footer_creator_style = ParagraphStyle(
-            'FooterCreator',
-            parent=styles['Normal'],
-            fontSize=9,
-            textColor=colors.HexColor(accent_color),
-            alignment=TA_CENTER,
-            fontName='Helvetica-Bold',
-            spaceAfter=3
-        )
-        elements.append(Paragraph(creator_footer, footer_creator_style))
         
         # Copyright and date
         current_year = datetime.now().year

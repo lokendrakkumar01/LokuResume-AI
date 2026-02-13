@@ -166,6 +166,11 @@ function Dashboard() {
                               </div>
                         )}
                   </div>
+
+                  <footer className="dashboard-footer">
+                        <p>Created by {config.FOUNDER}</p>
+                        <p>© 2026 {config.APP_NAME}. All rights reserved.</p>
+                  </footer>
             </div>
       );
 }
