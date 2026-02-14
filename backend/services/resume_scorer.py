@@ -280,10 +280,14 @@ class ResumeScorer:
         if resume.get('projects'):
             score += 2
         
+        # Coding Profiles (bonus 1 point, capped at 10)
+        if resume.get('coding_profiles'):
+            score += 1
+            
         # LinkedIn/GitHub (1 point)
         if personal_info.get('linkedin') or personal_info.get('github'):
             score += 1
-        
+            
         return min(score, 10)
 
 # Create singleton instance

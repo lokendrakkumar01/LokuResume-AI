@@ -111,6 +111,7 @@ class ResumeResponse(BaseModel):
     experience: List[Experience]
     certifications: List[Certification]
     achievements: List[Achievement]
+    coding_profiles: List[CodingProfile] = []
     pdf_preferences: PDFPreferences
     score: float
     score_breakdown: ScoreBreakdown
