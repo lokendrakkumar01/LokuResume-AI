@@ -87,6 +87,7 @@ class ResumeCreate(BaseModel):
     experience: List[Experience] = []
     certifications: List[Certification] = []
     achievements: List[Achievement] = []
+    coding_profiles: List[CodingProfile] = []
     pdf_preferences: Optional[PDFPreferences] = None
 
 class ResumeUpdate(BaseModel):
@@ -98,6 +99,7 @@ class ResumeUpdate(BaseModel):
     experience: Optional[List[Experience]] = None
     certifications: Optional[List[Certification]] = None
     achievements: Optional[List[Achievement]] = None
+    coding_profiles: Optional[List[CodingProfile]] = None
     pdf_preferences: Optional[PDFPreferences] = None
 
 class ResumeResponse(BaseModel):
