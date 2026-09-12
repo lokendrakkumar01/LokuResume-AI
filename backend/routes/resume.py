@@ -1,16 +1,19 @@
 from fastapi import APIRouter, HTTPException, Depends, status, Header
 from fastapi.responses import StreamingResponse
-from models.resume import ResumeCreate, ResumeUpdate, ResumeResponse
+from models.resume import ResumeCreate, ResumeUpdate, ResumeResponse, PDFPreferences
 from auth.jwt_handler import get_user_from_token
 from database import get_database
 from services.resume_scorer import scorer
 from services.ai_suggestions import ai_suggestions
 from services.pdf_generator import pdf_generator
-from datetime import datetime
+from datetime import datetime, timezone
 from bson import ObjectId
+from bson.errors import InvalidId
 from typing import List
 
 router = APIRouter(prefix="/resumes", tags=["Resumes"])
+
+DEFAULT_PDF_PREFERENCES = {"background_color": "#ffffff", "accent_color": "#1a73e8"}
 
 async def get_current_user(authorization: str = Header(None)):
     """Dependency to extract and verify user from JWT token"""
@@ -20,20 +23,14 @@ async def get_current_user(authorization: str = Header(None)):
             detail="Authorization header missing"
         )
     
-    try:
-        token = authorization.replace("Bearer ", "")
-        user_id = get_user_from_token(token)
-        if not user_id:
-            raise HTTPException(
-                status_code=status.HTTP_401_UNAUTHORIZED,
-                detail="Invalid or expired token"
-            )
-        return user_id
-    except:
+    token = authorization.replace("Bearer ", "").strip()
+    user_id = get_user_from_token(token)
+    if not user_id:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Invalid or expired token"
         )
+    return user_id
 
 @router.post("", response_model=ResumeResponse, status_code=status.HTTP_201_CREATED)
 async def create_resume(resume: ResumeCreate, user_id: str = Depends(get_current_user)):
@@ -45,6 +42,8 @@ async def create_resume(resume: ResumeCreate, user_id: str = Depends(get_current
     
     # Calculate initial score
     score, breakdown, suggestions, missing_keywords = scorer.score_resume(resume_dict)
+    
+    pdf_prefs = resume_dict.get("pdf_preferences") or DEFAULT_PDF_PREFERENCES
     
     # Prepare resume document
     resume_doc = {
@@ -58,13 +57,13 @@ async def create_resume(resume: ResumeCreate, user_id: str = Depends(get_current
         "certifications": resume_dict["certifications"],
         "achievements": resume_dict.get("achievements", []),
         "coding_profiles": resume_dict.get("coding_profiles", []),
-        "pdf_preferences": resume_dict.get("pdf_preferences", {"background_color": "#ffffff", "accent_color": "#1a73e8"}),
+        "pdf_preferences": pdf_prefs,
         "score": score,
         "score_breakdown": breakdown.model_dump(),
         "suggestions": suggestions,
         "missing_keywords": missing_keywords,
-        "created_at": datetime.utcnow(),
-        "updated_at": datetime.utcnow()
+        "created_at": datetime.now(timezone.utc),
+        "updated_at": datetime.now(timezone.utc)
     }
     
     result = await db.resumes.insert_one(resume_doc)
@@ -112,7 +111,7 @@ async def get_all_resumes(user_id: str = Depends(get_current_user)):
             certifications=resume["certifications"],
             achievements=resume.get("achievements", []),
             coding_profiles=resume.get("coding_profiles", []),
-            pdf_preferences=resume.get("pdf_preferences", {"background_color": "#ffffff", "accent_color": "#1a73e8"}),
+            pdf_preferences=resume.get("pdf_preferences") or DEFAULT_PDF_PREFERENCES,
             score=resume["score"],
             score_breakdown=resume["score_breakdown"],
             suggestions=resume["suggestions"],
@@ -129,9 +128,11 @@ async def get_resume(resume_id: str, user_id: str = Depends(get_current_user)):
     db = await get_database()
     
     try:
-        resume = await db.resumes.find_one({"_id": ObjectId(resume_id), "user_id": user_id})
-    except:
+        obj_id = ObjectId(resume_id)
+    except InvalidId:
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Invalid resume ID")
+    
+    resume = await db.resumes.find_one({"_id": obj_id, "user_id": user_id})
     
     if not resume:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Resume not found")
@@ -148,7 +149,7 @@ async def get_resume(resume_id: str, user_id: str = Depends(get_current_user)):
         certifications=resume["certifications"],
         achievements=resume.get("achievements", []),
         coding_profiles=resume.get("coding_profiles", []),
-        pdf_preferences=resume.get("pdf_preferences", {"background_color": "#ffffff", "accent_color": "#1a73e8"}),
+        pdf_preferences=resume.get("pdf_preferences") or DEFAULT_PDF_PREFERENCES,
         score=resume["score"],
         score_breakdown=resume["score_breakdown"],
         suggestions=resume["suggestions"],
@@ -163,10 +164,11 @@ async def update_resume(resume_id: str, resume_update: ResumeUpdate, user_id: st
     db = await get_database()
     
     try:
-        existing_resume = await db.resumes.find_one({"_id": ObjectId(resume_id), "user_id": user_id})
-    except:
+        obj_id = ObjectId(resume_id)
+    except InvalidId:
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Invalid resume ID")
     
+    existing_resume = await db.resumes.find_one({"_id": obj_id, "user_id": user_id})
     if not existing_resume:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Resume not found")
     
@@ -181,13 +183,14 @@ async def update_resume(resume_id: str, resume_update: ResumeUpdate, user_id: st
     score, breakdown, suggestions, missing_keywords = scorer.score_resume(existing_resume)
     
     # Update resume document
+    existing_resume["pdf_preferences"] = existing_resume.get("pdf_preferences") or DEFAULT_PDF_PREFERENCES
     existing_resume["score"] = score
     existing_resume["score_breakdown"] = breakdown.model_dump()
     existing_resume["suggestions"] = suggestions
     existing_resume["missing_keywords"] = missing_keywords
-    existing_resume["updated_at"] = datetime.utcnow()
+    existing_resume["updated_at"] = datetime.now(timezone.utc)
     
-    await db.resumes.replace_one({"_id": ObjectId(resume_id)}, existing_resume)
+    await db.resumes.replace_one({"_id": obj_id}, existing_resume)
     
     return ResumeResponse(
         id=str(existing_resume["_id"]),
@@ -201,7 +204,7 @@ async def update_resume(resume_id: str, resume_update: ResumeUpdate, user_id: st
         certifications=existing_resume["certifications"],
         achievements=existing_resume.get("achievements", []),
         coding_profiles=existing_resume.get("coding_profiles", []),
-        pdf_preferences=existing_resume.get("pdf_preferences", {"background_color": "#ffffff", "accent_color": "#1a73e8"}),
+        pdf_preferences=existing_resume.get("pdf_preferences") or DEFAULT_PDF_PREFERENCES,
         score=existing_resume["score"],
         score_breakdown=breakdown,
         suggestions=existing_resume["suggestions"],
@@ -216,9 +219,11 @@ async def delete_resume(resume_id: str, user_id: str = Depends(get_current_user)
     db = await get_database()
     
     try:
-        result = await db.resumes.delete_one({"_id": ObjectId(resume_id), "user_id": user_id})
-    except:
+        obj_id = ObjectId(resume_id)
+    except InvalidId:
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Invalid resume ID")
+    
+    result = await db.resumes.delete_one({"_id": obj_id, "user_id": user_id})
     
     if result.deleted_count == 0:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Resume not found")
@@ -231,10 +236,11 @@ async def duplicate_resume(resume_id: str, user_id: str = Depends(get_current_us
     db = await get_database()
     
     try:
-        resume = await db.resumes.find_one({"_id": ObjectId(resume_id), "user_id": user_id})
-    except:
+        obj_id = ObjectId(resume_id)
+    except InvalidId:
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Invalid resume ID")
     
+    resume = await db.resumes.find_one({"_id": obj_id, "user_id": user_id})
     if not resume:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Resume not found")
     
@@ -248,8 +254,8 @@ async def duplicate_resume(resume_id: str, user_id: str = Depends(get_current_us
     # Create duplicate
     new_resume = resume.copy()
     del new_resume["_id"]
-    new_resume["created_at"] = datetime.utcnow()
-    new_resume["updated_at"] = datetime.utcnow()
+    new_resume["created_at"] = datetime.now(timezone.utc)
+    new_resume["updated_at"] = datetime.now(timezone.utc)
     
     result = await db.resumes.insert_one(new_resume)
     new_resume["_id"] = result.inserted_id
@@ -265,7 +271,8 @@ async def duplicate_resume(resume_id: str, user_id: str = Depends(get_current_us
         experience=new_resume["experience"],
         certifications=new_resume["certifications"],
         achievements=new_resume.get("achievements", []),
-        pdf_preferences=new_resume.get("pdf_preferences", {"background_color": "#ffffff", "accent_color": "#1a73e8"}),
+        coding_profiles=new_resume.get("coding_profiles", []),
+        pdf_preferences=new_resume.get("pdf_preferences") or DEFAULT_PDF_PREFERENCES,
         score=new_resume["score"],
         score_breakdown=new_resume["score_breakdown"],
         suggestions=new_resume["suggestions"],
@@ -280,10 +287,11 @@ async def generate_ai_resume(resume_id: str, user_id: str = Depends(get_current_
     db = await get_database()
     
     try:
-        resume = await db.resumes.find_one({"_id": ObjectId(resume_id), "user_id": user_id})
-    except:
+        obj_id = ObjectId(resume_id)
+    except InvalidId:
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Invalid resume ID")
     
+    resume = await db.resumes.find_one({"_id": obj_id, "user_id": user_id})
     if not resume:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Resume not found")
     
@@ -294,13 +302,14 @@ async def generate_ai_resume(resume_id: str, user_id: str = Depends(get_current_
     # Recalculate score
     score, breakdown, suggestions, missing_keywords = scorer.score_resume(resume)
     
+    resume["pdf_preferences"] = resume.get("pdf_preferences") or DEFAULT_PDF_PREFERENCES
     resume["score"] = score
     resume["score_breakdown"] = breakdown.model_dump()
     resume["suggestions"] = suggestions
     resume["missing_keywords"] = missing_keywords
-    resume["updated_at"] = datetime.utcnow()
+    resume["updated_at"] = datetime.now(timezone.utc)
     
-    await db.resumes.replace_one({"_id": ObjectId(resume_id)}, resume)
+    await db.resumes.replace_one({"_id": obj_id}, resume)
     
     return ResumeResponse(
         id=str(resume["_id"]),
@@ -313,7 +322,8 @@ async def generate_ai_resume(resume_id: str, user_id: str = Depends(get_current_
         experience=resume["experience"],
         certifications=resume["certifications"],
         achievements=resume.get("achievements", []),
-        pdf_preferences=resume.get("pdf_preferences", {"background_color": "#ffffff", "accent_color": "#1a73e8"}),
+        coding_profiles=resume.get("coding_profiles", []),
+        pdf_preferences=resume.get("pdf_preferences") or DEFAULT_PDF_PREFERENCES,
         score=resume["score"],
         score_breakdown=breakdown,
         suggestions=resume["suggestions"],
@@ -328,26 +338,24 @@ async def download_resume(resume_id: str, user_id: str = Depends(get_current_use
     db = await get_database()
     
     try:
-        resume = await db.resumes.find_one({"_id": ObjectId(resume_id), "user_id": user_id})
-    except Exception as e:
-        print(f"Error finding resume: {str(e)}")
+        obj_id = ObjectId(resume_id)
+    except InvalidId:
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Invalid resume ID")
     
+    resume = await db.resumes.find_one({"_id": obj_id, "user_id": user_id})
     if not resume:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Resume not found")
     
     try:
         # Get PDF preferences with defaults
-        pdf_preferences = resume.get("pdf_preferences", {"background_color": "#ffffff", "accent_color": "#1a73e8"})
+        pdf_preferences = resume.get("pdf_preferences") or DEFAULT_PDF_PREFERENCES
         
         # Sanitize certifications - remove large base64 file_data before PDF generation
-        # We only use file_url in the PDF, not the actual file data
         resume_for_pdf = resume.copy()
         if resume_for_pdf.get("certifications"):
             sanitized_certs = []
             for cert in resume_for_pdf["certifications"]:
                 if isinstance(cert, dict):
-                    # Create a copy without the large file_data
                     cert_copy = {k: v for k, v in cert.items() if k != 'file_data'}
                     sanitized_certs.append(cert_copy)
                 else:
@@ -366,7 +374,6 @@ async def download_resume(resume_id: str, user_id: str = Depends(get_current_use
             headers={"Content-Disposition": f"attachment; filename={filename}"}
         )
     except Exception as e:
-        # Log the actual error for debugging
         print(f"PDF Generation Error: {str(e)}")
         import traceback
         traceback.print_exc()
@@ -374,4 +381,3 @@ async def download_resume(resume_id: str, user_id: str = Depends(get_current_use
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"Failed to generate PDF: {str(e)}"
         )
-

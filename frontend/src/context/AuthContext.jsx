@@ -7,23 +7,93 @@ const AuthContext = createContext();
 
 export const useAuth = () => useContext(AuthContext);
 
+const formatErrorMessage = (detail, fallback) => {
+      if (typeof detail === 'string') return detail;
+      if (Array.isArray(detail)) {
+            return detail.map(err => err.msg || JSON.stringify(err)).join(', ');
+      }
+      if (detail && typeof detail === 'object') {
+            return detail.msg || JSON.stringify(detail);
+      }
+      return fallback;
+};
+
 export const AuthProvider = ({ children }) => {
-      const [user, setUser] = useState(null);
-      const [token, setToken] = useState(localStorage.getItem('token'));
+      const [token, setToken] = useState(() => localStorage.getItem('token') || null);
+      const [user, setUser] = useState(() => {
+            try {
+                  const saved = localStorage.getItem('user');
+                  return saved ? JSON.parse(saved) : null;
+            } catch (e) {
+                  return null;
+            }
+      });
       const [loading, setLoading] = useState(true);
 
+      // Verify token on mount if present
       useEffect(() => {
-            const savedUser = localStorage.getItem('user');
-            if (savedUser && token) {
-                  setUser(JSON.parse(savedUser));
-            }
-            setLoading(false);
-      }, [token]);
+            let isMounted = true;
+
+            const verifySession = async () => {
+                  const storedToken = localStorage.getItem('token');
+                  if (!storedToken) {
+                        if (isMounted) setLoading(false);
+                        return;
+                  }
+
+                  try {
+                        const response = await axios.get(`${config.API_BASE_URL}/auth/me`, {
+                              headers: { Authorization: `Bearer ${storedToken}` }
+                        });
+                        if (isMounted && response.data) {
+                              setUser(response.data);
+                              localStorage.setItem('user', JSON.stringify(response.data));
+                        }
+                  } catch (err) {
+                        // If token is invalid or expired (401), clear session
+                        if (err.response && err.response.status === 401) {
+                              if (isMounted) {
+                                    localStorage.removeItem('token');
+                                    localStorage.removeItem('user');
+                                    setToken(null);
+                                    setUser(null);
+                              }
+                        }
+                        // If network error (offline / cold start), keep saved local user
+                  } finally {
+                        if (isMounted) setLoading(false);
+                  }
+            };
+
+            verifySession();
+
+            return () => {
+                  isMounted = false;
+            };
+      }, []);
+
+      // Axios interceptor to catch any 401 Unauthorized across API requests
+      useEffect(() => {
+            const interceptor = axios.interceptors.response.use(
+                  (response) => response,
+                  (error) => {
+                        if (error.response && error.response.status === 401) {
+                              localStorage.removeItem('token');
+                              localStorage.removeItem('user');
+                              setToken(null);
+                              setUser(null);
+                        }
+                        return Promise.reject(error);
+                  }
+            );
+
+            return () => axios.interceptors.response.eject(interceptor);
+      }, []);
 
       const login = async (email, password) => {
             try {
                   const response = await axios.post(`${config.API_BASE_URL}/auth/login`, {
-                        email,
+                        email: email.trim().toLowerCase(),
                         password
                   });
 
@@ -35,11 +105,11 @@ export const AuthProvider = ({ children }) => {
                   setToken(access_token);
                   setUser(userData);
 
-                  return { success: true };
+                  return { success: true, user: userData };
             } catch (error) {
                   return {
                         success: false,
-                        error: error.response?.data?.detail || 'Login failed'
+                        error: formatErrorMessage(error.response?.data?.detail, 'Login failed')
                   };
             }
       };
@@ -47,8 +117,8 @@ export const AuthProvider = ({ children }) => {
       const signup = async (name, email, password) => {
             try {
                   const response = await axios.post(`${config.API_BASE_URL}/auth/signup`, {
-                        name,
-                        email,
+                        name: name.trim(),
+                        email: email.trim().toLowerCase(),
                         password
                   });
 
@@ -60,11 +130,11 @@ export const AuthProvider = ({ children }) => {
                   setToken(access_token);
                   setUser(userData);
 
-                  return { success: true };
+                  return { success: true, user: userData };
             } catch (error) {
                   return {
                         success: false,
-                        error: error.response?.data?.detail || 'Signup failed'
+                        error: formatErrorMessage(error.response?.data?.detail, 'Signup failed')
                   };
             }
       };
@@ -91,11 +161,34 @@ export const ProtectedRoute = ({ children }) => {
       const { token, loading } = useAuth();
 
       if (loading) {
-            return <div className="loading">Loading...</div>;
+            return (
+                  <div style={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                        <div style={{ width: 36, height: 36, border: '3px solid rgba(255,255,255,0.15)', borderTopColor: '#3b82f6', borderRadius: '50%', animation: 'spin 1s linear infinite' }} />
+                  </div>
+            );
       }
 
       if (!token) {
             return <Navigate to="/login" replace />;
+      }
+
+      return children;
+};
+
+export const GuestRoute = ({ children }) => {
+      const { token, loading } = useAuth();
+
+      if (loading) {
+            return (
+                  <div style={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                        <div style={{ width: 36, height: 36, border: '3px solid rgba(255,255,255,0.15)', borderTopColor: '#3b82f6', borderRadius: '50%', animation: 'spin 1s linear infinite' }} />
+                  </div>
+            );
+      }
+
+      // If user is already logged in, redirect directly to dashboard
+      if (token) {
+            return <Navigate to="/dashboard" replace />;
       }
 
       return children;

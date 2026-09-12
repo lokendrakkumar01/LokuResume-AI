@@ -14,77 +14,72 @@ class PDFGenerator:
     
     def generate_resume_pdf(self, resume: dict, score: float, pdf_preferences: dict = None) -> BytesIO:
         """Generate a PDF resume from resume data"""
-        # Extract color preferences
         if pdf_preferences is None:
             pdf_preferences = {}
         
-        bg_color = pdf_preferences.get('background_color', '#ffffff')
-        accent_color = pdf_preferences.get('accent_color', '#1a73e8')
+        accent_color = pdf_preferences.get('accent_color') or '#4f46e5'
+        template_style = resume.get('template_style') or 'modern'
         
         buffer = BytesIO()
-        # Optimized for one page: tighter margins
-        doc = SimpleDocTemplate(buffer, pagesize=letter,
-                              rightMargin=0.5*inch, leftMargin=0.5*inch,
-                              topMargin=0.4*inch, bottomMargin=0.4*inch)
+        doc = SimpleDocTemplate(
+            buffer, pagesize=letter,
+            rightMargin=0.45*inch, leftMargin=0.45*inch,
+            topMargin=0.4*inch, bottomMargin=0.4*inch
+        )
         
-        # Container for PDF elements
         elements = []
-        
-        # Styles
         styles = getSampleStyleSheet()
         
-        # Custom styles
+        header_align = TA_CENTER if template_style == 'executive' else TA_LEFT
+        
         name_style = ParagraphStyle(
             'NameStyle',
             parent=styles['Heading1'],
-            fontSize=18,
-            textColor=colors.HexColor('#1a1a1a'),
+            fontSize=20 if template_style == 'executive' else 18,
+            textColor=colors.HexColor('#0f172a'),
             spaceAfter=2,
-            alignment=TA_LEFT,
+            alignment=header_align,
             fontName='Helvetica-Bold',
-            leading=20
+            leading=22
         )
         
         title_style = ParagraphStyle(
             'TitleStyle',
             parent=styles['Normal'],
-            fontSize=9,
-            textColor=colors.HexColor('#555555'),
+            fontSize=10,
+            textColor=colors.HexColor(accent_color),
             spaceAfter=4,
-            alignment=TA_LEFT,
-            fontName='Helvetica'
+            alignment=header_align,
+            fontName='Helvetica-Bold'
         )
         
         contact_style = ParagraphStyle(
             'ContactStyle',
             parent=styles['Normal'],
             fontSize=8,
-            textColor=colors.HexColor(accent_color),
+            textColor=colors.HexColor('#475569'),
             spaceAfter=2,
-            alignment=TA_LEFT,
+            alignment=header_align,
             fontName='Helvetica'
         )
         
         section_header_style = ParagraphStyle(
             'SectionHeader',
             parent=styles['Heading2'],
-            fontSize=10,
-            textColor=colors.HexColor('#1a1a1a'),
+            fontSize=11,
+            textColor=colors.HexColor(accent_color),
             spaceAfter=4,
             spaceBefore=6,
             fontName='Helvetica-Bold',
-            borderWidth=0,
-            borderPadding=0,
-            leftIndent=0,
-            leading=12
+            leading=13
         )
         
         subsection_style = ParagraphStyle(
             'SubsectionStyle',
             parent=styles['Normal'],
-            fontSize=8,
-            textColor=colors.HexColor('#333333'),
-            spaceAfter=3,
+            fontSize=8.5,
+            textColor=colors.HexColor('#0f172a'),
+            spaceAfter=2,
             fontName='Helvetica-Bold',
             leading=10
         )
@@ -93,9 +88,9 @@ class PDFGenerator:
             'BodyStyle',
             parent=styles['Normal'],
             fontSize=8,
-            textColor=colors.HexColor('#333333'),
+            textColor=colors.HexColor('#334155'),
             spaceAfter=3,
-            alignment=TA_JUSTIFY,
+            alignment=TA_LEFT,
             fontName='Helvetica',
             leading=10
         )
@@ -104,48 +99,32 @@ class PDFGenerator:
             'BulletStyle',
             parent=styles['Normal'],
             fontSize=8,
-            textColor=colors.HexColor('#333333'),
+            textColor=colors.HexColor('#334155'),
             spaceAfter=2,
             leftIndent=10,
             fontName='Helvetica',
             leading=9
         )
         
-        # Header Section with Profile Photo
-        personal_info = resume['personal_info']
-        
-        # Create header table with photo and info
-        header_data = []
-        
-        # Profile photo (if available)
+        # Header Section
+        personal_info = resume.get('personal_info', {})
         photo_cell = ""
         if personal_info.get('profile_photo'):
             try:
-                # Handle base64 encoded image
                 photo_data = personal_info['profile_photo']
                 if photo_data.startswith('data:image'):
                     photo_data = photo_data.split(',')[1]
                 
                 img_buffer = BytesIO(base64.b64decode(photo_data))
-                photo = Image(img_buffer, width=0.8*inch, height=0.8*inch)
+                photo = Image(img_buffer, width=0.75*inch, height=0.75*inch)
                 photo_cell = photo
-            except:
+            except Exception:
                 photo_cell = ""
         
-        # Name and contact info
-        name = personal_info['name']
-        
-        # Name and Title
-        name_para = Paragraph(personal_info['name'], name_style)
-        
-        # Use user-provided headline or default fallback if empty
-        headline_text = personal_info.get('headline', '')
-        if not headline_text:
-            headline_text = "Full-Stack Developer | MERN & Java | Web Applications"
-            
+        name_para = Paragraph(personal_info.get('name', 'Your Name'), name_style)
+        headline_text = personal_info.get('headline') or "Software Developer | Web Applications"
         title_para = Paragraph(headline_text, title_style)
         
-        # Contact information with clickable links
         contact_lines = []
         if personal_info.get('email'):
             contact_lines.append(f"<a href='mailto:{personal_info['email']}' color='{accent_color}'>{personal_info['email']}</a>")
@@ -155,25 +134,19 @@ class PDFGenerator:
             contact_lines.append(f"<a href='{personal_info['github']}' color='{accent_color}'>GitHub</a>")
         if personal_info.get('linkedin'):
             contact_lines.append(f"<a href='{personal_info['linkedin']}' color='{accent_color}'>LinkedIn</a>")
-        if personal_info.get('leetcode'):
-            contact_lines.append(f"<a href='{personal_info['leetcode']}' color='{accent_color}'>LeetCode</a>")
-        if personal_info.get('problem_solving'):
-            contact_lines.append(f"<a href='{personal_info['problem_solving']}' color='{accent_color}'>DSA</a>")
         if personal_info.get('portfolio'):
             contact_lines.append(f"<a href='{personal_info['portfolio']}' color='{accent_color}'>Portfolio</a>")
         
         contact_para = Paragraph(" | ".join(contact_lines), contact_style)
         
-        # Build header
-        if photo_cell:
-            header_table = Table([[photo_cell, [name_para, title_para, contact_para]]], 
-                                colWidths=[1*inch, 6*inch])
+        if photo_cell and template_style != 'executive':
+            header_table = Table([[photo_cell, [name_para, title_para, contact_para]]], colWidths=[0.9*inch, 6.2*inch])
             header_table.setStyle(TableStyle([
-                ('VALIGN', (0, 0), (-1, -1), 'TOP'),
+                ('VALIGN', (0, 0), (-1, -1), 'MIDDLE'),
                 ('LEFTPADDING', (0, 0), (-1, -1), 0),
                 ('RIGHTPADDING', (0, 0), (-1, -1), 0),
                 ('TOPPADDING', (0, 0), (-1, -1), 0),
-                ('BOTTOMPADDING', (0, 0), (-1, -1), 8),
+                ('BOTTOMPADDING', (0, 0), (-1, -1), 6),
             ]))
             elements.append(header_table)
         else:
@@ -181,241 +154,95 @@ class PDFGenerator:
             elements.append(title_para)
             elements.append(contact_para)
         
-        elements.append(Spacer(1, 0.08*inch))
+        elements.append(Spacer(1, 0.05*inch))
         
-        # Add horizontal line
-        line_table = Table([['']], colWidths=[7*inch])
+        # Header divider line
+        line_table = Table([['']], colWidths=[7.1*inch])
         line_table.setStyle(TableStyle([
-            ('LINEABOVE', (0, 0), (-1, 0), 1, colors.HexColor('#cccccc')),
+            ('LINEABOVE', (0, 0), (-1, 0), 1.5, colors.HexColor(accent_color)),
             ('TOPPADDING', (0, 0), (-1, -1), 0),
             ('BOTTOMPADDING', (0, 0), (-1, -1), 0),
         ]))
         elements.append(line_table)
         elements.append(Spacer(1, 0.05*inch))
         
-        # Skills Section
-        if resume.get('skills') and len(resume['skills']) > 0:
-            elements.append(Paragraph("<b>Skills</b>", section_header_style))
-            
-            # Categorize skills (simple heuristic)
-            hard_skills = []
-            soft_skills = []
-            
-            soft_skill_keywords = ['leadership', 'communication', 'teamwork', 'problem-solving', 
-                                  'adaptability', 'creativity', 'critical thinking', 'collaboration']
-            
-            for skill in resume['skills']:
-                is_soft = any(keyword in skill.lower() for keyword in soft_skill_keywords)
-                if is_soft:
-                    soft_skills.append(skill)
-                else:
-                    hard_skills.append(skill)
-            
-            if hard_skills:
-                elements.append(Paragraph("<b>Hard Skills:</b> " + ", ".join(hard_skills), body_style))
-            if soft_skills:
-                elements.append(Paragraph("<b>Soft Skills:</b> " + ", ".join(soft_skills), body_style))
-            
-            elements.append(Spacer(1, 0.05*inch))
+        # Summary
+        if resume.get('summary'):
+            elements.append(Paragraph("<b>PROFESSIONAL SUMMARY</b>", section_header_style))
+            elements.append(Paragraph(resume['summary'], body_style))
+            elements.append(Spacer(1, 0.04*inch))
         
-        # Technical Projects Section
-        if resume.get('projects') and len(resume['projects']) > 0:
-            elements.append(Paragraph("<b>Technical Projects</b>", section_header_style))
-            
+        # Skills
+        if resume.get('skills'):
+            elements.append(Paragraph("<b>SKILLS &amp; EXPERTISE</b>", section_header_style))
+            elements.append(Paragraph(" • ".join(resume['skills']), body_style))
+            elements.append(Spacer(1, 0.04*inch))
+        
+        # Projects
+        if resume.get('projects'):
+            elements.append(Paragraph("<b>PROJECTS</b>", section_header_style))
             for project in resume['projects']:
-                # Project title with year (if available)
-                project_title = f"<b>{project['title']}</b>"
-                if project.get('year'):
-                    project_title += f" <i>({project['year']})</i>"
-                elements.append(Paragraph(project_title, subsection_style))
-                
-                # Technologies
+                p_title = f"<b>{project.get('title', '')}</b>"
                 if project.get('technologies'):
-                    tech_text = f"<i>{project['technologies']}</i>"
-                    elements.append(Paragraph(tech_text, body_style))
-                
-                # Description
+                    p_title += f" <i>({project['technologies']})</i>"
+                elements.append(Paragraph(p_title, subsection_style))
                 if project.get('description'):
                     elements.append(Paragraph(project['description'], body_style))
-                
-                links = []
-                if project.get('repository_url'):
-                    links.append(f"<a href='{project['repository_url']}' color='{accent_color}'>Repository</a>")
-                if project.get('live_demo_url'):
-                    links.append(f"<a href='{project['live_demo_url']}' color='{accent_color}'>Live Demo</a>")
-                if links:
-                    elements.append(Paragraph(" | ".join(links), contact_style))
-                
-                elements.append(Spacer(1, 0.04*inch))
+                elements.append(Spacer(1, 0.03*inch))
         
-        # Problem Solving & Data Structures (if LeetCode is present)
-        if personal_info.get('leetcode'):
-            elements.append(Paragraph("<b>Problem Solving &amp; Data Structures</b>", section_header_style))
-            elements.append(Paragraph("• <a href='" + personal_info['leetcode'] + f"' color='{accent_color}'>LeetCode Profile</a>", bullet_style))
-            elements.append(Paragraph("A dedicated Computer Science student with proven problem-solving skills and expertise in data structures and algorithms, demonstrated through developing scalable web applications using Java, JavaScript, and the MERN stack.", body_style))
-            elements.append(Spacer(1, 0.05*inch))
-        
-        # Education Section
-        if resume.get('education') and len(resume['education']) > 0:
-            elements.append(Paragraph("<b>Education</b>", section_header_style))
-            
-            for edu in resume['education']:
-                # Create table for education entry with right-aligned year
-                edu_data = []
-                
-                # Degree and college
-                degree_text = f"<b>{edu.get('degree', '')}</b>"
-                college_text = edu.get('college', '')
-                year_text = edu.get('year', '')
-                
-                edu_line = Paragraph(f"{degree_text}<br/>{college_text}", body_style)
-                year_para = Paragraph(f"<b>{year_text}</b>", ParagraphStyle(
-                    'YearStyle',
-                    parent=body_style,
-                    alignment=TA_RIGHT,
-                    fontName='Helvetica-Bold'
-                ))
-                
-                edu_table = Table([[edu_line, year_para]], colWidths=[5.5*inch, 1.5*inch])
-                edu_table.setStyle(TableStyle([
-                    ('VALIGN', (0, 0), (-1, -1), 'TOP'),
-                    ('LEFTPADDING', (0, 0), (-1, -1), 0),
-                    ('RIGHTPADDING', (0, 0), (-1, -1), 0),
-                    ('TOPPADDING', (0, 0), (-1, -1), 0),
-                    ('BOTTOMPADDING', (0, 0), (-1, -1), 4),
-                ]))
-                elements.append(edu_table)
-                
-                # Grade info
-                if edu.get('grade'):
-                    grade_para = Paragraph(f"<b>CGPA:</b> {edu['grade']}", body_style)
-                    elements.append(grade_para)
-                
-                elements.append(Spacer(1, 0.08*inch))
-        
-        # Professional Summary (if available)
-        if resume.get('summary'):
-            elements.append(Paragraph("<b>Professional Summary</b>", section_header_style))
-            elements.append(Paragraph(resume['summary'], body_style))
-            elements.append(Spacer(1, 0.1*inch))
-        
-        # Experience Section
-        if resume.get('experience') and len(resume['experience']) > 0:
-            elements.append(Paragraph("<b>Professional Experience</b>", section_header_style))
-            
+        # Experience
+        if resume.get('experience'):
+            elements.append(Paragraph("<b>WORK EXPERIENCE</b>", section_header_style))
             for exp in resume['experience']:
-                # Role and company with duration
-                role_text = f"<b>{exp.get('role', '')}</b> at {exp.get('company', '')}"
-                elements.append(Paragraph(role_text, subsection_style))
-                
+                exp_head = f"<b>{exp.get('role', '')}</b> - {exp.get('company', '')}"
                 if exp.get('duration'):
-                    elements.append(Paragraph(f"<i>{exp['duration']}</i>", body_style))
-                
+                    exp_head += f" <i>({exp['duration']})</i>"
+                elements.append(Paragraph(exp_head, subsection_style))
                 if exp.get('description'):
                     elements.append(Paragraph(exp['description'], body_style))
-                
-                elements.append(Spacer(1, 0.04*inch))
+                elements.append(Spacer(1, 0.03*inch))
         
-        # Certifications Section
-        if resume.get('certifications') and len(resume['certifications']) > 0:
-            elements.append(Paragraph("<b>Certifications</b>", section_header_style))
-            
-            for cert in resume['certifications']:
-                # Handle both string and dict formats
-                if isinstance(cert, str):
-                    cert_text = f"• {cert}"
-                else:
-                    cert_name = cert.get('name', '')
-                    cert_issuer = cert.get('issued_by', '')
-                    cert_date = cert.get('date', '')
-                    
-                    cert_parts = [cert_name]
-                    if cert_issuer:
-                        cert_parts.append(f"- {cert_issuer}")
-                    if cert_date:
-                        cert_parts.append(f"({cert_date})")
-                    
-                    cert_text = f"• {' '.join(cert_parts)}"
-                    
-                    # Add certificate file link if file_url is available
-                    # Note: file_data contains base64 encoded certificate, but we only link if URL exists
-                    if cert.get('file_url'):
-                        cert_url = cert.get('file_url')
-                        cert_text += f" <a href='{cert_url}' color='{accent_color}'>[View Certificate]</a>"
-                    
-                    # Add skills learned if available
-                    if cert.get('skills_learned'):
-                        cert_text += f"<br/>  <i>Skills learned:</i> {cert['skills_learned']}"
-                
-                elements.append(Paragraph(cert_text, bullet_style))
-            
-            elements.append(Spacer(1, 0.05*inch))
+        # Education
+        if resume.get('education'):
+            elements.append(Paragraph("<b>EDUCATION</b>", section_header_style))
+            for edu in resume['education']:
+                edu_text = f"<b>{edu.get('degree', '')}</b> - {edu.get('college', '')} ({edu.get('year', '')})"
+                if edu.get('grade'):
+                    edu_text += f" | Grade: {edu['grade']}"
+                elements.append(Paragraph(edu_text, body_style))
+            elements.append(Spacer(1, 0.04*inch))
         
-        # Achievements Section
-        if resume.get('achievements') and len(resume['achievements']) > 0:
-            elements.append(Paragraph("<b>Achievements & Awards</b>", section_header_style))
-            
-            for achievement in resume['achievements']:
-                # Achievement title
-                achievement_title = f"<b>{achievement.get('title', '')}</b>"
-                if achievement.get('date'):
-                    achievement_title += f" <i>({achievement['date']})</i>"
-                elements.append(Paragraph(achievement_title, subsection_style))
-                
-                # Description
-                if achievement.get('description'):
-                    elements.append(Paragraph(achievement['description'], body_style))
-                
-                # Add link if available
-                if achievement.get('link'):
-                    link_text = f"<a href='{achievement['link']}' color='{accent_color}'>[View Details]</a>"
-                    elements.append(Paragraph(link_text, contact_style))
-                
-                elements.append(Spacer(1, 0.04*inch))
-        
-                elements.append(Spacer(1, 0.04*inch))
-        
-        # Coding Profiles Section
-        if resume.get('coding_profiles') and len(resume['coding_profiles']) > 0:
-            elements.append(Paragraph("<b>Problem Solving & Coding Profiles</b>", section_header_style))
-            
+        # Coding Profiles
+        if resume.get('coding_profiles'):
+            elements.append(Paragraph("<b>CODING PROFILES</b>", section_header_style))
             for profile in resume['coding_profiles']:
-                # Platform name and link
-                platform = profile.get('platform', '')
-                link = profile.get('link', '')
-                headline = profile.get('headline', '')
-                
-                profile_text = f"<b>{platform}:</b> "
-                if headline:
-                    profile_text += f"{headline} "
-                
-                if link:
-                    link_text = "[View Profile]" if headline else link
-                    profile_text += f"<a href='{link}' color='{accent_color}'>{link_text}</a>"
-                
-                elements.append(Paragraph(profile_text, bullet_style))
-            
-            elements.append(Spacer(1, 0.05*inch))
+                p_text = f"• <b>{profile.get('platform', '')}:</b> {profile.get('headline', '')} - {profile.get('link', '')}"
+                elements.append(Paragraph(p_text, bullet_style))
+            elements.append(Spacer(1, 0.04*inch))
         
-        # Footer with copyright
-        elements.append(Spacer(1, 0.15*inch))
+        # Certifications
+        if resume.get('certifications'):
+            elements.append(Paragraph("<b>CERTIFICATIONS</b>", section_header_style))
+            for cert in resume['certifications']:
+                c_name = cert if isinstance(cert, str) else cert.get('name', '')
+                elements.append(Paragraph(f"• {c_name}", bullet_style))
+            elements.append(Spacer(1, 0.04*inch))
         
-        # Copyright and date
+        # Footer
+        elements.append(Spacer(1, 0.1*inch))
         current_year = datetime.now().year
-        footer_text = f"<i>© {current_year} LokuResume AI. All rights reserved.</i>"
+        footer_text = f"<i>© {current_year} LokuResume AI. ATS Optimized.</i>"
         footer_style = ParagraphStyle(
             'Footer',
             parent=styles['Normal'],
             fontSize=7,
-            textColor=colors.HexColor('#999999'),
+            textColor=colors.HexColor('#94a3b8'),
             alignment=TA_CENTER
         )
         elements.append(Paragraph(footer_text, footer_style))
         
-        # Build PDF
         doc.build(elements)
         buffer.seek(0)
         return buffer
 
-# Create singleton instance
 pdf_generator = PDFGenerator()

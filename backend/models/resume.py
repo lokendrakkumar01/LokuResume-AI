@@ -3,9 +3,9 @@ from typing import List, Optional
 from datetime import datetime
 
 class PersonalInfo(BaseModel):
-    name: str
-    email: EmailStr
-    phone: str
+    name: Optional[str] = ""
+    email: Optional[str] = ""
+    phone: Optional[str] = ""
     linkedin: Optional[str] = ""
     github: Optional[str] = ""
     leetcode: Optional[str] = ""
@@ -15,41 +15,40 @@ class PersonalInfo(BaseModel):
     profile_photo: Optional[str] = ""  # Base64 encoded image or URL
 
 class Education(BaseModel):
-    degree: str
-    college: str
-    year: str
-    grade: str
+    degree: Optional[str] = ""
+    college: Optional[str] = ""
+    year: Optional[str] = ""
+    grade: Optional[str] = ""
 
 class Project(BaseModel):
-    title: str
-    technologies: str
-    description: str
+    title: Optional[str] = ""
+    technologies: Optional[str] = ""
+    description: Optional[str] = ""
     repository_url: Optional[str] = ""
     live_demo_url: Optional[str] = ""
 
 class Experience(BaseModel):
-    company: str
-    role: str
-    duration: str
-    description: str
+    company: Optional[str] = ""
+    role: Optional[str] = ""
+    duration: Optional[str] = ""
+    description: Optional[str] = ""
 
 class Certification(BaseModel):
-    name: str
+    name: Optional[str] = ""
     file_data: Optional[str] = ""  # Base64 encoded certificate
     file_url: Optional[str] = ""  # URL for certificate file (optional)
     issued_by: Optional[str] = ""
     date: Optional[str] = ""
 
-
 class Achievement(BaseModel):
-    title: str
-    description: str
+    title: Optional[str] = ""
+    description: Optional[str] = ""
     date: Optional[str] = ""
     link: Optional[str] = ""  # URL for achievement proof/details
 
 class CodingProfile(BaseModel):
-    platform: str
-    link: str
+    platform: Optional[str] = ""
+    link: Optional[str] = ""
     headline: Optional[str] = ""  # e.g. "Max Rating: 1600" or "5 Star"
 
 class PDFPreferences(BaseModel):
@@ -106,18 +105,18 @@ class ResumeResponse(BaseModel):
     id: str
     user_id: str
     personal_info: PersonalInfo
-    summary: str
-    education: List[Education]
-    skills: List[str]
-    projects: List[Project]
-    experience: List[Experience]
-    certifications: List[Certification]
-    achievements: List[Achievement]
+    summary: str = ""
+    education: List[Education] = []
+    skills: List[str] = []
+    projects: List[Project] = []
+    experience: List[Experience] = []
+    certifications: List[Certification] = []
+    achievements: List[Achievement] = []
     coding_profiles: List[CodingProfile] = []
-    pdf_preferences: PDFPreferences
-    score: float
-    score_breakdown: ScoreBreakdown
-    suggestions: List[str]
-    missing_keywords: List[str]
+    pdf_preferences: Optional[PDFPreferences] = PDFPreferences(background_color="#ffffff", accent_color="#1a73e8")
+    score: float = 0
+    score_breakdown: ScoreBreakdown = ScoreBreakdown()
+    suggestions: List[str] = []
+    missing_keywords: List[str] = []
     created_at: datetime
     updated_at: datetime

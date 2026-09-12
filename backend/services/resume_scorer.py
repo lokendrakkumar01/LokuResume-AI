@@ -66,6 +66,9 @@ class ResumeScorer:
         # Word count (5 points)
         if len(words) >= 50 and len(words) <= 150:
             score += 5
+        elif len(words) > 150:
+            score += 3
+            suggestions.append("Your summary is too long. Shorten your summary to 50-150 words for optimal readability")
         elif len(words) >= 30:
             score += 3
             suggestions.append("Expand your summary to 50-150 words for better impact")

@@ -21,5 +21,7 @@ env/
 .DS_Store
 Thumbs.db
 
-# Node modules (if any tools used)
+# Node modules & build
 node_modules/
+dist/
+

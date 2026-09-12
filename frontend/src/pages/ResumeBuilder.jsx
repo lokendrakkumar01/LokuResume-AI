@@ -1,6 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
+import { useToast } from '../context/ToastContext';
+import ATSAnalyzerModal from '../components/ATSAnalyzerModal';
 import axios from 'axios';
 import config from '../config';
 import '../styles/ResumeBuilder.css';
@@ -10,14 +12,21 @@ import ResumePreview from '../components/ResumePreview';
 function ResumeBuilder() {
       const { id } = useParams();
       const { getAuthHeader } = useAuth();
+      const { showToast } = useToast();
       const navigate = useNavigate();
+
       const [currentStep, setCurrentStep] = useState(1);
       const [loading, setLoading] = useState(false);
       const [score, setScore] = useState(null);
       const [showPreview, setShowPreview] = useState(false);
+      const [showATSModal, setShowATSModal] = useState(false);
+
+      // AI Bullet Generator state
+      const [aiTarget, setAiTarget] = useState(null); // { type: 'project'|'experience', index }
+      const [aiLoading, setAiLoading] = useState(false);
+      const [aiVariations, setAiVariations] = useState([]);
 
       const [formData, setFormData] = useState(() => {
-            // Try to load from local storage if available
             const savedData = localStorage.getItem('resume_draft');
             if (savedData && !id) {
                   return JSON.parse(savedData);
@@ -33,10 +42,9 @@ function ResumeBuilder() {
                         problem_solving: '',
                         portfolio: '',
                         headline: '',
-                        problem_solving: '',  // Keep for backward compatibility/single link preference
                         profile_photo: ''
                   },
-                  coding_profiles: [], // List of { platform: '', link: '' }
+                  coding_profiles: [],
                   summary: '',
                   education: [],
                   skills: [],
@@ -44,9 +52,10 @@ function ResumeBuilder() {
                   experience: [],
                   certifications: [],
                   achievements: [],
+                  template_style: 'modern',
                   pdf_preferences: {
                         background_color: '#ffffff',
-                        accent_color: '#1a73e8'
+                        accent_color: '#4f46e5'
                   }
             };
       });
@@ -57,7 +66,6 @@ function ResumeBuilder() {
             }
       }, [id]);
 
-      // Auto-save to local storage whenever formData changes
       useEffect(() => {
             if (!id) {
                   localStorage.setItem('resume_draft', JSON.stringify(formData));
@@ -70,37 +78,40 @@ function ResumeBuilder() {
                         headers: getAuthHeader()
                   });
 
-                  // Handle backward compatibility for certifications
                   const data = response.data;
                   if (data.certifications && data.certifications.length > 0) {
                         data.certifications = data.certifications.map(cert => {
                               if (typeof cert === 'string') {
                                     return { name: cert, file_data: '', file_url: '', issued_by: '', date: '' };
                               }
-                              // Ensure file_url exists for older data
-                              if (!cert.hasOwnProperty('file_url')) {
-                                    cert.file_url = '';
-                              }
                               return cert;
                         });
                   }
 
-                  // Handle backward compatibility for pdf_preferences
                   if (!data.pdf_preferences) {
                         data.pdf_preferences = {
                               background_color: '#ffffff',
-                              accent_color: '#1a73e8'
+                              accent_color: '#4f46e5'
                         };
+                  }
+                  if (!data.template_style) {
+                        data.template_style = 'modern';
                   }
 
                   setFormData(data);
                   setScore(data.score);
             } catch (error) {
-                  console.error('Failed to fetch resume');
+                  showToast('Failed to load resume details', 'error');
             }
       };
 
       const handleSave = async () => {
+            if (!formData.personal_info.name || !formData.personal_info.email) {
+                  showToast('Please enter your Name and Email in Step 1 before saving', 'warning');
+                  setCurrentStep(1);
+                  return;
+            }
+
             setLoading(true);
             try {
                   if (id) {
@@ -108,52 +119,75 @@ function ResumeBuilder() {
                               headers: getAuthHeader()
                         });
                         setScore(response.data.score);
-                        alert('Resume updated successfully!');
+                        showToast('Resume updated successfully!', 'success');
                   } else {
                         const response = await axios.post(`${config.API_BASE_URL}/resumes`, formData, {
                               headers: getAuthHeader()
                         });
                         const newId = response.data.id;
                         setScore(response.data.score);
-                        alert('Resume saved successfully!');
-
-                        // Clear local storage draft on successful save
+                        showToast('Resume saved successfully!', 'success');
                         localStorage.removeItem('resume_draft');
 
-                        // Navigate to the edit page for the new resume to prevent creating duplicates on subsequent saves
                         if (newId) {
                               navigate(`/resume/edit/${newId}`);
                         }
                   }
             } catch (error) {
-                  console.error('Failed to save resume', error);
-
-                  // Handle token expiration specifically
-                  if (error.response && error.response.status === 401) {
-                        // Ensure data is saved locally
-                        localStorage.setItem('resume_draft', JSON.stringify(formData));
-                        alert('Session expired! Your work has been saved locally. Please logout, login again, and return to this page to restore your work.');
-                  } else {
-                        alert('Failed to save resume. Please try again.');
-                  }
+                  console.error('Save Resume Error:', error);
+                  showToast(error.response?.data?.detail || 'Failed to save resume', 'error');
             } finally {
                   setLoading(false);
             }
       };
 
-      const nextStep = () => {
-            if (currentStep < 10) setCurrentStep(currentStep + 1);
+      const nextStep = () => { if (currentStep < 10) setCurrentStep(currentStep + 1); };
+      const prevStep = () => { if (currentStep > 1) setCurrentStep(currentStep - 1); };
+
+      // AI Bullet Generator Trigger
+      const handleAIEnhanceBullet = async (type, index, text) => {
+            if (!text.trim()) {
+                  showToast('Please type a brief description first to enhance with AI', 'warning');
+                  return;
+            }
+
+            setAiTarget({ type, index });
+            setAiLoading(true);
+            setAiVariations([]);
+
+            try {
+                  const response = await axios.post(`${config.API_BASE_URL}/ai/enhance-bullet`, {
+                        text: text,
+                        context: type
+                  });
+                  setAiVariations(response.data.variations);
+                  showToast('Generated 3 AI bullet options!', 'info');
+            } catch (error) {
+                  showToast('AI generation failed', 'error');
+            } finally {
+                  setAiLoading(false);
+            }
       };
 
-      const prevStep = () => {
-            if (currentStep > 1) setCurrentStep(currentStep - 1);
+      const applyAIVariation = (variationText) => {
+            if (!aiTarget) return;
+
+            if (aiTarget.type === 'project') {
+                  updateProject(aiTarget.index, 'description', variationText);
+            } else if (aiTarget.type === 'experience') {
+                  updateExperience(aiTarget.index, 'description', variationText);
+            }
+
+            showToast('Applied AI bullet point!', 'success');
+            setAiTarget(null);
+            setAiVariations([]);
       };
 
       const handlePhotoUpload = (e) => {
             const file = e.target.files[0];
             if (file && file.type.startsWith('image/')) {
                   if (file.size > 2 * 1024 * 1024) {
-                        alert('Photo size should be less than 2MB');
+                        showToast('Photo size should be less than 2MB', 'warning');
                         return;
                   }
                   const reader = new FileReader();
@@ -165,7 +199,7 @@ function ResumeBuilder() {
                   };
                   reader.readAsDataURL(file);
             } else {
-                  alert('Please select a valid image file');
+                  showToast('Please select a valid image file', 'warning');
             }
       };
 
@@ -175,80 +209,38 @@ function ResumeBuilder() {
                   education: [...formData.education, { degree: '', college: '', year: '', grade: '' }]
             });
       };
-
-      const addCodingProfile = () => {
-            setFormData({
-                  ...formData,
-                  coding_profiles: [...(formData.coding_profiles || []), { platform: '', link: '', headline: '' }]
-            });
-      };
-
-      const removeCodingProfile = (index) => {
-            const newProfiles = [...formData.coding_profiles];
-            newProfiles.splice(index, 1);
-            setFormData({ ...formData, coding_profiles: newProfiles });
-      };
-
-      const updateCodingProfile = (index, field, value) => {
-            const newProfiles = [...formData.coding_profiles];
-            newProfiles[index][field] = value;
-            setFormData({ ...formData, coding_profiles: newProfiles });
-      };
-
       const updateEducation = (index, field, value) => {
             const newEducation = [...formData.education];
             newEducation[index][field] = value;
             setFormData({ ...formData, education: newEducation });
       };
-
       const removeEducation = (index) => {
-            setFormData({
-                  ...formData,
-                  education: formData.education.filter((_, i) => i !== index)
-            });
+            setFormData({ ...formData, education: formData.education.filter((_, i) => i !== index) });
       };
 
       const addSkill = () => {
-            const skill = prompt('Enter skill:');
-            if (skill) {
-                  setFormData({
-                        ...formData,
-                        skills: [...formData.skills, skill]
-                  });
+            const skill = prompt('Enter new skill:');
+            if (skill && skill.trim()) {
+                  setFormData({ ...formData, skills: [...formData.skills, skill.trim()] });
             }
       };
-
       const removeSkill = (index) => {
-            setFormData({
-                  ...formData,
-                  skills: formData.skills.filter((_, i) => i !== index)
-            });
+            setFormData({ ...formData, skills: formData.skills.filter((_, i) => i !== index) });
       };
 
       const addProject = () => {
             setFormData({
                   ...formData,
-                  projects: [...formData.projects, {
-                        title: '',
-                        technologies: '',
-                        description: '',
-                        repository_url: '',
-                        live_demo_url: ''
-                  }]
+                  projects: [...formData.projects, { title: '', technologies: '', description: '', repository_url: '', live_demo_url: '' }]
             });
       };
-
       const updateProject = (index, field, value) => {
             const newProjects = [...formData.projects];
             newProjects[index][field] = value;
             setFormData({ ...formData, projects: newProjects });
       };
-
       const removeProject = (index) => {
-            setFormData({
-                  ...formData,
-                  projects: formData.projects.filter((_, i) => i !== index)
-            });
+            setFormData({ ...formData, projects: formData.projects.filter((_, i) => i !== index) });
       };
 
       const addExperience = () => {
@@ -257,175 +249,200 @@ function ResumeBuilder() {
                   experience: [...formData.experience, { company: '', role: '', duration: '', description: '' }]
             });
       };
-
       const updateExperience = (index, field, value) => {
             const newExperience = [...formData.experience];
             newExperience[index][field] = value;
             setFormData({ ...formData, experience: newExperience });
       };
-
       const removeExperience = (index) => {
-            setFormData({
-                  ...formData,
-                  experience: formData.experience.filter((_, i) => i !== index)
-            });
+            setFormData({ ...formData, experience: formData.experience.filter((_, i) => i !== index) });
       };
 
       const addCertification = () => {
             setFormData({
                   ...formData,
-                  certifications: [...formData.certifications, {
-                        name: '',
-                        file_data: '',
-                        file_url: '',
-                        issued_by: '',
-                        date: ''
-                  }]
+                  certifications: [...formData.certifications, { name: '', file_data: '', file_url: '', issued_by: '', date: '' }]
             });
       };
-
       const updateCertification = (index, field, value) => {
             const newCerts = [...formData.certifications];
             newCerts[index][field] = value;
             setFormData({ ...formData, certifications: newCerts });
       };
-
       const removeCertification = (index) => {
-            setFormData({
-                  ...formData,
-                  certifications: formData.certifications.filter((_, i) => i !== index)
-            });
-      };
-
-      const handleCertificateUpload = (index, e) => {
-            const file = e.target.files[0];
-            if (file) {
-                  if (file.size > 2 * 1024 * 1024) {
-                        alert('File size should be less than 2MB');
-                        return;
-                  }
-                  const reader = new FileReader();
-                  reader.onloadend = () => {
-                        const newCerts = [...formData.certifications];
-                        newCerts[index].file_data = reader.result;
-                        setFormData({ ...formData, certifications: newCerts });
-                  };
-                  reader.readAsDataURL(file);
-            }
+            setFormData({ ...formData, certifications: formData.certifications.filter((_, i) => i !== index) });
       };
 
       const addAchievement = () => {
             setFormData({
                   ...formData,
-                  achievements: [...formData.achievements, {
-                        title: '',
-                        description: '',
-                        date: '',
-                        link: ''
-                  }]
+                  achievements: [...formData.achievements, { title: '', description: '', date: '', link: '' }]
             });
       };
-
       const updateAchievement = (index, field, value) => {
             const newAchievements = [...formData.achievements];
             newAchievements[index][field] = value;
             setFormData({ ...formData, achievements: newAchievements });
       };
-
       const removeAchievement = (index) => {
+            setFormData({ ...formData, achievements: formData.achievements.filter((_, i) => i !== index) });
+      };
+
+      const addCodingProfile = () => {
             setFormData({
                   ...formData,
-                  achievements: formData.achievements.filter((_, i) => i !== index)
+                  coding_profiles: [...(formData.coding_profiles || []), { platform: '', link: '', headline: '' }]
             });
       };
+      const updateCodingProfile = (index, field, value) => {
+            const newProfiles = [...formData.coding_profiles];
+            newProfiles[index][field] = value;
+            setFormData({ ...formData, coding_profiles: newProfiles });
+      };
+      const removeCodingProfile = (index) => {
+            const newProfiles = [...formData.coding_profiles];
+            newProfiles.splice(index, 1);
+            setFormData({ ...formData, coding_profiles: newProfiles });
+      };
+
+      const stepsList = [
+            { num: 1, label: '👤 Personal' },
+            { num: 2, label: '📝 Summary' },
+            { num: 3, label: '🎓 Education' },
+            { num: 4, label: '💼 Skills' },
+            { num: 5, label: '🚀 Projects' },
+            { num: 6, label: '💻 Experience' },
+            { num: 7, label: '📜 Certs' },
+            { num: 8, label: '🏆 Awards' },
+            { num: 9, label: '👨‍💻 Profiles' },
+            { num: 10, label: '👀 Review' },
+      ];
+
+      const colorPresets = [
+            { name: 'Indigo', color: '#4f46e5' },
+            { name: 'Emerald', color: '#10b981' },
+            { name: 'Purple', color: '#8b5cf6' },
+            { name: 'Slate', color: '#334155' },
+            { name: 'Crimson', color: '#dc2626' }
+      ];
 
       return (
             <div className="resume-builder">
                   <div className="builder-header">
-                        <div className="header-left">
-                              <h1>{id ? 'Edit Resume' : 'Create Resume'}</h1>
+                        <div>
+                              <h1>{id ? '✏️ Edit Resume' : '✨ Create Resume'}</h1>
                         </div>
                         <div className="header-actions">
-                              <button onClick={() => setShowPreview(true)} className="btn btn-preview">
-                                    👁️ Preview Resume
+                              <button onClick={() => setShowATSModal(true)} className="btn btn-secondary">
+                                    🎯 ATS Job Matcher
+                              </button>
+                              <button onClick={() => setShowPreview(true)} className="btn btn-primary">
+                                    👁️ Live Preview
                               </button>
                               <button onClick={() => navigate('/dashboard')} className="btn btn-secondary">
-                                    Back to Dashboard
+                                    Dashboard
                               </button>
                         </div>
                   </div>
 
-                  {/* PDF Customization */}
+                  {/* PDF & Template Style Customization */}
                   <div className="pdf-customization">
-                        <h4>🎨 PDF Customization</h4>
-                        <div className="color-pickers">
-                              <div className="color-picker-group">
-                                    <label>Accent Color:</label>
-                                    <input
-                                          type="color"
-                                          value={formData.pdf_preferences.accent_color}
-                                          onChange={(e) => setFormData({
-                                                ...formData,
-                                                pdf_preferences: { ...formData.pdf_preferences, accent_color: e.target.value }
-                                          })}
-                                    />
-                                    <span className="color-value">{formData.pdf_preferences.accent_color}</span>
+                        <h4>🎨 Template &amp; Design Styling</h4>
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
+                              <div>
+                                    <label style={{ fontSize: '0.88rem', fontWeight: 600, display: 'block', marginBottom: '6px' }}>Resume Layout Template:</label>
+                                    <div className="template-selector-grid">
+                                          {[
+                                                { id: 'modern', name: 'Modern Minimal' },
+                                                { id: 'executive', name: 'Executive' },
+                                                { id: 'tech', name: 'Tech Developer' },
+                                                { id: 'compact', name: 'Compact 1-Page' }
+                                          ].map(tpl => (
+                                                <div
+                                                      key={tpl.id}
+                                                      className={`template-card-option ${formData.template_style === tpl.id ? 'selected' : ''}`}
+                                                      onClick={() => setFormData({ ...formData, template_style: tpl.id })}
+                                                >
+                                                      {tpl.name}
+                                                </div>
+                                          ))}
+                                    </div>
                               </div>
-                              <div className="color-picker-group">
-                                    <label>Background Color:</label>
-                                    <input
-                                          type="color"
-                                          value={formData.pdf_preferences.background_color}
-                                          onChange={(e) => setFormData({
-                                                ...formData,
-                                                pdf_preferences: { ...formData.pdf_preferences, background_color: e.target.value }
-                                          })}
-                                    />
-                                    <span className="color-value">{formData.pdf_preferences.background_color}</span>
+
+                              <div className="color-pickers">
+                                    <div className="color-picker-group">
+                                          <label>Accent Color:</label>
+                                          <div style={{ display: 'flex', gap: '6px', alignItems: 'center' }}>
+                                                {colorPresets.map(p => (
+                                                      <span
+                                                            key={p.color}
+                                                            onClick={() => setFormData({
+                                                                  ...formData,
+                                                                  pdf_preferences: { ...formData.pdf_preferences, accent_color: p.color }
+                                                            })}
+                                                            style={{
+                                                                  width: 24, height: 24, borderRadius: '50%', background: p.color, cursor: 'pointer',
+                                                                  border: formData.pdf_preferences?.accent_color === p.color ? '2px solid var(--text-main)' : 'none'
+                                                            }}
+                                                      />
+                                                ))}
+                                                <input
+                                                      type="color"
+                                                      value={formData.pdf_preferences?.accent_color || '#4f46e5'}
+                                                      onChange={(e) => setFormData({
+                                                            ...formData,
+                                                            pdf_preferences: { ...formData.pdf_preferences, accent_color: e.target.value }
+                                                      })}
+                                                />
+                                          </div>
+                                    </div>
                               </div>
                         </div>
                   </div>
 
+                  {/* Score Indicator */}
                   {score !== null && (
                         <div className="score-display">
-                              <h3>Current Score: <span className={score < 50 ? 'red' : score < 65 ? 'orange' : 'green'}>{score}%</span></h3>
+                              <h3>ATS Optimization Score: <span className={score < 50 ? 'red' : score < 65 ? 'orange' : 'green'}>{score}%</span></h3>
+                              {score < 65 ? (
+                                    <span style={{ fontSize: '0.85rem', color: 'var(--text-muted)' }}>🔒 Reach 65%+ to unlock duplication &amp; advanced options</span>
+                              ) : (
+                                    <span style={{ fontSize: '0.85rem', color: '#10b981', fontWeight: 600 }}>🎉 Unlocked All Features!</span>
+                              )}
                         </div>
                   )}
 
+                  {/* Stepper Bar */}
                   <div className="progress-bar">
-                        {[1, 2, 3, 4, 5, 6, 7, 8, 9, 10].map((step) => (
-                              <div key={step} className={`progress-step ${currentStep >= step ? 'active' : ''}`}>
-                                    {step}
+                        {stepsList.map((step) => (
+                              <div
+                                    key={step.num}
+                                    className={`progress-step ${currentStep >= step.num ? 'active' : ''}`}
+                                    onClick={() => setCurrentStep(step.num)}
+                                    title={step.label}
+                                    style={{ cursor: 'pointer' }}
+                              >
+                                    {step.num}
                               </div>
                         ))}
                   </div>
 
+                  {/* Builder Steps */}
                   <div className="builder-form">
-                        {/* Step 1: Personal Information */}
+                        {/* Step 1: Personal Info */}
                         {currentStep === 1 && (
                               <div className="form-step fade-in">
                                     <h2>👤 Step 1: Personal Information</h2>
                                     <p className="step-description">Add your contact details and professional links</p>
+
                                     <div className="form-group">
                                           <label>Profile Photo (Optional)</label>
-                                          <div className="photo-upload-container">
-                                                {formData.personal_info.profile_photo && (
-                                                      <img
-                                                            src={formData.personal_info.profile_photo}
-                                                            alt="Profile"
-                                                            className="profile-photo-preview"
-                                                      />
-                                                )}
-                                                <input
-                                                      type="file"
-                                                      accept="image/*"
-                                                      onChange={handlePhotoUpload}
-                                                      className="file-input"
-                                                />
-                                          </div>
+                                          <input type="file" accept="image/*" onChange={handlePhotoUpload} />
+                                          {formData.personal_info.profile_photo && <small>✅ Profile Photo Selected</small>}
                                     </div>
+
                                     <div className="form-group">
-                                          <label>Headline / Professional Title</label>
+                                          <label>Headline / Professional Title *</label>
                                           <input
                                                 type="text"
                                                 value={formData.personal_info.headline || ''}
@@ -433,110 +450,106 @@ function ResumeBuilder() {
                                                       ...formData,
                                                       personal_info: { ...formData.personal_info, headline: e.target.value }
                                                 })}
-                                                placeholder="e.g. Full-Stack Developer | MERN & Java"
+                                                placeholder="e.g. Full-Stack Engineer | React & Python"
                                           />
                                     </div>
-                                    <div className="form-group">
-                                          <label>Full Name *</label>
-                                          <input
-                                                type="text"
-                                                value={formData.personal_info.name}
-                                                onChange={(e) => setFormData({
-                                                      ...formData,
-                                                      personal_info: { ...formData.personal_info, name: e.target.value }
-                                                })}
-                                                required
-                                          />
+
+                                    <div className="form-row">
+                                          <div className="form-group">
+                                                <label>Full Name *</label>
+                                                <input
+                                                      type="text"
+                                                      value={formData.personal_info.name}
+                                                      onChange={(e) => setFormData({
+                                                            ...formData,
+                                                            personal_info: { ...formData.personal_info, name: e.target.value }
+                                                      })}
+                                                      required
+                                                />
+                                          </div>
+                                          <div className="form-group">
+                                                <label>Email *</label>
+                                                <input
+                                                      type="email"
+                                                      value={formData.personal_info.email}
+                                                      onChange={(e) => setFormData({
+                                                            ...formData,
+                                                            personal_info: { ...formData.personal_info, email: e.target.value }
+                                                      })}
+                                                      required
+                                                />
+                                          </div>
                                     </div>
-                                    <div className="form-group">
-                                          <label>Email *</label>
-                                          <input
-                                                type="email"
-                                                value={formData.personal_info.email}
-                                                onChange={(e) => setFormData({
-                                                      ...formData,
-                                                      personal_info: { ...formData.personal_info, email: e.target.value }
-                                                })}
-                                                required
-                                          />
+
+                                    <div className="form-row">
+                                          <div className="form-group">
+                                                <label>Phone *</label>
+                                                <input
+                                                      type="tel"
+                                                      value={formData.personal_info.phone}
+                                                      onChange={(e) => setFormData({
+                                                            ...formData,
+                                                            personal_info: { ...formData.personal_info, phone: e.target.value }
+                                                      })}
+                                                      required
+                                                />
+                                          </div>
+                                          <div className="form-group">
+                                                <label>Portfolio URL</label>
+                                                <input
+                                                      type="url"
+                                                      value={formData.personal_info.portfolio || ''}
+                                                      onChange={(e) => setFormData({
+                                                            ...formData,
+                                                            personal_info: { ...formData.personal_info, portfolio: e.target.value }
+                                                      })}
+                                                      placeholder="https://yourportfolio.com"
+                                                />
+                                          </div>
                                     </div>
-                                    <div className="form-group">
-                                          <label>Phone *</label>
-                                          <input
-                                                type="tel"
-                                                value={formData.personal_info.phone}
-                                                onChange={(e) => setFormData({
-                                                      ...formData,
-                                                      personal_info: { ...formData.personal_info, phone: e.target.value }
-                                                })}
-                                                required
-                                          />
-                                    </div>
-                                    <div className="form-group">
-                                          <label>LinkedIn</label>
-                                          <input
-                                                type="url"
-                                                value={formData.personal_info.linkedin}
-                                                onChange={(e) => setFormData({
-                                                      ...formData,
-                                                      personal_info: { ...formData.personal_info, linkedin: e.target.value }
-                                                })}
-                                                placeholder="https://linkedin.com/in/yourprofile"
-                                          />
-                                    </div>
-                                    <div className="form-group">
-                                          <label>GitHub</label>
-                                          <input
-                                                type="url"
-                                                value={formData.personal_info.github}
-                                                onChange={(e) => setFormData({
-                                                      ...formData,
-                                                      personal_info: { ...formData.personal_info, github: e.target.value }
-                                                })}
-                                                placeholder="https://github.com/yourusername"
-                                          />
-                                    </div>
-                                    <div className="form-group">
-                                          <label>LeetCode</label>
-                                          <input
-                                                type="url"
-                                                value={formData.personal_info.leetcode}
-                                                onChange={(e) => setFormData({
-                                                      ...formData,
-                                                      personal_info: { ...formData.personal_info, leetcode: e.target.value }
-                                                })}
-                                                placeholder="https://leetcode.com/yourusername"
-                                          />
-                                    </div>
-                                    <div className="form-group">
-                                          <label>Portfolio Website</label>
-                                          <input
-                                                type="url"
-                                                value={formData.personal_info.portfolio}
-                                                onChange={(e) => setFormData({
-                                                      ...formData,
-                                                      personal_info: { ...formData.personal_info, portfolio: e.target.value }
-                                                })}
-                                                placeholder="https://yourportfolio.com"
-                                          />
+
+                                    <div className="form-row">
+                                          <div className="form-group">
+                                                <label>GitHub</label>
+                                                <input
+                                                      type="url"
+                                                      value={formData.personal_info.github || ''}
+                                                      onChange={(e) => setFormData({
+                                                            ...formData,
+                                                            personal_info: { ...formData.personal_info, github: e.target.value }
+                                                      })}
+                                                      placeholder="https://github.com/username"
+                                                />
+                                          </div>
+                                          <div className="form-group">
+                                                <label>LinkedIn</label>
+                                                <input
+                                                      type="url"
+                                                      value={formData.personal_info.linkedin || ''}
+                                                      onChange={(e) => setFormData({
+                                                            ...formData,
+                                                            personal_info: { ...formData.personal_info, linkedin: e.target.value }
+                                                      })}
+                                                      placeholder="https://linkedin.com/in/username"
+                                                />
+                                          </div>
                                     </div>
                               </div>
                         )}
 
-                        {/* Step 2: Professional Summary */}
+                        {/* Step 2: Summary */}
                         {currentStep === 2 && (
                               <div className="form-step fade-in">
                                     <h2>📝 Step 2: Professional Summary</h2>
-                                    <p className="step-description">Write a compelling summary highlighting your key achievements</p>
+                                    <p className="step-description">Write a compelling summary highlighting your key achievements (50-150 words)</p>
                                     <div className="form-group">
-                                          <label>Summary (50-150 words recommended)</label>
                                           <textarea
                                                 value={formData.summary}
                                                 onChange={(e) => setFormData({ ...formData, summary: e.target.value })}
                                                 rows={6}
-                                                placeholder="Write a compelling summary highlighting your key achievements and skills..."
+                                                placeholder="Passionate Software Engineer with expertise in..."
                                           />
-                                          <small>{formData.summary.split(' ').filter(w => w).length} words</small>
+                                          <small>{formData.summary.split(/\s+/).filter(Boolean).length} words</small>
                                     </div>
                               </div>
                         )}
@@ -545,7 +558,7 @@ function ResumeBuilder() {
                         {currentStep === 3 && (
                               <div className="form-step fade-in">
                                     <h2>🎓 Step 3: Education</h2>
-                                    <p className="step-description">Add your educational qualifications</p>
+                                    <p className="step-description">Add your educational background</p>
                                     {formData.education.map((edu, index) => (
                                           <div key={index} className="repeatable-item">
                                                 <div className="form-group">
@@ -563,7 +576,7 @@ function ResumeBuilder() {
                                                             type="text"
                                                             value={edu.college}
                                                             onChange={(e) => updateEducation(index, 'college', e.target.value)}
-                                                            placeholder="ABC University"
+                                                            placeholder="XYZ Institute of Technology"
                                                       />
                                                 </div>
                                                 <div className="form-row">
@@ -577,18 +590,16 @@ function ResumeBuilder() {
                                                             />
                                                       </div>
                                                       <div className="form-group">
-                                                            <label>CGPA/Percentage</label>
+                                                            <label>Grade / CGPA</label>
                                                             <input
                                                                   type="text"
                                                                   value={edu.grade}
                                                                   onChange={(e) => updateEducation(index, 'grade', e.target.value)}
-                                                                  placeholder="8.5 CGPA"
+                                                                  placeholder="8.8 CGPA"
                                                             />
                                                       </div>
                                                 </div>
-                                                <button onClick={() => removeEducation(index)} className="btn btn-sm btn-danger">
-                                                      Remove
-                                                </button>
+                                                <button onClick={() => removeEducation(index)} className="btn btn-sm btn-danger">Remove</button>
                                           </div>
                                     ))}
                                     <button onClick={addEducation} className="btn btn-secondary">+ Add Education</button>
@@ -599,7 +610,7 @@ function ResumeBuilder() {
                         {currentStep === 4 && (
                               <div className="form-step fade-in">
                                     <h2>💼 Step 4: Skills</h2>
-                                    <p className="step-description">List your technical and soft skills</p>
+                                    <p className="step-description">List your key technical and soft skills</p>
                                     <div className="skills-list">
                                           {formData.skills.map((skill, index) => (
                                                 <div key={index} className="skill-tag">
@@ -616,89 +627,95 @@ function ResumeBuilder() {
                         {currentStep === 5 && (
                               <div className="form-step fade-in">
                                     <h2>🚀 Step 5: Projects</h2>
-                                    <p className="step-description">Showcase your technical projects with measurable results</p>
-                                    {formData.projects.map((project, index) => (
+                                    <p className="step-description">Showcase projects with action verbs and quantifiable metrics</p>
+                                    {formData.projects.map((proj, index) => (
                                           <div key={index} className="repeatable-item">
                                                 <div className="form-group">
                                                       <label>Project Title</label>
                                                       <input
                                                             type="text"
-                                                            value={project.title}
+                                                            value={proj.title}
                                                             onChange={(e) => updateProject(index, 'title', e.target.value)}
-                                                            placeholder="E-commerce Platform"
+                                                            placeholder="AI Resume Builder"
                                                       />
                                                 </div>
                                                 <div className="form-group">
                                                       <label>Technologies Used</label>
                                                       <input
                                                             type="text"
-                                                            value={project.technologies}
+                                                            value={proj.technologies}
                                                             onChange={(e) => updateProject(index, 'technologies', e.target.value)}
-                                                            placeholder="React, Node.js, MongoDB"
+                                                            placeholder="React, FastAPI, MongoDB"
                                                       />
-                                                </div>
-                                                <div className="form-row">
-                                                      <div className="form-group">
-                                                            <label>Repository URL</label>
-                                                            <input
-                                                                  type="url"
-                                                                  value={project.repository_url}
-                                                                  onChange={(e) => updateProject(index, 'repository_url', e.target.value)}
-                                                                  placeholder="https://github.com/username/repo"
-                                                            />
-                                                      </div>
-                                                      <div className="form-group">
-                                                            <label>Live Demo URL</label>
-                                                            <input
-                                                                  type="url"
-                                                                  value={project.live_demo_url}
-                                                                  onChange={(e) => updateProject(index, 'live_demo_url', e.target.value)}
-                                                                  placeholder="https://project-demo.com"
-                                                            />
-                                                      </div>
                                                 </div>
                                                 <div className="form-group">
-                                                      <label>Description (Include measurable results)</label>
+                                                      <label>Description</label>
                                                       <textarea
-                                                            value={project.description}
+                                                            value={proj.description}
                                                             onChange={(e) => updateProject(index, 'description', e.target.value)}
-                                                            rows={4}
-                                                            placeholder="Developed a full-stack platform that increased sales by 30%..."
+                                                            rows={3}
+                                                            placeholder="Developed scalable web app serving 1,000+ users..."
                                                       />
+                                                      <button
+                                                            type="button"
+                                                            className="ai-generator-btn"
+                                                            onClick={() => handleAIEnhanceBullet('project', index, proj.description)}
+                                                      >
+                                                            ⚡ AI Enhance Description
+                                                      </button>
+
+                                                      {aiTarget?.type === 'project' && aiTarget?.index === index && (
+                                                            <div className="ai-variations-drawer">
+                                                                  <h5>✨ Select an AI-Enhanced Variation:</h5>
+                                                                  {aiLoading ? (
+                                                                        <p>Generating high-impact variations...</p>
+                                                                  ) : (
+                                                                        aiVariations.map((varText, vIdx) => (
+                                                                              <div
+                                                                                    key={vIdx}
+                                                                                    className="ai-variation-item"
+                                                                                    onClick={() => applyAIVariation(varText)}
+                                                                              >
+                                                                                    • {varText}
+                                                                              </div>
+                                                                        ))
+                                                                  )}
+                                                            </div>
+                                                      )}
                                                 </div>
-                                                <button onClick={() => removeProject(index)} className="btn btn-sm btn-danger">
-                                                      Remove
-                                                </button>
+                                                <button onClick={() => removeProject(index)} className="btn btn-sm btn-danger">Remove</button>
                                           </div>
                                     ))}
                                     <button onClick={addProject} className="btn btn-secondary">+ Add Project</button>
                               </div>
                         )}
 
-                        {/* Step 6: Experience (Optional) */}
+                        {/* Step 6: Experience */}
                         {currentStep === 6 && (
                               <div className="form-step fade-in">
-                                    <h2>💻 Step 6: Experience (Optional)</h2>
-                                    <p className="step-description">Add your professional work experience</p>
+                                    <h2>💻 Step 6: Professional Experience (Optional)</h2>
+                                    <p className="step-description">Detail your work experience or internships</p>
                                     {formData.experience.map((exp, index) => (
                                           <div key={index} className="repeatable-item">
-                                                <div className="form-group">
-                                                      <label>Company</label>
-                                                      <input
-                                                            type="text"
-                                                            value={exp.company}
-                                                            onChange={(e) => updateExperience(index, 'company', e.target.value)}
-                                                            placeholder="Tech Corp"
-                                                      />
-                                                </div>
-                                                <div className="form-group">
-                                                      <label>Role</label>
-                                                      <input
-                                                            type="text"
-                                                            value={exp.role}
-                                                            onChange={(e) => updateExperience(index, 'role', e.target.value)}
-                                                            placeholder="Software Engineer"
-                                                      />
+                                                <div className="form-row">
+                                                      <div className="form-group">
+                                                            <label>Company</label>
+                                                            <input
+                                                                  type="text"
+                                                                  value={exp.company}
+                                                                  onChange={(e) => updateExperience(index, 'company', e.target.value)}
+                                                                  placeholder="Acme Corp"
+                                                            />
+                                                      </div>
+                                                      <div className="form-group">
+                                                            <label>Role</label>
+                                                            <input
+                                                                  type="text"
+                                                                  value={exp.role}
+                                                                  onChange={(e) => updateExperience(index, 'role', e.target.value)}
+                                                                  placeholder="Software Engineer Intern"
+                                                            />
+                                                      </div>
                                                 </div>
                                                 <div className="form-group">
                                                       <label>Duration</label>
@@ -706,32 +723,55 @@ function ResumeBuilder() {
                                                             type="text"
                                                             value={exp.duration}
                                                             onChange={(e) => updateExperience(index, 'duration', e.target.value)}
-                                                            placeholder="Jan 2023 - Present"
+                                                            placeholder="Jan 2024 - Present"
                                                       />
                                                 </div>
                                                 <div className="form-group">
-                                                      <label>Description (Use action verbs, quantify impact)</label>
+                                                      <label>Description</label>
                                                       <textarea
                                                             value={exp.description}
                                                             onChange={(e) => updateExperience(index, 'description', e.target.value)}
-                                                            rows={4}
-                                                            placeholder="Led a team of 5 developers to deliver..."
+                                                            rows={3}
+                                                            placeholder="Reduced database query times by 40%..."
                                                       />
+                                                      <button
+                                                            type="button"
+                                                            className="ai-generator-btn"
+                                                            onClick={() => handleAIEnhanceBullet('experience', index, exp.description)}
+                                                      >
+                                                            ⚡ AI Enhance Description
+                                                      </button>
+
+                                                      {aiTarget?.type === 'experience' && aiTarget?.index === index && (
+                                                            <div className="ai-variations-drawer">
+                                                                  <h5>✨ Select an AI-Enhanced Variation:</h5>
+                                                                  {aiLoading ? (
+                                                                        <p>Generating high-impact variations...</p>
+                                                                  ) : (
+                                                                        aiVariations.map((varText, vIdx) => (
+                                                                              <div
+                                                                                    key={vIdx}
+                                                                                    className="ai-variation-item"
+                                                                                    onClick={() => applyAIVariation(varText)}
+                                                                              >
+                                                                                    • {varText}
+                                                                              </div>
+                                                                        ))
+                                                                  )}
+                                                            </div>
+                                                      )}
                                                 </div>
-                                                <button onClick={() => removeExperience(index)} className="btn btn-sm btn-danger">
-                                                      Remove
-                                                </button>
+                                                <button onClick={() => removeExperience(index)} className="btn btn-sm btn-danger">Remove</button>
                                           </div>
                                     ))}
                                     <button onClick={addExperience} className="btn btn-secondary">+ Add Experience</button>
                               </div>
                         )}
 
-                        {/* Step 7: Certifications (Optional) */}
+                        {/* Step 7: Certifications */}
                         {currentStep === 7 && (
                               <div className="form-step fade-in">
                                     <h2>📜 Step 7: Certifications (Optional)</h2>
-                                    <p className="step-description">Add your professional certifications and credentials</p>
                                     {formData.certifications.map((cert, index) => (
                                           <div key={index} className="repeatable-item">
                                                 <div className="form-group">
@@ -742,26 +782,6 @@ function ResumeBuilder() {
                                                             onChange={(e) => updateCertification(index, 'name', e.target.value)}
                                                             placeholder="AWS Certified Solutions Architect"
                                                       />
-                                                </div>
-                                                <div className="form-group">
-                                                      <label>Upload Certificate (Image/PDF)</label>
-                                                      <input
-                                                            type="file"
-                                                            accept="image/*,.pdf"
-                                                            onChange={(e) => handleCertificateUpload(index, e)}
-                                                            className="file-input"
-                                                      />
-                                                      {cert.file_data && <span className="file-success">✅ File uploaded</span>}
-                                                </div>
-                                                <div className="form-group">
-                                                      <label>Certificate URL (Optional)</label>
-                                                      <input
-                                                            type="url"
-                                                            value={cert.file_url || ''}
-                                                            onChange={(e) => updateCertification(index, 'file_url', e.target.value)}
-                                                            placeholder="https://example.com/certificate.pdf"
-                                                      />
-                                                      <small>Provide a link to your certificate (e.g., Coursera, Udemy, etc.)</small>
                                                 </div>
                                                 <div className="form-row">
                                                       <div className="form-group">
@@ -783,156 +803,128 @@ function ResumeBuilder() {
                                                             />
                                                       </div>
                                                 </div>
-                                                <button onClick={() => removeCertification(index)} className="btn btn-sm btn-danger">
-                                                      Remove
-                                                </button>
+                                                <button onClick={() => removeCertification(index)} className="btn btn-sm btn-danger">Remove</button>
                                           </div>
                                     ))}
                                     <button onClick={addCertification} className="btn btn-secondary">+ Add Certification</button>
                               </div>
                         )}
 
-                        {/* Step 8: Achievements (Optional) */}
+                        {/* Step 8: Achievements */}
                         {currentStep === 8 && (
                               <div className="form-step fade-in">
-                                    <h2>🏆 Step 8: Achievements & Awards (Optional)</h2>
-                                    <p className="step-description">Add your achievements, awards, and honors</p>
-                                    {formData.achievements.map((achievement, index) => (
+                                    <h2>🏆 Step 8: Achievements &amp; Awards (Optional)</h2>
+                                    {formData.achievements.map((ach, index) => (
                                           <div key={index} className="repeatable-item">
                                                 <div className="form-group">
-                                                      <label>Achievement/Award Title</label>
+                                                      <label>Title</label>
                                                       <input
                                                             type="text"
-                                                            value={achievement.title}
+                                                            value={ach.title}
                                                             onChange={(e) => updateAchievement(index, 'title', e.target.value)}
-                                                            placeholder="Winner - National Hackathon 2024"
+                                                            placeholder="1st Place - National Hackathon"
                                                       />
                                                 </div>
                                                 <div className="form-group">
                                                       <label>Description</label>
                                                       <textarea
-                                                            value={achievement.description}
+                                                            value={ach.description}
                                                             onChange={(e) => updateAchievement(index, 'description', e.target.value)}
-                                                            rows={3}
-                                                            placeholder="Developed an AI-powered solution that won first place among 200+ teams..."
+                                                            rows={2}
+                                                            placeholder="Built AI application competing against 200+ teams"
                                                       />
                                                 </div>
-                                                <div className="form-group">
-                                                      <label>Date/Year</label>
-                                                      <input
-                                                            type="text"
-                                                            value={achievement.date}
-                                                            onChange={(e) => updateAchievement(index, 'date', e.target.value)}
-                                                            placeholder="March 2024"
-                                                      />
-                                                </div>
-                                                <div className="form-group">
-                                                      <label>Link/URL (Optional)</label>
-                                                      <input
-                                                            type="url"
-                                                            value={achievement.link || ''}
-                                                            onChange={(e) => updateAchievement(index, 'link', e.target.value)}
-                                                            placeholder="https://example.com/achievement-proof"
-                                                      />
-                                                      <small>Provide a link to news article, certificate, or proof</small>
-                                                </div>
-                                                <button onClick={() => removeAchievement(index)} className="btn btn-sm btn-danger">
-                                                      Remove
-                                                </button>
+                                                <button onClick={() => removeAchievement(index)} className="btn btn-sm btn-danger">Remove</button>
                                           </div>
                                     ))}
                                     <button onClick={addAchievement} className="btn btn-secondary">+ Add Achievement</button>
                               </div>
                         )}
 
-                        {/* Step 9: Problem Solving & Coding Profiles */}
+                        {/* Step 9: Coding Profiles */}
                         {currentStep === 9 && (
                               <div className="form-step fade-in">
-                                    <h2>👨‍💻 Step 9: Problem Solving & Coding Profiles</h2>
-                                    <p className="step-description">Add your profiles from various coding platforms (e.g., LeetCode, GFG, CodeChef, HackerRank)</p>
-
-                                    {(formData.coding_profiles || []).map((profile, index) => (
+                                    <h2>👨‍💻 Step 9: Problem Solving &amp; Coding Profiles</h2>
+                                    {(formData.coding_profiles || []).map((prof, index) => (
                                           <div key={index} className="repeatable-item">
-                                                <div className="form-group">
-                                                      <label>Platform Name</label>
-                                                      <input
-                                                            type="text"
-                                                            value={profile.platform}
-                                                            onChange={(e) => updateCodingProfile(index, 'platform', e.target.value)}
-                                                            placeholder="e.g. GeeksforGeeks"
-                                                      />
+                                                <div className="form-row">
+                                                      <div className="form-group">
+                                                            <label>Platform Name</label>
+                                                            <input
+                                                                  type="text"
+                                                                  value={prof.platform}
+                                                                  onChange={(e) => updateCodingProfile(index, 'platform', e.target.value)}
+                                                                  placeholder="GeeksforGeeks / LeetCode"
+                                                            />
+                                                      </div>
+                                                      <div className="form-group">
+                                                            <label>Profile Link</label>
+                                                            <input
+                                                                  type="url"
+                                                                  value={prof.link}
+                                                                  onChange={(e) => updateCodingProfile(index, 'link', e.target.value)}
+                                                                  placeholder="https://leetcode.com/username"
+                                                            />
+                                                      </div>
                                                 </div>
                                                 <div className="form-group">
-                                                      <label>Profile Link</label>
-                                                      <input
-                                                            type="url"
-                                                            value={profile.link}
-                                                            onChange={(e) => updateCodingProfile(index, 'link', e.target.value)}
-                                                            placeholder="https://auth.geeksforgeeks.org/user/..."
-                                                      />
-                                                </div>
-                                                <div className="form-group">
-                                                      <label>Headline / Stats (Optional)</label>
+                                                      <label>Headline / Stats</label>
                                                       <input
                                                             type="text"
-                                                            value={profile.headline || ''}
+                                                            value={prof.headline || ''}
                                                             onChange={(e) => updateCodingProfile(index, 'headline', e.target.value)}
-                                                            placeholder="e.g. Max Rating: 1800 | 500+ Solved"
+                                                            placeholder="Max Rating 1850 | 500+ Solved"
                                                       />
                                                 </div>
-                                                <button onClick={() => removeCodingProfile(index)} className="btn btn-sm btn-danger">
-                                                      Remove
-                                                </button>
+                                                <button onClick={() => removeCodingProfile(index)} className="btn btn-sm btn-danger">Remove</button>
                                           </div>
                                     ))}
-                                    <button onClick={addCodingProfile} className="btn btn-secondary">+ Add Platform</button>
-
-                                    <div style={{ marginTop: '20px', padding: '15px', background: '#f8f9fa', borderRadius: '8px' }}>
-                                          <p style={{ margin: 0, fontSize: '0.9rem' }}><strong>Note:</strong> You can also use the default LeetCode field in Step 1 if you prefer.</p>
-                                    </div>
+                                    <button onClick={addCodingProfile} className="btn btn-secondary">+ Add Platform Profile</button>
                               </div>
                         )}
 
                         {/* Step 10: Final Review */}
                         {currentStep === 10 && (
                               <div className="form-step fade-in">
-                                    <h2>👀 Step 10: Final Review</h2>
-                                    <p className="step-description">Review your information and save your resume</p>
-
-                                    <div className="review-section">
-                                          <div className="review-card">
-                                                <h3>✨ Ready to Finish!</h3>
-                                                <p>You have completed all sections. Click "Save Resume" to generate your score and download the PDF.</p>
-                                                <button
-                                                      onClick={() => setShowPreview(true)}
-                                                      className="btn btn-secondary"
-                                                      style={{ marginTop: '1rem' }}
-                                                >
-                                                      Preview Resume
+                                    <h2>👀 Step 10: Final Review &amp; Save</h2>
+                                    <div className="glass-panel" style={{ padding: '24px', textAlign: 'center' }}>
+                                          <h3>🎉 You are ready to generate your ATS Resume!</h3>
+                                          <p style={{ color: 'var(--text-muted)', marginTop: '6px' }}>Click "Save Resume" to update your ATS score and download your PDF.</p>
+                                          <div style={{ marginTop: '16px', display: 'flex', justifyContent: 'center', gap: '12px' }}>
+                                                <button onClick={() => setShowPreview(true)} className="btn btn-primary">
+                                                      👁️ Live Preview Resume
                                                 </button>
                                           </div>
                                     </div>
                               </div>
                         )}
 
+                        {/* Navigation Footer */}
                         <div className="form-navigation">
                               {currentStep > 1 && (
                                     <button onClick={prevStep} className="btn btn-secondary">Previous</button>
                               )}
-                              {currentStep < 10 && (
-                                    <button onClick={nextStep} className="btn btn-primary">Next</button>
-                              )}
+                              {currentStep < 10 ? (
+                                    <button onClick={nextStep} className="btn btn-primary" style={{ marginLeft: 'auto' }}>Next</button>
+                              ) : null}
                               <button onClick={handleSave} className="btn btn-success" disabled={loading}>
-                                    {loading ? 'Saving...' : 'Save Resume'}
+                                    {loading ? 'Saving...' : '💾 Save Resume'}
                               </button>
                         </div>
                   </div>
 
-                  {/* Preview Modal */}
+                  {/* Modals */}
                   {showPreview && (
                         <ResumePreview
                               formData={formData}
                               onClose={() => setShowPreview(false)}
+                        />
+                  )}
+
+                  {showATSModal && (
+                        <ATSAnalyzerModal
+                              resume={formData}
+                              onClose={() => setShowATSModal(false)}
                         />
                   )}
             </div>

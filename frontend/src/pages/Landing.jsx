@@ -45,7 +45,9 @@ function Landing() {
                                           <p>Advanced features</p>
                                     </div>
                               </div>
-                              {!user && (
+                              {user ? (
+                                    <Link to="/dashboard" className="btn btn-primary btn-lg">Go to Dashboard →</Link>
+                              ) : (
                                     <Link to="/signup" className="btn btn-primary btn-lg">Start Building Your Resume</Link>
                               )}
                         </div>
