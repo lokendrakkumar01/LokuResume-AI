@@ -251,6 +251,21 @@
     margin-top: 4px;
 }
 
+.card-score-progress {
+    width: 100%;
+    height: 6px;
+    background: rgba(255, 255, 255, 0.08);
+    border-radius: 6px;
+    overflow: hidden;
+    margin: -6px 0 2px;
+}
+
+.card-score-fill {
+    height: 100%;
+    border-radius: 6px;
+    transition: width 0.5s ease-in-out;
+}
+
 .score-badge {
     padding: 6px 12px;
     border-radius: var(--radius-full);

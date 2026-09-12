@@ -45,7 +45,6 @@
     font-size: 0.85rem;
     cursor: pointer;
     transition: var(--transition);
-
 }
 
 .ai-variation-item:hover {
@@ -76,4 +75,259 @@
     border-color: var(--primary-color);
     background: rgba(99, 102, 241, 0.1);
     color: var(--primary-color);
+}
+
+/* Header Live Score Tracker */
+.header-left-col {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    min-width: 260px;
+}
+
+.title-row {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    flex-wrap: wrap;
+}
+
+.live-score-pill {
+    font-size: 0.82rem;
+    padding: 4px 10px;
+    border-radius: var(--radius-full);
+    background: rgba(99, 102, 241, 0.1);
+    border: 1px solid rgba(99, 102, 241, 0.25);
+    color: var(--primary-color);
+    font-weight: 600;
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+}
+
+.live-score-bar-track {
+    width: 100%;
+    max-width: 320px;
+    height: 6px;
+    background: rgba(148, 163, 184, 0.2);
+    border-radius: 9999px;
+    overflow: hidden;
+}
+
+.live-score-bar-fill {
+    height: 100%;
+    border-radius: 9999px;
+    transition: width 0.4s ease;
+}
+
+.bar-red {
+    background: #ef4444;
+}
+
+.bar-orange {
+    background: #f59e0b;
+}
+
+.bar-green {
+    background: #10b981;
+}
+
+/* Stepper labels */
+.progress-step {
+    flex-direction: column;
+    height: auto;
+    min-height: 48px;
+    padding: 6px 8px;
+    border-radius: var(--radius-md) !important;
+}
+
+.step-badge-num {
+    font-size: 0.85rem;
+    font-weight: 800;
+}
+
+.step-badge-label {
+    font-size: 0.68rem;
+    margin-top: 2px;
+    white-space: nowrap;
+    opacity: 0.85;
+}
+
+/* Repeatable items reordering header */
+.repeatable-item-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding-bottom: 8px;
+    border-bottom: 1px solid var(--card-border);
+    margin-bottom: 8px;
+}
+
+.item-badge {
+    font-size: 0.82rem;
+    font-weight: 700;
+    color: var(--primary-color);
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+}
+
+.item-reorder-actions {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+}
+
+.btn-icon {
+    width: 30px;
+    height: 30px;
+    border-radius: 6px;
+    background: var(--glass-bg);
+    border: 1px solid var(--card-border);
+    cursor: pointer;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 0.85rem;
+    transition: var(--transition);
+}
+
+.btn-icon:hover:not(:disabled) {
+    background: rgba(99, 102, 241, 0.15);
+    border-color: var(--primary-color);
+    transform: translateY(-1px);
+}
+
+.btn-icon:disabled {
+    opacity: 0.35;
+    cursor: not-allowed;
+}
+
+.btn-icon-danger:hover {
+    background: rgba(239, 68, 68, 0.15) !important;
+    border-color: #ef4444 !important;
+}
+
+/* Skills Adder */
+.inline-skill-adder {
+    display: flex;
+    gap: 10px;
+    align-items: center;
+    margin-bottom: 16px;
+}
+
+.skill-input-field {
+    flex: 1;
+    padding: 10px 14px;
+    border-radius: var(--radius-sm);
+    border: 1px solid var(--card-border);
+    background: var(--card-bg);
+    color: var(--text-main);
+    font-size: 0.92rem;
+    transition: var(--transition);
+}
+
+.skill-input-field:focus {
+    outline: none;
+    border-color: var(--primary-color);
+    box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.15);
+}
+
+.active-skills-container {
+    padding: 14px;
+    background: rgba(148, 163, 184, 0.06);
+    border-radius: var(--radius-md);
+    border: 1px solid var(--card-border);
+    margin-bottom: 16px;
+}
+
+.skill-suggestions-box {
+    padding: 16px;
+    background: rgba(99, 102, 241, 0.05);
+    border: 1px dashed rgba(99, 102, 241, 0.25);
+    border-radius: var(--radius-md);
+}
+
+.suggestions-label {
+    display: block;
+    font-size: 0.82rem;
+    font-weight: 700;
+    color: var(--primary-color);
+    margin-bottom: 10px;
+}
+
+.popular-skills-pills {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+}
+
+.pill-suggestion {
+    padding: 5px 12px;
+    border-radius: var(--radius-full);
+    border: 1px solid var(--card-border);
+    background: var(--card-bg);
+    color: var(--text-main);
+    font-size: 0.82rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: var(--transition);
+}
+
+.pill-suggestion:hover:not(:disabled) {
+    border-color: var(--primary-color);
+    background: rgba(99, 102, 241, 0.1);
+    color: var(--primary-color);
+    transform: translateY(-1px);
+}
+
+.pill-suggestion.pill-added {
+    opacity: 0.5;
+    background: rgba(16, 185, 129, 0.1);
+    border-color: rgba(16, 185, 129, 0.3);
+    color: #10b981;
+    cursor: default;
+}
+
+/* Mobile Sticky Action Bar */
+.mobile-sticky-action-bar {
+    display: none;
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    background: var(--card-bg);
+    backdrop-filter: blur(20px);
+    -webkit-backdrop-filter: blur(20px);
+    border-top: 1px solid var(--card-border);
+    padding: 10px 16px;
+    z-index: 990;
+    justify-content: space-between;
+    align-items: center;
+    box-shadow: 0 -4px 16px rgba(0, 0, 0, 0.12);
+}
+
+.mobile-step-indicator {
+    font-size: 0.82rem;
+    font-weight: 700;
+    color: var(--text-muted);
+}
+
+@media (max-width: 768px) {
+    .mobile-sticky-action-bar {
+        display: flex;
+    }
+    .resume-builder {
+        padding-bottom: 72px; /* Prevent sticky bar from overlapping content */
+    }
+    .header-actions {
+        width: 100%;
+        justify-content: flex-start;
+    }
+    .progress-bar {
+        gap: 6px;
+        padding: 10px 12px;
+    }
+    .step-badge-label {
+        display: none; /* Hide labels on very small mobile for compact numbers */
+    }
 }

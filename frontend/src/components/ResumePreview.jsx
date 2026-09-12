@@ -1,31 +1,87 @@
-import React from 'react';
+import React, { useState } from 'react';
 import '../styles/ResumePreview.css';
 
 function ResumePreview({ formData, onClose }) {
+      const [template, setTemplate] = useState(formData.template_style || 'modern');
+      const [accentColor, setAccentColor] = useState(formData.pdf_preferences?.accent_color || '#4f46e5');
+      const [zoom, setZoom] = useState(1);
+
       const {
-            personal_info, summary, education, skills, projects,
-            experience, certifications, achievements, coding_profiles,
-            pdf_preferences, template_style = 'modern'
+            personal_info = {},
+            summary = '',
+            education = [],
+            skills = [],
+            projects = [],
+            experience = [],
+            certifications = [],
+            achievements = [],
+            coding_profiles = [],
+            pdf_preferences = {}
       } = formData;
 
-      const accentColor = pdf_preferences?.accent_color || '#4f46e5';
+      const colorPresets = ['#4f46e5', '#059669', '#2563eb', '#7c3aed', '#dc2626', '#0f766e', '#1e293b'];
+
+      const handlePrint = () => {
+            window.print();
+      };
 
       return (
             <div className="preview-modal-overlay" onClick={onClose}>
                   <div className="preview-modal" onClick={(e) => e.stopPropagation()}>
                         <div className="preview-header">
-                              <div>
-                                    <h2>📄 Live Resume Preview ({template_style.toUpperCase()})</h2>
+                              <div className="preview-title-bar">
+                                    <h2>📄 Interactive Resume Preview</h2>
+                                    <div className="preview-toolbar">
+                                          {/* Template Switcher */}
+                                          <div className="preview-template-pills">
+                                                {['modern', 'executive', 'tech', 'compact'].map((t) => (
+                                                      <button
+                                                            key={t}
+                                                            className={`pill-btn ${template === t ? 'active' : ''}`}
+                                                            onClick={() => setTemplate(t)}
+                                                      >
+                                                            {t.charAt(0).toUpperCase() + t.slice(1)}
+                                                      </button>
+                                                ))}
+                                          </div>
+
+                                          {/* Color Picker Dots */}
+                                          <div className="preview-color-dots">
+                                                {colorPresets.map((c) => (
+                                                      <button
+                                                            key={c}
+                                                            className={`color-dot ${accentColor === c ? 'selected' : ''}`}
+                                                            style={{ backgroundColor: c }}
+                                                            onClick={() => setAccentColor(c)}
+                                                            title={c}
+                                                      />
+                                                ))}
+                                          </div>
+
+                                          {/* Zoom Controls */}
+                                          <div className="zoom-controls">
+                                                <button onClick={() => setZoom(Math.max(0.7, zoom - 0.1))} title="Zoom Out">-</button>
+                                                <span>{Math.round(zoom * 100)}%</span>
+                                                <button onClick={() => setZoom(Math.min(1.4, zoom + 0.1))} title="Zoom In">+</button>
+                                                <button onClick={() => setZoom(1)} title="Reset Zoom">↺</button>
+                                          </div>
+
+                                          <button className="btn btn-sm btn-primary" onClick={handlePrint} title="Print / Save PDF">
+                                                🖨️ Print
+                                          </button>
+                                          <button className="btn btn-secondary btn-sm" onClick={onClose}>✕</button>
+                                    </div>
                               </div>
-                              <button className="btn btn-secondary btn-sm" onClick={onClose}>✕ Close</button>
                         </div>
 
                         <div className="preview-content">
                               <div
-                                    className={`resume-page tpl-${template_style}`}
+                                    className={`resume-page tpl-${template}`}
                                     style={{
                                           backgroundColor: pdf_preferences?.background_color || '#ffffff',
-                                          '--accent-color': accentColor
+                                          '--accent-color': accentColor,
+                                          transform: `scale(${zoom})`,
+                                          transformOrigin: 'top center'
                                     }}
                               >
                                     {/* Header */}
@@ -125,6 +181,20 @@ function ResumePreview({ formData, onClose }) {
                                                       {certifications.map((cert, index) => (
                                                             <li key={index}>
                                                                   {typeof cert === 'string' ? cert : `${cert.name} ${cert.issued_by ? `- ${cert.issued_by}` : ''}`}
+                                                            </li>
+                                                      ))}
+                                                </ul>
+                                          </div>
+                                    )}
+
+                                    {/* Achievements */}
+                                    {achievements && achievements.length > 0 && (
+                                          <div className="resume-section">
+                                                <h3 style={{ color: accentColor }}>Key Achievements</h3>
+                                                <ul>
+                                                      {achievements.map((ach, index) => (
+                                                            <li key={index}>
+                                                                  <strong>{ach.title}</strong>: {ach.description}
                                                             </li>
                                                       ))}
                                                 </ul>

@@ -1,13 +1,19 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { useToast } from '../context/ToastContext';
 import ATSAnalyzerModal from '../components/ATSAnalyzerModal';
+import ResumePreview from '../components/ResumePreview';
 import axios from 'axios';
 import config from '../config';
 import '../styles/ResumeBuilder.css';
 import '../styles/ResumeBuilderExtra.css';
-import ResumePreview from '../components/ResumePreview';
+
+const POPULAR_SKILLS = [
+      'React.js', 'TypeScript', 'JavaScript', 'Node.js', 'Python', 'FastAPI',
+      'Docker', 'AWS', 'PostgreSQL', 'MongoDB', 'Redis', 'Git', 'Next.js',
+      'GraphQL', 'Tailwind CSS', 'CI/CD', 'REST APIs', 'Kubernetes'
+];
 
 function ResumeBuilder() {
       const { id } = useParams();
@@ -21,6 +27,9 @@ function ResumeBuilder() {
       const [showPreview, setShowPreview] = useState(false);
       const [showATSModal, setShowATSModal] = useState(false);
 
+      // Inline skill input state
+      const [skillInput, setSkillInput] = useState('');
+
       // AI Bullet Generator state
       const [aiTarget, setAiTarget] = useState(null); // { type: 'project'|'experience', index }
       const [aiLoading, setAiLoading] = useState(false);
@@ -29,7 +38,11 @@ function ResumeBuilder() {
       const [formData, setFormData] = useState(() => {
             const savedData = localStorage.getItem('resume_draft');
             if (savedData && !id) {
-                  return JSON.parse(savedData);
+                  try {
+                        return JSON.parse(savedData);
+                  } catch (e) {
+                        // ignore parsing error
+                  }
             }
             return {
                   personal_info: {
@@ -72,6 +85,23 @@ function ResumeBuilder() {
             }
       }, [formData, id]);
 
+      // Calculate Live ATS Readiness Score
+      const liveATSScore = useMemo(() => {
+            let pts = 0;
+            const p = formData.personal_info || {};
+            if (p.name && p.email) pts += 15;
+            if (p.phone) pts += 5;
+            if (p.headline) pts += 10;
+            if (p.linkedin || p.github || p.portfolio) pts += 5;
+            if (formData.summary && formData.summary.trim().split(/\s+/).filter(Boolean).length >= 25) pts += 15;
+            if (formData.education && formData.education.length > 0 && formData.education[0].degree) pts += 10;
+            if (formData.skills && formData.skills.length >= 4) pts += 15;
+            if (formData.projects && formData.projects.length > 0 && formData.projects[0].title) pts += 15;
+            if (formData.experience && formData.experience.length > 0 && formData.experience[0].company) pts += 5;
+            if ((formData.certifications && formData.certifications.length > 0) || (formData.achievements && formData.achievements.length > 0)) pts += 5;
+            return Math.min(100, pts);
+      }, [formData]);
+
       const fetchResume = async () => {
             try {
                   const response = await axios.get(`${config.API_BASE_URL}/resumes/${id}`, {
@@ -106,7 +136,7 @@ function ResumeBuilder() {
       };
 
       const handleSave = async () => {
-            if (!formData.personal_info.name || !formData.personal_info.email) {
+            if (!formData.personal_info?.name || !formData.personal_info?.email) {
                   showToast('Please enter your Name and Email in Step 1 before saving', 'warning');
                   setCurrentStep(1);
                   return;
@@ -141,12 +171,87 @@ function ResumeBuilder() {
             }
       };
 
+      // 1-Click Auto-fill Sample Data
+      const handleAutoFill = () => {
+            setFormData({
+                  personal_info: {
+                        name: 'Alex Morgan',
+                        email: 'alex.morgan@example.com',
+                        phone: '+1 (555) 234-5678',
+                        linkedin: 'https://linkedin.com/in/alexmorgan',
+                        github: 'https://github.com/alexmorgan',
+                        leetcode: 'https://leetcode.com/alexmorgan',
+                        problem_solving: 'https://hackerrank.com/alexmorgan',
+                        portfolio: 'https://alexmorgan.dev',
+                        headline: 'Senior Full-Stack Software Engineer | Distributed Systems',
+                        profile_photo: formData.personal_info?.profile_photo || ''
+                  },
+                  coding_profiles: [
+                        { platform: 'LeetCode', link: 'https://leetcode.com/alexmorgan', headline: 'Knight Rank (2150 Rating) | 650+ Solved' },
+                        { platform: 'GitHub', link: 'https://github.com/alexmorgan', headline: '1,200+ Contributions in 2025' }
+                  ],
+                  summary: 'Accomplished Senior Full-Stack Engineer with 5+ years of experience architecting high-throughput microservices, real-time data pipelines, and responsive web platforms. Proven track record reducing API latency by 45% and cutting AWS infrastructure costs by 30%.',
+                  education: [
+                        { degree: 'B.S. in Computer Science', college: 'University of California, Berkeley', year: '2016 - 2020', grade: '3.9 GPA' }
+                  ],
+                  skills: ['React.js', 'TypeScript', 'Node.js', 'Python', 'FastAPI', 'AWS', 'Docker', 'PostgreSQL', 'MongoDB', 'Redis', 'Tailwind CSS', 'CI/CD', 'REST APIs'],
+                  projects: [
+                        {
+                              title: 'AI Resume & Career Engine',
+                              technologies: 'React, FastAPI, MongoDB, OpenAI API',
+                              description: 'Architected an automated career platform serving 15,000+ engineers with instant ATS scoring and real-time bullet enhancement.',
+                              repository_url: 'https://github.com/alexmorgan/resume-ai',
+                              live_demo_url: 'https://resume-ai-demo.com'
+                        },
+                        {
+                              title: 'Real-Time Telemetry Observability',
+                              technologies: 'Node.js, TypeScript, Redis Streams, Docker',
+                              description: 'Engineered a real-time event streaming pipeline handling 30,000 telemetry events/sec with sub-15ms dashboard chart rendering.'
+                        }
+                  ],
+                  experience: [
+                        {
+                              company: 'Apex Digital Systems',
+                              role: 'Senior Full-Stack Engineer',
+                              duration: '2022 - Present',
+                              description: 'Spearheaded modern cloud architecture across 14 microservices. Mentored 6 junior engineers and improved team sprint velocity by 25%.'
+                        },
+                        {
+                              company: 'NextGen Cloud Labs',
+                              role: 'Software Engineer',
+                              duration: '2020 - 2022',
+                              description: 'Engineered backend REST endpoints in Python & FastAPI with 99.98% uptime SLA. Built automated test suites achieving 92% coverage.'
+                        }
+                  ],
+                  certifications: [
+                        { name: 'AWS Certified Solutions Architect', issued_by: 'Amazon Web Services', date: '2023', file_data: '', file_url: '' }
+                  ],
+                  achievements: [
+                        { title: '1st Place Winner - Silicon Valley Hackathon', description: 'Built an AI accessibility tool selected #1 out of 160 global teams.', date: '2023', link: '' }
+                  ],
+                  template_style: formData.template_style || 'modern',
+                  pdf_preferences: formData.pdf_preferences || { background_color: '#ffffff', accent_color: '#4f46e5' }
+            });
+            showToast('Loaded complete sample resume data!', 'success');
+      };
+
       const nextStep = () => { if (currentStep < 10) setCurrentStep(currentStep + 1); };
       const prevStep = () => { if (currentStep > 1) setCurrentStep(currentStep - 1); };
 
+      // Reorder items in lists (Move Up / Down)
+      const moveItem = (listName, index, direction) => {
+            const list = [...(formData[listName] || [])];
+            const targetIndex = index + direction;
+            if (targetIndex < 0 || targetIndex >= list.length) return;
+            const temp = list[index];
+            list[index] = list[targetIndex];
+            list[targetIndex] = temp;
+            setFormData({ ...formData, [listName]: list });
+      };
+
       // AI Bullet Generator Trigger
       const handleAIEnhanceBullet = async (type, index, text) => {
-            if (!text.trim()) {
+            if (!text || !text.trim()) {
                   showToast('Please type a brief description first to enhance with AI', 'warning');
                   return;
             }
@@ -203,6 +308,7 @@ function ResumeBuilder() {
             }
       };
 
+      // Repeatable field handlers
       const addEducation = () => {
             setFormData({
                   ...formData,
@@ -218,16 +324,23 @@ function ResumeBuilder() {
             setFormData({ ...formData, education: formData.education.filter((_, i) => i !== index) });
       };
 
-      const addSkill = () => {
-            const skill = prompt('Enter new skill:');
-            if (skill && skill.trim()) {
-                  setFormData({ ...formData, skills: [...formData.skills, skill.trim()] });
+      // Skills handlers
+      const handleAddSkill = (skillToAdd) => {
+            const skill = (skillToAdd || skillInput).trim();
+            if (skill) {
+                  if (formData.skills.includes(skill)) {
+                        showToast('Skill already added', 'info');
+                  } else {
+                        setFormData({ ...formData, skills: [...formData.skills, skill] });
+                        setSkillInput('');
+                  }
             }
       };
       const removeSkill = (index) => {
             setFormData({ ...formData, skills: formData.skills.filter((_, i) => i !== index) });
       };
 
+      // Projects handlers
       const addProject = () => {
             setFormData({
                   ...formData,
@@ -243,6 +356,7 @@ function ResumeBuilder() {
             setFormData({ ...formData, projects: formData.projects.filter((_, i) => i !== index) });
       };
 
+      // Experience handlers
       const addExperience = () => {
             setFormData({
                   ...formData,
@@ -258,6 +372,7 @@ function ResumeBuilder() {
             setFormData({ ...formData, experience: formData.experience.filter((_, i) => i !== index) });
       };
 
+      // Certifications handlers
       const addCertification = () => {
             setFormData({
                   ...formData,
@@ -273,6 +388,7 @@ function ResumeBuilder() {
             setFormData({ ...formData, certifications: formData.certifications.filter((_, i) => i !== index) });
       };
 
+      // Achievements handlers
       const addAchievement = () => {
             setFormData({
                   ...formData,
@@ -288,6 +404,7 @@ function ResumeBuilder() {
             setFormData({ ...formData, achievements: formData.achievements.filter((_, i) => i !== index) });
       };
 
+      // Coding Profiles handlers
       const addCodingProfile = () => {
             setFormData({
                   ...formData,
@@ -328,18 +445,37 @@ function ResumeBuilder() {
 
       return (
             <div className="resume-builder">
+                  {/* Top Builder Bar */}
                   <div className="builder-header">
-                        <div>
-                              <h1>{id ? '✏️ Edit Resume' : '✨ Create Resume'}</h1>
+                        <div className="header-left-col">
+                              <div className="title-row">
+                                    <h1>{id ? '✏️ Edit Resume' : '✨ Create Resume'}</h1>
+                                    <span className="live-score-pill" title="Real-time estimated ATS score">
+                                          🎯 ATS Ready: <strong>{liveATSScore}%</strong>
+                                    </span>
+                              </div>
+                              <div className="live-score-bar-track">
+                                    <div
+                                          className={`live-score-bar-fill ${liveATSScore < 50 ? 'bar-red' : liveATSScore < 70 ? 'bar-orange' : 'bar-green'}`}
+                                          style={{ width: `${liveATSScore}%` }}
+                                    />
+                              </div>
                         </div>
+
                         <div className="header-actions">
-                              <button onClick={() => setShowATSModal(true)} className="btn btn-secondary">
-                                    🎯 ATS Job Matcher
+                              <button onClick={handleAutoFill} type="button" className="btn btn-secondary btn-sm" title="Fill all fields with sample profile">
+                                    ⚡ Sample Data
                               </button>
-                              <button onClick={() => setShowPreview(true)} className="btn btn-primary">
-                                    👁️ Live Preview
+                              <button onClick={() => setShowATSModal(true)} type="button" className="btn btn-secondary btn-sm">
+                                    🎯 ATS Matcher
                               </button>
-                              <button onClick={() => navigate('/dashboard')} className="btn btn-secondary">
+                              <button onClick={() => setShowPreview(true)} type="button" className="btn btn-primary btn-sm">
+                                    👁️ Preview
+                              </button>
+                              <button onClick={handleSave} disabled={loading} type="button" className="btn btn-success btn-sm">
+                                    {loading ? 'Saving...' : '💾 Save'}
+                              </button>
+                              <button onClick={() => navigate('/dashboard')} type="button" className="btn btn-secondary btn-sm">
                                     Dashboard
                               </button>
                         </div>
@@ -400,10 +536,10 @@ function ResumeBuilder() {
                         </div>
                   </div>
 
-                  {/* Score Indicator */}
+                  {/* Saved Score Indicator (if saved) */}
                   {score !== null && (
                         <div className="score-display">
-                              <h3>ATS Optimization Score: <span className={score < 50 ? 'red' : score < 65 ? 'orange' : 'green'}>{score}%</span></h3>
+                              <h3>Saved ATS Optimization Score: <span className={score < 50 ? 'red' : score < 65 ? 'orange' : 'green'}>{score}%</span></h3>
                               {score < 65 ? (
                                     <span style={{ fontSize: '0.85rem', color: 'var(--text-muted)' }}>🔒 Reach 65%+ to unlock duplication &amp; advanced options</span>
                               ) : (
@@ -422,7 +558,8 @@ function ResumeBuilder() {
                                     title={step.label}
                                     style={{ cursor: 'pointer' }}
                               >
-                                    {step.num}
+                                    <span className="step-badge-num">{step.num}</span>
+                                    <span className="step-badge-label">{step.label.split(' ')[1]}</span>
                               </div>
                         ))}
                   </div>
@@ -438,19 +575,19 @@ function ResumeBuilder() {
                                     <div className="form-group">
                                           <label>Profile Photo (Optional)</label>
                                           <input type="file" accept="image/*" onChange={handlePhotoUpload} />
-                                          {formData.personal_info.profile_photo && <small>✅ Profile Photo Selected</small>}
+                                          {formData.personal_info?.profile_photo && <small>✅ Profile Photo Selected</small>}
                                     </div>
 
                                     <div className="form-group">
                                           <label>Headline / Professional Title *</label>
                                           <input
                                                 type="text"
-                                                value={formData.personal_info.headline || ''}
+                                                value={formData.personal_info?.headline || ''}
                                                 onChange={(e) => setFormData({
                                                       ...formData,
                                                       personal_info: { ...formData.personal_info, headline: e.target.value }
                                                 })}
-                                                placeholder="e.g. Full-Stack Engineer | React & Python"
+                                                placeholder="e.g. Senior Full-Stack Software Engineer | React & Python"
                                           />
                                     </div>
 
@@ -459,11 +596,12 @@ function ResumeBuilder() {
                                                 <label>Full Name *</label>
                                                 <input
                                                       type="text"
-                                                      value={formData.personal_info.name}
+                                                      value={formData.personal_info?.name || ''}
                                                       onChange={(e) => setFormData({
                                                             ...formData,
                                                             personal_info: { ...formData.personal_info, name: e.target.value }
                                                       })}
+                                                      placeholder="e.g. Alex Morgan"
                                                       required
                                                 />
                                           </div>
@@ -471,11 +609,12 @@ function ResumeBuilder() {
                                                 <label>Email *</label>
                                                 <input
                                                       type="email"
-                                                      value={formData.personal_info.email}
+                                                      value={formData.personal_info?.email || ''}
                                                       onChange={(e) => setFormData({
                                                             ...formData,
                                                             personal_info: { ...formData.personal_info, email: e.target.value }
                                                       })}
+                                                      placeholder="e.g. alex@example.com"
                                                       required
                                                 />
                                           </div>
@@ -486,11 +625,12 @@ function ResumeBuilder() {
                                                 <label>Phone *</label>
                                                 <input
                                                       type="tel"
-                                                      value={formData.personal_info.phone}
+                                                      value={formData.personal_info?.phone || ''}
                                                       onChange={(e) => setFormData({
                                                             ...formData,
                                                             personal_info: { ...formData.personal_info, phone: e.target.value }
                                                       })}
+                                                      placeholder="e.g. +1 (555) 234-5678"
                                                       required
                                                 />
                                           </div>
@@ -498,7 +638,7 @@ function ResumeBuilder() {
                                                 <label>Portfolio URL</label>
                                                 <input
                                                       type="url"
-                                                      value={formData.personal_info.portfolio || ''}
+                                                      value={formData.personal_info?.portfolio || ''}
                                                       onChange={(e) => setFormData({
                                                             ...formData,
                                                             personal_info: { ...formData.personal_info, portfolio: e.target.value }
@@ -513,7 +653,7 @@ function ResumeBuilder() {
                                                 <label>GitHub</label>
                                                 <input
                                                       type="url"
-                                                      value={formData.personal_info.github || ''}
+                                                      value={formData.personal_info?.github || ''}
                                                       onChange={(e) => setFormData({
                                                             ...formData,
                                                             personal_info: { ...formData.personal_info, github: e.target.value }
@@ -525,7 +665,7 @@ function ResumeBuilder() {
                                                 <label>LinkedIn</label>
                                                 <input
                                                       type="url"
-                                                      value={formData.personal_info.linkedin || ''}
+                                                      value={formData.personal_info?.linkedin || ''}
                                                       onChange={(e) => setFormData({
                                                             ...formData,
                                                             personal_info: { ...formData.personal_info, linkedin: e.target.value }
@@ -544,12 +684,15 @@ function ResumeBuilder() {
                                     <p className="step-description">Write a compelling summary highlighting your key achievements (50-150 words)</p>
                                     <div className="form-group">
                                           <textarea
-                                                value={formData.summary}
+                                                value={formData.summary || ''}
                                                 onChange={(e) => setFormData({ ...formData, summary: e.target.value })}
                                                 rows={6}
-                                                placeholder="Passionate Software Engineer with expertise in..."
+                                                placeholder="Passionate Software Engineer with 5+ years of experience architecting distributed cloud applications..."
                                           />
-                                          <small>{formData.summary.split(/\s+/).filter(Boolean).length} words</small>
+                                          <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: '6px' }}>
+                                                <small>{formData.summary ? formData.summary.split(/\s+/).filter(Boolean).length : 0} words</small>
+                                                <small style={{ color: 'var(--text-muted)' }}>Recommended: 40 - 120 words</small>
+                                          </div>
                                     </div>
                               </div>
                         )}
@@ -558,9 +701,41 @@ function ResumeBuilder() {
                         {currentStep === 3 && (
                               <div className="form-step fade-in">
                                     <h2>🎓 Step 3: Education</h2>
-                                    <p className="step-description">Add your educational background</p>
+                                    <p className="step-description">Add your degree, university, graduation year, and GPA</p>
                                     {formData.education.map((edu, index) => (
                                           <div key={index} className="repeatable-item">
+                                                <div className="repeatable-item-header">
+                                                      <span className="item-badge">Education #{index + 1}</span>
+                                                      <div className="item-reorder-actions">
+                                                            <button
+                                                                  type="button"
+                                                                  disabled={index === 0}
+                                                                  onClick={() => moveItem('education', index, -1)}
+                                                                  className="btn-icon"
+                                                                  title="Move Up"
+                                                            >
+                                                                  ⬆️
+                                                            </button>
+                                                            <button
+                                                                  type="button"
+                                                                  disabled={index === formData.education.length - 1}
+                                                                  onClick={() => moveItem('education', index, 1)}
+                                                                  className="btn-icon"
+                                                                  title="Move Down"
+                                                            >
+                                                                  ⬇️
+                                                            </button>
+                                                            <button
+                                                                  type="button"
+                                                                  onClick={() => removeEducation(index)}
+                                                                  className="btn-icon btn-icon-danger"
+                                                                  title="Delete"
+                                                            >
+                                                                  🗑️
+                                                            </button>
+                                                      </div>
+                                                </div>
+
                                                 <div className="form-group">
                                                       <label>Degree</label>
                                                       <input
@@ -571,7 +746,7 @@ function ResumeBuilder() {
                                                       />
                                                 </div>
                                                 <div className="form-group">
-                                                      <label>College/University</label>
+                                                      <label>College / University</label>
                                                       <input
                                                             type="text"
                                                             value={edu.college}
@@ -581,12 +756,12 @@ function ResumeBuilder() {
                                                 </div>
                                                 <div className="form-row">
                                                       <div className="form-group">
-                                                            <label>Year</label>
+                                                            <label>Year / Duration</label>
                                                             <input
                                                                   type="text"
                                                                   value={edu.year}
                                                                   onChange={(e) => updateEducation(index, 'year', e.target.value)}
-                                                                  placeholder="2020-2024"
+                                                                  placeholder="2020 - 2024"
                                                             />
                                                       </div>
                                                       <div className="form-group">
@@ -595,31 +770,86 @@ function ResumeBuilder() {
                                                                   type="text"
                                                                   value={edu.grade}
                                                                   onChange={(e) => updateEducation(index, 'grade', e.target.value)}
-                                                                  placeholder="8.8 CGPA"
+                                                                  placeholder="3.8 GPA or 8.8 CGPA"
                                                             />
                                                       </div>
                                                 </div>
-                                                <button onClick={() => removeEducation(index)} className="btn btn-sm btn-danger">Remove</button>
                                           </div>
                                     ))}
-                                    <button onClick={addEducation} className="btn btn-secondary">+ Add Education</button>
+                                    <button onClick={addEducation} type="button" className="btn btn-secondary">+ Add Education</button>
                               </div>
                         )}
 
                         {/* Step 4: Skills */}
                         {currentStep === 4 && (
                               <div className="form-step fade-in">
-                                    <h2>💼 Step 4: Skills</h2>
-                                    <p className="step-description">List your key technical and soft skills</p>
-                                    <div className="skills-list">
-                                          {formData.skills.map((skill, index) => (
-                                                <div key={index} className="skill-tag">
-                                                      {skill}
-                                                      <button onClick={() => removeSkill(index)}>×</button>
-                                                </div>
-                                          ))}
+                                    <h2>💼 Step 4: Skills &amp; Tech Stack</h2>
+                                    <p className="step-description">Type and press Enter, or click popular skills below to add them</p>
+
+                                    {/* Inline Add Skill Input */}
+                                    <div className="inline-skill-adder">
+                                          <input
+                                                type="text"
+                                                value={skillInput}
+                                                onChange={(e) => setSkillInput(e.target.value)}
+                                                onKeyDown={(e) => {
+                                                      if (e.key === 'Enter') {
+                                                            e.preventDefault();
+                                                            handleAddSkill();
+                                                      }
+                                                }}
+                                                placeholder="Type skill (e.g. Next.js, Docker, Kubernetes) and press Enter..."
+                                                className="skill-input-field"
+                                          />
+                                          <button
+                                                type="button"
+                                                onClick={() => handleAddSkill()}
+                                                className="btn btn-primary btn-sm"
+                                          >
+                                                + Add Skill
+                                          </button>
                                     </div>
-                                    <button onClick={addSkill} className="btn btn-secondary">+ Add Skill</button>
+
+                                    {/* Active Skills List */}
+                                    <div className="active-skills-container">
+                                          <label style={{ fontSize: '0.85rem', fontWeight: 600, color: 'var(--text-muted)' }}>
+                                                Your Skills ({formData.skills.length}):
+                                          </label>
+                                          <div className="skills-list" style={{ marginTop: '8px' }}>
+                                                {formData.skills.map((skill, index) => (
+                                                      <div key={index} className="skill-tag">
+                                                            <span>{skill}</span>
+                                                            <button type="button" onClick={() => removeSkill(index)} title="Remove">×</button>
+                                                      </div>
+                                                ))}
+                                                {formData.skills.length === 0 && (
+                                                      <span style={{ fontSize: '0.85rem', color: 'var(--text-muted)' }}>
+                                                            No skills added yet. Add some above or click quick suggestions below!
+                                                      </span>
+                                                )}
+                                          </div>
+                                    </div>
+
+                                    {/* Quick Suggestions */}
+                                    <div className="skill-suggestions-box">
+                                          <span className="suggestions-label">💡 Popular Tech Skills (Click to add):</span>
+                                          <div className="popular-skills-pills">
+                                                {POPULAR_SKILLS.map((sk) => {
+                                                      const isAdded = formData.skills.includes(sk);
+                                                      return (
+                                                            <button
+                                                                  key={sk}
+                                                                  type="button"
+                                                                  disabled={isAdded}
+                                                                  onClick={() => handleAddSkill(sk)}
+                                                                  className={`pill-suggestion ${isAdded ? 'pill-added' : ''}`}
+                                                            >
+                                                                  {isAdded ? `✓ ${sk}` : `+ ${sk}`}
+                                                            </button>
+                                                      );
+                                                })}
+                                          </div>
+                                    </div>
                               </div>
                         )}
 
@@ -627,16 +857,48 @@ function ResumeBuilder() {
                         {currentStep === 5 && (
                               <div className="form-step fade-in">
                                     <h2>🚀 Step 5: Projects</h2>
-                                    <p className="step-description">Showcase projects with action verbs and quantifiable metrics</p>
+                                    <p className="step-description">Showcase high-impact projects with metrics and tech stack</p>
                                     {formData.projects.map((proj, index) => (
                                           <div key={index} className="repeatable-item">
+                                                <div className="repeatable-item-header">
+                                                      <span className="item-badge">Project #{index + 1}</span>
+                                                      <div className="item-reorder-actions">
+                                                            <button
+                                                                  type="button"
+                                                                  disabled={index === 0}
+                                                                  onClick={() => moveItem('projects', index, -1)}
+                                                                  className="btn-icon"
+                                                                  title="Move Up"
+                                                            >
+                                                                  ⬆️
+                                                            </button>
+                                                            <button
+                                                                  type="button"
+                                                                  disabled={index === formData.projects.length - 1}
+                                                                  onClick={() => moveItem('projects', index, 1)}
+                                                                  className="btn-icon"
+                                                                  title="Move Down"
+                                                            >
+                                                                  ⬇️
+                                                            </button>
+                                                            <button
+                                                                  type="button"
+                                                                  onClick={() => removeProject(index)}
+                                                                  className="btn-icon btn-icon-danger"
+                                                                  title="Delete"
+                                                            >
+                                                                  🗑️
+                                                            </button>
+                                                      </div>
+                                                </div>
+
                                                 <div className="form-group">
                                                       <label>Project Title</label>
                                                       <input
                                                             type="text"
                                                             value={proj.title}
                                                             onChange={(e) => updateProject(index, 'title', e.target.value)}
-                                                            placeholder="AI Resume Builder"
+                                                            placeholder="AI Resume Platform"
                                                       />
                                                 </div>
                                                 <div className="form-group">
@@ -645,30 +907,31 @@ function ResumeBuilder() {
                                                             type="text"
                                                             value={proj.technologies}
                                                             onChange={(e) => updateProject(index, 'technologies', e.target.value)}
-                                                            placeholder="React, FastAPI, MongoDB"
+                                                            placeholder="React, FastAPI, MongoDB, Docker"
                                                       />
                                                 </div>
                                                 <div className="form-group">
-                                                      <label>Description</label>
+                                                      <label>Description (Impact &amp; Metrics)</label>
                                                       <textarea
                                                             value={proj.description}
                                                             onChange={(e) => updateProject(index, 'description', e.target.value)}
                                                             rows={3}
-                                                            placeholder="Developed scalable web app serving 1,000+ users..."
+                                                            placeholder="Engineered scalable full-stack application serving 1,000+ users with sub-50ms API responses..."
                                                       />
                                                       <button
                                                             type="button"
-                                                            className="ai-generator-btn"
                                                             onClick={() => handleAIEnhanceBullet('project', index, proj.description)}
+                                                            className="ai-generator-btn"
+                                                            disabled={aiLoading}
                                                       >
-                                                            ⚡ AI Enhance Description
+                                                            ✨ {aiLoading && aiTarget?.type === 'project' && aiTarget?.index === index ? 'Enhancing...' : 'Enhance with AI'}
                                                       </button>
 
                                                       {aiTarget?.type === 'project' && aiTarget?.index === index && (
-                                                            <div className="ai-variations-drawer">
-                                                                  <h5>✨ Select an AI-Enhanced Variation:</h5>
+                                                            <div className="ai-variations-drawer fade-in">
+                                                                  <h5>✨ Select an AI-Optimized Bullet Point:</h5>
                                                                   {aiLoading ? (
-                                                                        <p>Generating high-impact variations...</p>
+                                                                        <div className="spinner-small" style={{ margin: '8px 0' }} />
                                                                   ) : (
                                                                         aiVariations.map((varText, vIdx) => (
                                                                               <div
@@ -683,70 +946,122 @@ function ResumeBuilder() {
                                                             </div>
                                                       )}
                                                 </div>
-                                                <button onClick={() => removeProject(index)} className="btn btn-sm btn-danger">Remove</button>
+                                                <div className="form-row">
+                                                      <div className="form-group">
+                                                            <label>Repository URL (GitHub)</label>
+                                                            <input
+                                                                  type="url"
+                                                                  value={proj.repository_url || ''}
+                                                                  onChange={(e) => updateProject(index, 'repository_url', e.target.value)}
+                                                                  placeholder="https://github.com/username/project"
+                                                            />
+                                                      </div>
+                                                      <div className="form-group">
+                                                            <label>Live Demo URL</label>
+                                                            <input
+                                                                  type="url"
+                                                                  value={proj.live_demo_url || ''}
+                                                                  onChange={(e) => updateProject(index, 'live_demo_url', e.target.value)}
+                                                                  placeholder="https://demo-app.com"
+                                                            />
+                                                      </div>
+                                                </div>
                                           </div>
                                     ))}
-                                    <button onClick={addProject} className="btn btn-secondary">+ Add Project</button>
+                                    <button onClick={addProject} type="button" className="btn btn-secondary">+ Add Project</button>
                               </div>
                         )}
 
                         {/* Step 6: Experience */}
                         {currentStep === 6 && (
                               <div className="form-step fade-in">
-                                    <h2>💻 Step 6: Professional Experience (Optional)</h2>
-                                    <p className="step-description">Detail your work experience or internships</p>
+                                    <h2>💻 Step 6: Work Experience</h2>
+                                    <p className="step-description">Detail your professional experience and quantifiable achievements</p>
                                     {formData.experience.map((exp, index) => (
                                           <div key={index} className="repeatable-item">
+                                                <div className="repeatable-item-header">
+                                                      <span className="item-badge">Experience #{index + 1}</span>
+                                                      <div className="item-reorder-actions">
+                                                            <button
+                                                                  type="button"
+                                                                  disabled={index === 0}
+                                                                  onClick={() => moveItem('experience', index, -1)}
+                                                                  className="btn-icon"
+                                                                  title="Move Up"
+                                                            >
+                                                                  ⬆️
+                                                            </button>
+                                                            <button
+                                                                  type="button"
+                                                                  disabled={index === formData.experience.length - 1}
+                                                                  onClick={() => moveItem('experience', index, 1)}
+                                                                  className="btn-icon"
+                                                                  title="Move Down"
+                                                            >
+                                                                  ⬇️
+                                                            </button>
+                                                            <button
+                                                                  type="button"
+                                                                  onClick={() => removeExperience(index)}
+                                                                  className="btn-icon btn-icon-danger"
+                                                                  title="Delete"
+                                                            >
+                                                                  🗑️
+                                                            </button>
+                                                      </div>
+                                                </div>
+
+                                                <div className="form-group">
+                                                      <label>Company / Organization</label>
+                                                      <input
+                                                            type="text"
+                                                            value={exp.company}
+                                                            onChange={(e) => updateExperience(index, 'company', e.target.value)}
+                                                            placeholder="Apex Tech Systems"
+                                                      />
+                                                </div>
                                                 <div className="form-row">
                                                       <div className="form-group">
-                                                            <label>Company</label>
-                                                            <input
-                                                                  type="text"
-                                                                  value={exp.company}
-                                                                  onChange={(e) => updateExperience(index, 'company', e.target.value)}
-                                                                  placeholder="Acme Corp"
-                                                            />
-                                                      </div>
-                                                      <div className="form-group">
-                                                            <label>Role</label>
+                                                            <label>Job Title / Role</label>
                                                             <input
                                                                   type="text"
                                                                   value={exp.role}
                                                                   onChange={(e) => updateExperience(index, 'role', e.target.value)}
-                                                                  placeholder="Software Engineer Intern"
+                                                                  placeholder="Senior Software Engineer"
+                                                            />
+                                                      </div>
+                                                      <div className="form-group">
+                                                            <label>Duration</label>
+                                                            <input
+                                                                  type="text"
+                                                                  value={exp.duration}
+                                                                  onChange={(e) => updateExperience(index, 'duration', e.target.value)}
+                                                                  placeholder="2022 - Present"
                                                             />
                                                       </div>
                                                 </div>
                                                 <div className="form-group">
-                                                      <label>Duration</label>
-                                                      <input
-                                                            type="text"
-                                                            value={exp.duration}
-                                                            onChange={(e) => updateExperience(index, 'duration', e.target.value)}
-                                                            placeholder="Jan 2024 - Present"
-                                                      />
-                                                </div>
-                                                <div className="form-group">
-                                                      <label>Description</label>
+                                                      <label>Key Responsibilities &amp; Impact</label>
                                                       <textarea
                                                             value={exp.description}
                                                             onChange={(e) => updateExperience(index, 'description', e.target.value)}
                                                             rows={3}
-                                                            placeholder="Reduced database query times by 40%..."
+                                                            placeholder="Architected distributed microservices reducing latency by 45%..."
                                                       />
                                                       <button
                                                             type="button"
-                                                            className="ai-generator-btn"
                                                             onClick={() => handleAIEnhanceBullet('experience', index, exp.description)}
+                                                            className="ai-generator-btn"
+                                                            disabled={aiLoading}
                                                       >
-                                                            ⚡ AI Enhance Description
+                                                            ✨ {aiLoading && aiTarget?.type === 'experience' && aiTarget?.index === index ? 'Enhancing...' : 'Enhance with AI'}
                                                       </button>
 
                                                       {aiTarget?.type === 'experience' && aiTarget?.index === index && (
-                                                            <div className="ai-variations-drawer">
-                                                                  <h5>✨ Select an AI-Enhanced Variation:</h5>
+                                                            <div className="ai-variations-drawer fade-in">
+                                                                  <h5>✨ Select an AI-Optimized Bullet Point:</h5>
                                                                   {aiLoading ? (
-                                                                        <p>Generating high-impact variations...</p>
+                                                                        <div className="spinner-small" style={{ margin: '8px 0' }} />
                                                                   ) : (
                                                                         aiVariations.map((varText, vIdx) => (
                                                                               <div
@@ -761,10 +1076,9 @@ function ResumeBuilder() {
                                                             </div>
                                                       )}
                                                 </div>
-                                                <button onClick={() => removeExperience(index)} className="btn btn-sm btn-danger">Remove</button>
                                           </div>
                                     ))}
-                                    <button onClick={addExperience} className="btn btn-secondary">+ Add Experience</button>
+                                    <button onClick={addExperience} type="button" className="btn btn-secondary">+ Add Experience</button>
                               </div>
                         )}
 
@@ -772,8 +1086,41 @@ function ResumeBuilder() {
                         {currentStep === 7 && (
                               <div className="form-step fade-in">
                                     <h2>📜 Step 7: Certifications (Optional)</h2>
+                                    <p className="step-description">Add industry credentials, cloud certs, or specializations</p>
                                     {formData.certifications.map((cert, index) => (
                                           <div key={index} className="repeatable-item">
+                                                <div className="repeatable-item-header">
+                                                      <span className="item-badge">Certification #{index + 1}</span>
+                                                      <div className="item-reorder-actions">
+                                                            <button
+                                                                  type="button"
+                                                                  disabled={index === 0}
+                                                                  onClick={() => moveItem('certifications', index, -1)}
+                                                                  className="btn-icon"
+                                                                  title="Move Up"
+                                                            >
+                                                                  ⬆️
+                                                            </button>
+                                                            <button
+                                                                  type="button"
+                                                                  disabled={index === formData.certifications.length - 1}
+                                                                  onClick={() => moveItem('certifications', index, 1)}
+                                                                  className="btn-icon"
+                                                                  title="Move Down"
+                                                            >
+                                                                  ⬇️
+                                                            </button>
+                                                            <button
+                                                                  type="button"
+                                                                  onClick={() => removeCertification(index)}
+                                                                  className="btn-icon btn-icon-danger"
+                                                                  title="Delete"
+                                                            >
+                                                                  🗑️
+                                                            </button>
+                                                      </div>
+                                                </div>
+
                                                 <div className="form-group">
                                                       <label>Certification Name</label>
                                                       <input
@@ -794,19 +1141,18 @@ function ResumeBuilder() {
                                                             />
                                                       </div>
                                                       <div className="form-group">
-                                                            <label>Date</label>
+                                                            <label>Date / Year</label>
                                                             <input
                                                                   type="text"
                                                                   value={cert.date}
                                                                   onChange={(e) => updateCertification(index, 'date', e.target.value)}
-                                                                  placeholder="Jan 2024"
+                                                                  placeholder="2023"
                                                             />
                                                       </div>
                                                 </div>
-                                                <button onClick={() => removeCertification(index)} className="btn btn-sm btn-danger">Remove</button>
                                           </div>
                                     ))}
-                                    <button onClick={addCertification} className="btn btn-secondary">+ Add Certification</button>
+                                    <button onClick={addCertification} type="button" className="btn btn-secondary">+ Add Certification</button>
                               </div>
                         )}
 
@@ -814,15 +1160,48 @@ function ResumeBuilder() {
                         {currentStep === 8 && (
                               <div className="form-step fade-in">
                                     <h2>🏆 Step 8: Achievements &amp; Awards (Optional)</h2>
+                                    <p className="step-description">Highlight hackathons, honors, scholarships, and competitive milestones</p>
                                     {formData.achievements.map((ach, index) => (
                                           <div key={index} className="repeatable-item">
+                                                <div className="repeatable-item-header">
+                                                      <span className="item-badge">Achievement #{index + 1}</span>
+                                                      <div className="item-reorder-actions">
+                                                            <button
+                                                                  type="button"
+                                                                  disabled={index === 0}
+                                                                  onClick={() => moveItem('achievements', index, -1)}
+                                                                  className="btn-icon"
+                                                                  title="Move Up"
+                                                            >
+                                                                  ⬆️
+                                                            </button>
+                                                            <button
+                                                                  type="button"
+                                                                  disabled={index === formData.achievements.length - 1}
+                                                                  onClick={() => moveItem('achievements', index, 1)}
+                                                                  className="btn-icon"
+                                                                  title="Move Down"
+                                                            >
+                                                                  ⬇️
+                                                            </button>
+                                                            <button
+                                                                  type="button"
+                                                                  onClick={() => removeAchievement(index)}
+                                                                  className="btn-icon btn-icon-danger"
+                                                                  title="Delete"
+                                                            >
+                                                                  🗑️
+                                                            </button>
+                                                      </div>
+                                                </div>
+
                                                 <div className="form-group">
-                                                      <label>Title</label>
+                                                      <label>Award / Achievement Title</label>
                                                       <input
                                                             type="text"
                                                             value={ach.title}
                                                             onChange={(e) => updateAchievement(index, 'title', e.target.value)}
-                                                            placeholder="1st Place - National Hackathon"
+                                                            placeholder="1st Place - Silicon Valley Hackathon"
                                                       />
                                                 </div>
                                                 <div className="form-group">
@@ -831,13 +1210,12 @@ function ResumeBuilder() {
                                                             value={ach.description}
                                                             onChange={(e) => updateAchievement(index, 'description', e.target.value)}
                                                             rows={2}
-                                                            placeholder="Built AI application competing against 200+ teams"
+                                                            placeholder="Built AI solution competing against 150+ teams..."
                                                       />
                                                 </div>
-                                                <button onClick={() => removeAchievement(index)} className="btn btn-sm btn-danger">Remove</button>
                                           </div>
                                     ))}
-                                    <button onClick={addAchievement} className="btn btn-secondary">+ Add Achievement</button>
+                                    <button onClick={addAchievement} type="button" className="btn btn-secondary">+ Add Achievement</button>
                               </div>
                         )}
 
@@ -845,8 +1223,41 @@ function ResumeBuilder() {
                         {currentStep === 9 && (
                               <div className="form-step fade-in">
                                     <h2>👨‍💻 Step 9: Problem Solving &amp; Coding Profiles</h2>
+                                    <p className="step-description">Add LeetCode, Codeforces, HackerRank, or GitHub profile stats</p>
                                     {(formData.coding_profiles || []).map((prof, index) => (
                                           <div key={index} className="repeatable-item">
+                                                <div className="repeatable-item-header">
+                                                      <span className="item-badge">Profile #{index + 1}</span>
+                                                      <div className="item-reorder-actions">
+                                                            <button
+                                                                  type="button"
+                                                                  disabled={index === 0}
+                                                                  onClick={() => moveItem('coding_profiles', index, -1)}
+                                                                  className="btn-icon"
+                                                                  title="Move Up"
+                                                            >
+                                                                  ⬆️
+                                                            </button>
+                                                            <button
+                                                                  type="button"
+                                                                  disabled={index === formData.coding_profiles.length - 1}
+                                                                  onClick={() => moveItem('coding_profiles', index, 1)}
+                                                                  className="btn-icon"
+                                                                  title="Move Down"
+                                                            >
+                                                                  ⬇️
+                                                            </button>
+                                                            <button
+                                                                  type="button"
+                                                                  onClick={() => removeCodingProfile(index)}
+                                                                  className="btn-icon btn-icon-danger"
+                                                                  title="Delete"
+                                                            >
+                                                                  🗑️
+                                                            </button>
+                                                      </div>
+                                                </div>
+
                                                 <div className="form-row">
                                                       <div className="form-group">
                                                             <label>Platform Name</label>
@@ -854,7 +1265,7 @@ function ResumeBuilder() {
                                                                   type="text"
                                                                   value={prof.platform}
                                                                   onChange={(e) => updateCodingProfile(index, 'platform', e.target.value)}
-                                                                  placeholder="GeeksforGeeks / LeetCode"
+                                                                  placeholder="LeetCode / Codeforces / GitHub"
                                                             />
                                                       </div>
                                                       <div className="form-group">
@@ -873,13 +1284,12 @@ function ResumeBuilder() {
                                                             type="text"
                                                             value={prof.headline || ''}
                                                             onChange={(e) => updateCodingProfile(index, 'headline', e.target.value)}
-                                                            placeholder="Max Rating 1850 | 500+ Solved"
+                                                            placeholder="Knight Rank (2150 Rating) | 650+ Problems Solved"
                                                       />
                                                 </div>
-                                                <button onClick={() => removeCodingProfile(index)} className="btn btn-sm btn-danger">Remove</button>
                                           </div>
                                     ))}
-                                    <button onClick={addCodingProfile} className="btn btn-secondary">+ Add Platform Profile</button>
+                                    <button onClick={addCodingProfile} type="button" className="btn btn-secondary">+ Add Platform Profile</button>
                               </div>
                         )}
 
@@ -887,12 +1297,23 @@ function ResumeBuilder() {
                         {currentStep === 10 && (
                               <div className="form-step fade-in">
                                     <h2>👀 Step 10: Final Review &amp; Save</h2>
-                                    <div className="glass-panel" style={{ padding: '24px', textAlign: 'center' }}>
-                                          <h3>🎉 You are ready to generate your ATS Resume!</h3>
-                                          <p style={{ color: 'var(--text-muted)', marginTop: '6px' }}>Click "Save Resume" to update your ATS score and download your PDF.</p>
-                                          <div style={{ marginTop: '16px', display: 'flex', justifyContent: 'center', gap: '12px' }}>
-                                                <button onClick={() => setShowPreview(true)} className="btn btn-primary">
+                                    <div className="glass-panel" style={{ padding: '28px', textAlign: 'center' }}>
+                                          <div style={{ fontSize: '2.5rem', marginBottom: '10px' }}>🚀</div>
+                                          <h3>Your Resume Is Ready!</h3>
+                                          <p style={{ color: 'var(--text-muted)', marginTop: '8px', maxWidth: '500px', margin: '8px auto 0' }}>
+                                                Estimated ATS Score: <strong style={{ color: liveATSScore >= 70 ? '#10b981' : '#f59e0b' }}>{liveATSScore}%</strong>.
+                                                Save your resume to compute the official ATS breakdown and download high-resolution PDF.
+                                          </p>
+
+                                          <div style={{ marginTop: '24px', display: 'flex', justifyContent: 'center', gap: '14px', flexWrap: 'wrap' }}>
+                                                <button onClick={() => setShowPreview(true)} type="button" className="btn btn-primary">
                                                       👁️ Live Preview Resume
+                                                </button>
+                                                <button onClick={() => setShowATSModal(true)} type="button" className="btn btn-secondary">
+                                                      🎯 Run ATS Job Match
+                                                </button>
+                                                <button onClick={handleSave} disabled={loading} type="button" className="btn btn-success">
+                                                      {loading ? 'Saving...' : '💾 Save Resume Now'}
                                                 </button>
                                           </div>
                                     </div>
@@ -902,15 +1323,52 @@ function ResumeBuilder() {
                         {/* Navigation Footer */}
                         <div className="form-navigation">
                               {currentStep > 1 && (
-                                    <button onClick={prevStep} className="btn btn-secondary">Previous</button>
+                                    <button onClick={prevStep} type="button" className="btn btn-secondary">
+                                          ← Previous
+                                    </button>
                               )}
-                              {currentStep < 10 ? (
-                                    <button onClick={nextStep} className="btn btn-primary" style={{ marginLeft: 'auto' }}>Next</button>
-                              ) : null}
-                              <button onClick={handleSave} className="btn btn-success" disabled={loading}>
-                                    {loading ? 'Saving...' : '💾 Save Resume'}
-                              </button>
+                              <div style={{ marginLeft: 'auto', display: 'flex', gap: '12px' }}>
+                                    {currentStep < 10 && (
+                                          <button onClick={nextStep} type="button" className="btn btn-primary">
+                                                Next →
+                                          </button>
+                                    )}
+                                    <button onClick={handleSave} disabled={loading} type="button" className="btn btn-success">
+                                          {loading ? 'Saving...' : '💾 Save Resume'}
+                                    </button>
+                              </div>
                         </div>
+                  </div>
+
+                  {/* Mobile Sticky Action Bar */}
+                  <div className="mobile-sticky-action-bar">
+                        <button
+                              onClick={prevStep}
+                              disabled={currentStep === 1}
+                              type="button"
+                              className="btn btn-secondary btn-sm"
+                        >
+                              ◀ Prev
+                        </button>
+                        <span className="mobile-step-indicator">
+                              Step {currentStep}/10
+                        </span>
+                        <button
+                              onClick={nextStep}
+                              disabled={currentStep === 10}
+                              type="button"
+                              className="btn btn-primary btn-sm"
+                        >
+                              Next ▶
+                        </button>
+                        <button
+                              onClick={handleSave}
+                              disabled={loading}
+                              type="button"
+                              className="btn btn-success btn-sm"
+                        >
+                              {loading ? '...' : '💾 Save'}
+                        </button>
                   </div>
 
                   {/* Modals */}
