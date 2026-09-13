@@ -24,3 +24,14 @@ def get_user_from_token(token: str) -> str:
     if payload:
         return payload.get("sub")
     return None
+
+def get_token_payload(token: str) -> dict:
+    """Extract full payload from token"""
+    return verify_token(token)
+
+def get_admin_from_token(token: str) -> str:
+    """Extract and verify user ID has admin role from token"""
+    payload = verify_token(token)
+    if payload and payload.get("role") == "admin":
+        return payload.get("sub")
+    return None

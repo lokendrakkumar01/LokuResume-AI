@@ -1,6 +1,6 @@
 import React, { useEffect } from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
-import { AuthProvider, ProtectedRoute, GuestRoute } from './context/AuthContext';
+import { AuthProvider, ProtectedRoute, GuestRoute, AdminRoute, AdminGuestRoute } from './context/AuthContext';
 import { ThemeProvider } from './context/ThemeContext';
 import { ToastProvider } from './context/ToastContext';
 import ThemeToggle from './components/ThemeToggle';
@@ -10,6 +10,8 @@ import Signup from './pages/Signup';
 import Dashboard from './pages/Dashboard';
 import ResumeBuilder from './pages/ResumeBuilder';
 import Landing from './pages/Landing';
+import AdminLogin from './pages/AdminLogin';
+import AdminDashboard from './pages/AdminDashboard';
 import axios from 'axios';
 import config from './config';
 import './index.css';
@@ -71,6 +73,31 @@ function App() {
                   <ProtectedRoute>
                     <ResumeBuilder />
                   </ProtectedRoute>
+                }
+              />
+              {/* Admin Portal Routes */}
+              <Route
+                path="/admin/login"
+                element={
+                  <AdminGuestRoute>
+                    <AdminLogin />
+                  </AdminGuestRoute>
+                }
+              />
+              <Route
+                path="/admin"
+                element={
+                  <AdminRoute>
+                    <AdminDashboard />
+                  </AdminRoute>
+                }
+              />
+              <Route
+                path="/admin/dashboard"
+                element={
+                  <AdminRoute>
+                    <AdminDashboard />
+                  </AdminRoute>
                 }
               />
               <Route path="*" element={<Navigate to="/" replace />} />

@@ -147,6 +147,30 @@ export const AuthProvider = ({ children }) => {
             }
       };
 
+      const adminLogin = async (email, password) => {
+            try {
+                  const response = await axios.post(`${config.API_BASE_URL}/auth/admin-login`, {
+                        email: email.trim().toLowerCase(),
+                        password
+                  });
+
+                  const { access_token, user: userData } = response.data;
+
+                  localStorage.setItem('token', access_token);
+                  localStorage.setItem('user', JSON.stringify(userData));
+
+                  setToken(access_token);
+                  setUser(userData);
+
+                  return { success: true, user: userData };
+            } catch (error) {
+                  return {
+                        success: false,
+                        error: formatErrorMessage(error.response?.data?.detail, 'Admin authentication failed')
+                  };
+            }
+      };
+
       const logout = () => {
             localStorage.removeItem('token');
             localStorage.removeItem('user');
@@ -154,12 +178,18 @@ export const AuthProvider = ({ children }) => {
             setUser(null);
       };
 
+      const adminLogout = () => {
+            logout();
+      };
+
       const getAuthHeader = () => {
             return token ? { Authorization: `Bearer ${token}` } : {};
       };
 
+      const isAdmin = Boolean(user && user.role === 'admin');
+
       return (
-            <AuthContext.Provider value={{ user, token, login, signup, logout, getAuthHeader, loading }}>
+            <AuthContext.Provider value={{ user, token, login, signup, logout, adminLogin, adminLogout, isAdmin, getAuthHeader, loading }}>
                   {children}
             </AuthContext.Provider>
       );
@@ -197,6 +227,46 @@ export const GuestRoute = ({ children }) => {
       // If user is already logged in, redirect directly to dashboard
       if (token) {
             return <Navigate to="/dashboard" replace />;
+      }
+
+      return children;
+};
+
+export const AdminRoute = ({ children }) => {
+      const { token, user, loading } = useAuth();
+
+      if (loading) {
+            return (
+                  <div style={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                        <div style={{ width: 36, height: 36, border: '3px solid rgba(255,255,255,0.15)', borderTopColor: '#f43f5e', borderRadius: '50%', animation: 'spin 1s linear infinite' }} />
+                  </div>
+            );
+      }
+
+      if (!token) {
+            return <Navigate to="/admin/login" replace />;
+      }
+
+      if (!user || user.role !== 'admin') {
+            return <Navigate to="/dashboard" replace />;
+      }
+
+      return children;
+};
+
+export const AdminGuestRoute = ({ children }) => {
+      const { token, user, loading } = useAuth();
+
+      if (loading) {
+            return (
+                  <div style={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                        <div style={{ width: 36, height: 36, border: '3px solid rgba(255,255,255,0.15)', borderTopColor: '#f43f5e', borderRadius: '50%', animation: 'spin 1s linear infinite' }} />
+                  </div>
+            );
+      }
+
+      if (token && user && user.role === 'admin') {
+            return <Navigate to="/admin" replace />;
       }
 
       return children;

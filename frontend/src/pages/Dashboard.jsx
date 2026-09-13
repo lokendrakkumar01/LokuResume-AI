@@ -25,14 +25,27 @@ function Dashboard() {
       const [selectedResumeForATS, setSelectedResumeForATS] = useState(null);
       const [previewResume, setPreviewResume] = useState(null);
       const [deleteTarget, setDeleteTarget] = useState(null); // { id, name }
+      const [broadcast, setBroadcast] = useState(null);
 
-      const { user, logout, getAuthHeader } = useAuth();
+      const { user, logout, getAuthHeader, isAdmin } = useAuth();
       const { showToast } = useToast();
       const navigate = useNavigate();
 
       useEffect(() => {
             fetchResumes();
+            fetchBroadcast();
       }, []);
+
+      const fetchBroadcast = async () => {
+            try {
+                  const res = await axios.get(`${config.API_BASE_URL}/admin/public-broadcast`);
+                  if (res.data?.broadcast?.active) {
+                        setBroadcast(res.data.broadcast);
+                  }
+            } catch (e) {
+                  // ignore
+            }
+      };
 
       const fetchResumes = async () => {
             try {
@@ -240,6 +253,24 @@ function Dashboard() {
                               <h2>{config.APP_NAME}</h2>
                         </div>
                         <div className="nav-right">
+                              {isAdmin && (
+                                    <Link
+                                          to="/admin"
+                                          className="btn btn-secondary btn-sm"
+                                          style={{
+                                                borderColor: 'rgba(225, 29, 72, 0.4)',
+                                                color: '#fda4af',
+                                                background: 'rgba(225, 29, 72, 0.12)',
+                                                display: 'flex',
+                                                alignItems: 'center',
+                                                gap: '0.4rem',
+                                                fontWeight: '700'
+                                          }}
+                                    >
+                                          <span>🛡️</span>
+                                          <span>Admin Portal</span>
+                                    </Link>
+                              )}
                               <div className="user-welcome-badge">
                                     <span>👤</span>
                                     <span>{user?.name}</span>
@@ -249,6 +280,32 @@ function Dashboard() {
                   </nav>
 
                   <div className="dashboard-container">
+                        {/* Platform Broadcast Banner */}
+                        {broadcast && broadcast.active && broadcast.message && (
+                              <div
+                                    className={`platform-broadcast-banner broadcast-${broadcast.type || 'info'}`}
+                                    style={{
+                                          marginBottom: '1.75rem',
+                                          padding: '0.85rem 1.25rem',
+                                          borderRadius: '12px',
+                                          display: 'flex',
+                                          alignItems: 'center',
+                                          gap: '0.75rem',
+                                          fontSize: '0.9rem',
+                                          fontWeight: '600',
+                                          background: broadcast.type === 'alert' ? 'rgba(225,29,72,0.15)' : broadcast.type === 'warning' ? 'rgba(245,158,11,0.15)' : broadcast.type === 'success' ? 'rgba(16,185,129,0.15)' : 'rgba(59,130,246,0.15)',
+                                          border: `1px solid ${broadcast.type === 'alert' ? 'rgba(225,29,72,0.4)' : broadcast.type === 'warning' ? 'rgba(245,158,11,0.4)' : broadcast.type === 'success' ? 'rgba(16,185,129,0.4)' : 'rgba(59,130,246,0.4)'}`,
+                                          color: broadcast.type === 'alert' ? '#fda4af' : broadcast.type === 'warning' ? '#fcd34d' : broadcast.type === 'success' ? '#6ee7b7' : '#93c5fd',
+                                          boxShadow: '0 4px 14px rgba(0,0,0,0.2)'
+                                    }}
+                              >
+                                    <span style={{ fontSize: '1.1rem' }}>
+                                          {broadcast.type === 'alert' ? '🚨' : broadcast.type === 'warning' ? '⚠️' : broadcast.type === 'success' ? '🎉' : '📢'}
+                                    </span>
+                                    <span>{broadcast.message}</span>
+                              </div>
+                        )}
+
                         {/* Metrics Bar */}
                         <div className="metrics-grid">
                               <div className="metric-card">

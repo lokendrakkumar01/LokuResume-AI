@@ -2,14 +2,16 @@ from contextlib import asynccontextmanager
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from database import connect_to_mongo, close_mongo_connection
-from routes import auth, resume, ai_tools
+from routes import auth, resume, ai_tools, admin
+from routes.auth import seed_admin_account
 from config import settings
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     """Lifespan context manager for startup and shutdown events"""
     await connect_to_mongo()
-    print("[INFO] LokuResume AI Backend Started")
+    await seed_admin_account()
+    print("[INFO] LokuResume AI Backend Started (Admin Seeded)")
     yield
     await close_mongo_connection()
     print("[INFO] LokuResume AI Backend Stopped")
@@ -50,6 +52,7 @@ app.add_middleware(
 app.include_router(auth.router)
 app.include_router(resume.router)
 app.include_router(ai_tools.router)
+app.include_router(admin.router)
 
 @app.get("/")
 async def root():

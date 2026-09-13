@@ -1,0 +1,301 @@
+/* Admin Portal - High Security Obsidian Glassmorphism */
+.admin-login-wrapper {
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: radial-gradient(circle at 50% 20%, #1e112a 0%, #0c0a14 55%, #050408 100%);
+  position: relative;
+  overflow: hidden;
+  padding: 1.5rem;
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+  color: #f1f5f9;
+}
+
+/* Ambient glow orbs */
+.admin-glow-orb {
+  position: absolute;
+  border-radius: 50%;
+  filter: blur(100px);
+  pointer-events: none;
+  opacity: 0.35;
+}
+
+.admin-glow-orb-1 {
+  width: 450px;
+  height: 450px;
+  background: radial-gradient(circle, #e11d48, #9333ea);
+  top: -100px;
+  left: 20%;
+  animation: adminPulse 8s ease-in-out infinite alternate;
+}
+
+.admin-glow-orb-2 {
+  width: 400px;
+  height: 400px;
+  background: radial-gradient(circle, #4f46e5, #0ea5e9);
+  bottom: -80px;
+  right: 15%;
+  animation: adminPulse 10s ease-in-out infinite alternate-reverse;
+}
+
+@keyframes adminPulse {
+  0% { transform: scale(0.9) translate(0, 0); opacity: 0.3; }
+  100% { transform: scale(1.15) translate(30px, 20px); opacity: 0.5; }
+}
+
+/* Central Card */
+.admin-card {
+  width: 100%;
+  max-width: 460px;
+  background: rgba(18, 16, 28, 0.75);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border: 1px solid rgba(225, 29, 72, 0.25);
+  border-radius: 20px;
+  padding: 2.75rem 2.25rem;
+  box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.8),
+              0 0 40px rgba(225, 29, 72, 0.15);
+  position: relative;
+  z-index: 10;
+  animation: cardFadeUp 0.6s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+@keyframes cardFadeUp {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* Header */
+.admin-header {
+  text-align: center;
+  margin-bottom: 2rem;
+}
+
+.admin-badge-shield {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 68px;
+  height: 68px;
+  border-radius: 18px;
+  background: linear-gradient(135deg, rgba(225, 29, 72, 0.2), rgba(147, 51, 234, 0.2));
+  border: 1px solid rgba(225, 29, 72, 0.4);
+  box-shadow: 0 0 24px rgba(225, 29, 72, 0.3);
+  margin-bottom: 1.25rem;
+}
+
+.admin-badge-shield svg {
+  width: 34px;
+  height: 34px;
+  stroke: #f43f5e;
+}
+
+.admin-title {
+  font-size: 1.65rem;
+  font-weight: 800;
+  letter-spacing: -0.02em;
+  color: #ffffff;
+  margin: 0 0 0.5rem 0;
+  background: linear-gradient(135deg, #ffffff 0%, #cbd5e1 50%, #f43f5e 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+
+.admin-subtitle {
+  font-size: 0.875rem;
+  color: #94a3b8;
+  margin: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  font-weight: 600;
+}
+
+.admin-security-banner {
+  background: rgba(225, 29, 72, 0.12);
+  border: 1px solid rgba(225, 29, 72, 0.3);
+  color: #fda4af;
+  padding: 0.65rem 0.9rem;
+  border-radius: 10px;
+  font-size: 0.775rem;
+  font-weight: 600;
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  margin-top: 1rem;
+}
+
+/* Error message */
+.admin-error-box {
+  background: rgba(239, 68, 68, 0.15);
+  border: 1px solid rgba(239, 68, 68, 0.35);
+  color: #fca5a5;
+  padding: 0.75rem 1rem;
+  border-radius: 10px;
+  font-size: 0.85rem;
+  margin-bottom: 1.25rem;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+/* Form */
+.admin-form {
+  display: flex;
+  flex-direction: column;
+  gap: 1.25rem;
+}
+
+.admin-field {
+  display: flex;
+  flex-direction: column;
+  gap: 0.45rem;
+}
+
+.admin-field label {
+  font-size: 0.82rem;
+  font-weight: 600;
+  color: #cbd5e1;
+  letter-spacing: 0.03em;
+  text-transform: uppercase;
+}
+
+.admin-input-box {
+  position: relative;
+  display: flex;
+  align-items: center;
+}
+
+.admin-input-box svg.input-icon {
+  position: absolute;
+  left: 1rem;
+  width: 18px;
+  height: 18px;
+  stroke: #64748b;
+  pointer-events: none;
+  transition: stroke 0.2s ease;
+}
+
+.admin-input-box input {
+  width: 100%;
+  background: rgba(15, 23, 42, 0.7);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: 12px;
+  padding: 0.85rem 1rem 0.85rem 2.75rem;
+  font-size: 0.95rem;
+  color: #ffffff;
+  transition: all 0.25s ease;
+  outline: none;
+}
+
+.admin-input-box input:focus {
+  border-color: #f43f5e;
+  box-shadow: 0 0 0 3px rgba(244, 63, 94, 0.2);
+  background: rgba(15, 23, 42, 0.95);
+}
+
+.admin-input-box input:focus ~ svg.input-icon {
+  stroke: #f43f5e;
+}
+
+.admin-toggle-pwd {
+  position: absolute;
+  right: 0.9rem;
+  background: none;
+  border: none;
+  color: #64748b;
+  cursor: pointer;
+  padding: 0.25rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: color 0.2s;
+}
+
+.admin-toggle-pwd:hover {
+  color: #e2e8f0;
+}
+
+/* Submit Button */
+.admin-submit-btn {
+  background: linear-gradient(135deg, #e11d48 0%, #be123c 50%, #9f1239 100%);
+  color: #ffffff;
+  border: none;
+  border-radius: 12px;
+  padding: 0.95rem 1.25rem;
+  font-size: 0.95rem;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.65rem;
+  box-shadow: 0 4px 18px rgba(225, 29, 72, 0.4);
+  transition: all 0.25s ease;
+  margin-top: 0.5rem;
+}
+
+.admin-submit-btn:hover:not(:disabled) {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 24px rgba(225, 29, 72, 0.55);
+  background: linear-gradient(135deg, #f43f5e 0%, #e11d48 50%, #be123c 100%);
+}
+
+.admin-submit-btn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+  transform: none;
+}
+
+/* Spinner */
+.admin-btn-spinner {
+  width: 18px;
+  height: 18px;
+  border: 2px solid rgba(255, 255, 255, 0.3);
+  border-top-color: #ffffff;
+  border-radius: 50%;
+  animation: spin 0.8s linear infinite;
+}
+
+/* Footer / Back link */
+.admin-footer {
+  margin-top: 2rem;
+  text-align: center;
+  border-top: 1px solid rgba(255, 255, 255, 0.08);
+  padding-top: 1.25rem;
+}
+
+.admin-back-link {
+  color: #94a3b8;
+  font-size: 0.85rem;
+  text-decoration: none;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  transition: color 0.2s;
+}
+
+.admin-back-link:hover {
+  color: #ffffff;
+}
+
+.admin-secure-seal {
+  margin-top: 1.25rem;
+  font-size: 0.72rem;
+  color: #64748b;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.4rem;
+}
