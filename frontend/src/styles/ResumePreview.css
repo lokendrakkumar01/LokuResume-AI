@@ -389,24 +389,63 @@
         padding: 0;
     }
     .preview-modal {
-        height: 100vh;
+        height: 100dvh;
+        max-height: 100dvh;
+        width: 100vw;
         max-width: 100vw;
         border-radius: 0;
         border: none;
     }
     .preview-header {
-        padding: 10px 14px;
+        padding: 8px 12px;
         gap: 8px;
     }
+    .preview-header-main {
+        flex-wrap: wrap;
+        gap: 8px;
+        justify-content: space-between;
+    }
+    .preview-title-wrap {
+        flex-wrap: wrap;
+        gap: 6px;
+    }
     .preview-title-wrap h2 {
-        font-size: 1rem;
+        font-size: 0.95rem;
+    }
+    .preview-quick-actions {
+        display: flex;
+        align-items: center;
+        gap: 6px;
+        flex-wrap: wrap;
+    }
+    .preview-quick-actions .btn {
+        padding: 5px 8px;
+        font-size: 0.76rem;
+    }
+    .preview-toolbar-scrollable {
+        gap: 8px;
+        padding-bottom: 4px;
+        -webkit-overflow-scrolling: touch;
     }
     .preview-content {
-        padding: 12px 8px;
+        padding: 8px 4px;
     }
     .fit-btn {
         padding: 4px 8px;
         font-size: 0.75rem;
+    }
+}
+
+@media (max-width: 480px) {
+    .preview-title-wrap .template-badge {
+        display: none;
+    }
+    .preview-quick-actions button:nth-child(2) {
+        display: none; /* Hide print on small mobile to preserve room for download button */
+    }
+    .preview-quick-actions .btn-sm {
+        padding: 5px 8px;
+        font-size: 0.74rem;
     }
 }
 

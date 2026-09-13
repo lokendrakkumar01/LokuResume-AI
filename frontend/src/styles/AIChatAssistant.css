@@ -475,20 +475,20 @@
 /* Mobile Screen Adaptations */
 @media (max-width: 768px) {
     .ai-chat-assistant-root {
-        bottom: 5rem; /* Above mobile sticky navigation */
+        bottom: calc(5.2rem + env(safe-area-inset-bottom, 0px)); /* Above mobile sticky navigation */
         right: 1rem;
     }
     .ai-chat-trigger-btn {
-        padding: 10px 14px;
-        font-size: 0.85rem;
+        padding: 9px 13px;
+        font-size: 0.82rem;
     }
     .ai-chat-window {
         bottom: 0;
         right: 0;
         left: 0;
         width: 100vw;
-        height: 85vh;
-        max-height: 85vh;
+        height: 85dvh;
+        max-height: 85dvh;
         border-radius: 20px 20px 0 0;
         border-bottom: none;
     }

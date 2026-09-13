@@ -86,6 +86,14 @@ function ResumeBuilder() {
             }
       }, [formData, id]);
 
+      // Auto-scroll active stepper pill into view horizontally on step change (mobile friendly)
+      useEffect(() => {
+            const stepEl = document.getElementById(`step-badge-${currentStep}`);
+            if (stepEl) {
+                  stepEl.scrollIntoView({ behavior: 'smooth', block: 'nearest', inline: 'center' });
+            }
+      }, [currentStep]);
+
       // Calculate Live ATS Readiness Score
       const liveATSScore = useMemo(() => {
             let pts = 0;
@@ -197,11 +205,11 @@ function ResumeBuilder() {
             }
       };
 
-      // Download PDF Handler with 75% Score Enforcement
+      // Download PDF Handler with 50% Score Enforcement
       const handleDownloadPDF = async () => {
             const currentScore = score !== null ? score : liveATSScore;
-            if (currentScore < 75) {
-                  showToast(`⚠️ Resume completeness is ${Math.round(currentScore)}%. Complete at least 75% to download PDF!`, 'warning');
+            if (currentScore < 50) {
+                  showToast(`⚠️ Resume completeness is ${Math.round(currentScore)}%. Complete at least 50% to download PDF!`, 'warning');
                   return;
             }
 
@@ -255,7 +263,7 @@ function ResumeBuilder() {
                   showToast('🎉 PDF downloaded successfully!', 'success');
             } catch (error) {
                   console.error('PDF Download Error:', error);
-                  showToast('Failed to generate PDF. Ensure resume score is at least 75%', 'error');
+                  showToast('Failed to generate PDF. Ensure resume score is at least 50%', 'error');
             }
       };
 
@@ -635,11 +643,11 @@ function ResumeBuilder() {
                               <button
                                     onClick={handleDownloadPDF}
                                     type="button"
-                                    className={`btn btn-sm ${liveATSScore >= 75 ? 'btn-success' : 'btn-secondary'}`}
-                                    title={liveATSScore >= 75 ? "Download Official PDF" : `Complete at least 75% of your resume to unlock PDF download (Current: ${Math.round(liveATSScore)}%)`}
-                                    style={liveATSScore >= 75 ? { background: 'linear-gradient(135deg, #10b981 0%, #059669 100%)', color: '#fff', border: 'none', fontWeight: 600 } : { opacity: 0.85 }}
+                                    className={`btn btn-sm ${liveATSScore >= 50 ? 'btn-success' : 'btn-secondary'}`}
+                                    title={liveATSScore >= 50 ? "Download Official PDF" : `Complete at least 50% of your resume to unlock PDF download (Current: ${Math.round(liveATSScore)}%)`}
+                                    style={liveATSScore >= 50 ? { background: 'linear-gradient(135deg, #10b981 0%, #059669 100%)', color: '#fff', border: 'none', fontWeight: 600 } : { opacity: 0.85 }}
                               >
-                                    {liveATSScore >= 75 ? '📥 Download PDF' : `🔒 PDF (${Math.round(liveATSScore)}% / 75%)`}
+                                    {liveATSScore >= 50 ? '📥 Download PDF' : `🔒 PDF (${Math.round(liveATSScore)}% / 50%)`}
                               </button>
                               <button onClick={handleSave} disabled={loading} type="button" className="btn btn-success btn-sm">
                                     {loading ? 'Saving...' : '💾 Save'}
@@ -708,9 +716,9 @@ function ResumeBuilder() {
                   {/* Saved Score Indicator (if saved) */}
                   {score !== null && (
                         <div className="score-display">
-                              <h3>Saved ATS Optimization Score: <span className={score < 50 ? 'red' : score < 65 ? 'orange' : 'green'}>{score}%</span></h3>
-                              {score < 65 ? (
-                                    <span style={{ fontSize: '0.85rem', color: 'var(--text-muted)' }}>🔒 Reach 65%+ to unlock duplication &amp; advanced options</span>
+                              <h3>Saved ATS Optimization Score: <span className={score < 50 ? 'red' : score < 70 ? 'orange' : 'green'}>{score}%</span></h3>
+                              {score < 50 ? (
+                                    <span style={{ fontSize: '0.85rem', color: 'var(--text-muted)' }}>🔒 Reach 50%+ to unlock PDF download &amp; duplication</span>
                               ) : (
                                     <span style={{ fontSize: '0.85rem', color: '#10b981', fontWeight: 600 }}>🎉 Unlocked All Features!</span>
                               )}
@@ -722,6 +730,7 @@ function ResumeBuilder() {
                         {stepsList.map((step) => (
                               <div
                                     key={step.num}
+                                    id={`step-badge-${step.num}`}
                                     className={`progress-step ${currentStep >= step.num ? 'active' : ''}`}
                                     onClick={() => setCurrentStep(step.num)}
                                     title={step.label}
@@ -1573,10 +1582,10 @@ function ResumeBuilder() {
                                           <div style={{ fontSize: '2.5rem', marginBottom: '10px' }}>🚀</div>
                                           <h3>Your Resume Is Ready!</h3>
                                           <p style={{ color: 'var(--text-muted)', marginTop: '8px', maxWidth: '520px', margin: '8px auto 0' }}>
-                                                Resume Completeness / ATS Score: <strong style={{ color: liveATSScore >= 75 ? '#10b981' : '#f59e0b' }}>{liveATSScore}%</strong>.
-                                                {liveATSScore >= 75
-                                                      ? ' 🎉 Congratulations! You have reached 75%+ and PDF download is unlocked.'
-                                                      : ' ⚠️ 75% score required to download PDF. Fill in all sections (summary, skills, projects, certs, achievements).'}
+                                                Resume Completeness / ATS Score: <strong style={{ color: liveATSScore >= 50 ? '#10b981' : '#f59e0b' }}>{liveATSScore}%</strong>.
+                                                {liveATSScore >= 50
+                                                      ? ' 🎉 Congratulations! You have reached 50%+ and PDF download is unlocked.'
+                                                      : ' ⚠️ 50% score required to download PDF. Fill in key sections (summary, skills, projects, education).'}
                                           </p>
 
                                           <div style={{ marginTop: '24px', display: 'flex', justifyContent: 'center', gap: '14px', flexWrap: 'wrap' }}>
@@ -1592,14 +1601,14 @@ function ResumeBuilder() {
                                                 <button
                                                       onClick={handleDownloadPDF}
                                                       type="button"
-                                                      className={`btn ${liveATSScore >= 75 ? 'btn-download-unlocked' : 'btn-download-locked'}`}
+                                                      className={`btn ${liveATSScore >= 50 ? 'btn-download-unlocked' : 'btn-download-locked'}`}
                                                       style={
-                                                            liveATSScore >= 75
+                                                            liveATSScore >= 50
                                                                   ? { background: 'linear-gradient(135deg, #10b981 0%, #059669 100%)', color: '#ffffff', fontWeight: 600 }
                                                                   : { opacity: 0.75 }
                                                       }
                                                 >
-                                                      {liveATSScore >= 75 ? `📄 Download Official PDF (${liveATSScore}%)` : `🔒 Download PDF (${liveATSScore}% / 75%)`}
+                                                      {liveATSScore >= 50 ? `📄 Download Official PDF (${liveATSScore}%)` : `🔒 Download PDF (${liveATSScore}% / 50%)`}
                                                 </button>
                                           </div>
                                     </div>
@@ -1658,10 +1667,10 @@ function ResumeBuilder() {
                         <button
                               onClick={handleDownloadPDF}
                               type="button"
-                              className={`btn btn-sm ${liveATSScore >= 75 ? 'btn-success' : 'btn-secondary'}`}
-                              title={liveATSScore >= 75 ? 'Download PDF' : 'Score must be at least 75% to download'}
+                              className={`btn btn-sm ${liveATSScore >= 50 ? 'btn-success' : 'btn-secondary'}`}
+                              title={liveATSScore >= 50 ? 'Download PDF' : 'Score must be at least 50% to download'}
                         >
-                              {liveATSScore >= 75 ? '📄 PDF' : '🔒 75%'}
+                              {liveATSScore >= 50 ? '📄 PDF' : '🔒 50%'}
                         </button>
                   </div>
 

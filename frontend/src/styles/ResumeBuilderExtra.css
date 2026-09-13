@@ -299,17 +299,34 @@
     backdrop-filter: blur(20px);
     -webkit-backdrop-filter: blur(20px);
     border-top: 1px solid var(--card-border);
-    padding: 10px 16px;
+    padding: 8px 10px;
+    padding-bottom: max(10px, env(safe-area-inset-bottom, 10px));
     z-index: 990;
     justify-content: space-between;
     align-items: center;
-    box-shadow: 0 -4px 16px rgba(0, 0, 0, 0.12);
+    gap: 6px;
+    box-shadow: 0 -4px 18px rgba(0, 0, 0, 0.25);
+}
+
+.mobile-sticky-action-bar .btn {
+    padding: 7px 6px;
+    font-size: 0.78rem;
+    font-weight: 700;
+    white-space: nowrap;
+    min-width: 0;
+    flex: 1;
+    text-align: center;
+    justify-content: center;
+    border-radius: var(--radius-sm);
 }
 
 .mobile-step-indicator {
-    font-size: 0.82rem;
-    font-weight: 700;
+    font-size: 0.74rem;
+    font-weight: 800;
     color: var(--text-muted);
+    white-space: nowrap;
+    padding: 0 4px;
+    flex-shrink: 0;
 }
 
 @media (max-width: 768px) {
@@ -317,17 +334,32 @@
         display: flex;
     }
     .resume-builder {
-        padding-bottom: 72px; /* Prevent sticky bar from overlapping content */
+        padding-bottom: 96px !important; /* Prevent sticky bar from overlapping content */
     }
     .header-actions {
         width: 100%;
-        justify-content: flex-start;
     }
     .progress-bar {
         gap: 6px;
-        padding: 10px 12px;
+        padding: 8px 10px;
     }
     .step-badge-label {
-        display: none; /* Hide labels on very small mobile for compact numbers */
+        font-size: 0.62rem;
+    }
+    .template-selector-grid {
+        grid-template-columns: repeat(2, 1fr);
+    }
+    .inline-skill-adder {
+        gap: 8px;
+    }
+    .repeatable-item-header {
+        flex-wrap: wrap;
+        gap: 8px;
+    }
+    .item-badge {
+        max-width: 65%;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
     }
 }

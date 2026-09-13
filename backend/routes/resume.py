@@ -237,7 +237,7 @@ async def delete_resume(resume_id: str, user_id: str = Depends(get_current_user)
 
 @router.post("/{resume_id}/duplicate", response_model=ResumeResponse)
 async def duplicate_resume(resume_id: str, user_id: str = Depends(get_current_user)):
-    """Duplicate a resume (requires score >= 65%)"""
+    """Duplicate a resume (requires score >= 50%)"""
     db = await get_database()
     
     try:
@@ -250,10 +250,10 @@ async def duplicate_resume(resume_id: str, user_id: str = Depends(get_current_us
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Resume not found")
     
     # Check score requirement
-    if resume.get("score", 0) < 75:
+    if resume.get("score", 0) < 50:
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
-            detail="Resume score must be 75% or higher to duplicate"
+            detail="Resume score must be 50% or higher to duplicate"
         )
     
     # Create duplicate
@@ -341,7 +341,7 @@ async def generate_ai_resume(resume_id: str, user_id: str = Depends(get_current_
 
 @router.get("/{resume_id}/download")
 async def download_resume(resume_id: str, user_id: str = Depends(get_current_user)):
-    """Generate and download resume PDF (Requires minimum 75% score)"""
+    """Generate and download resume PDF (Requires minimum 50% score)"""
     db = await get_database()
     
     try:
@@ -353,12 +353,12 @@ async def download_resume(resume_id: str, user_id: str = Depends(get_current_use
     if not resume:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Resume not found")
     
-    # Check score requirement (must be >= 75% to download)
+    # Check score requirement (must be >= 50% to download)
     resume_score = resume.get("score", 0)
-    if resume_score < 75:
+    if resume_score < 50:
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
-            detail=f"Resume completeness score must be 75% or higher to download PDF (Current: {resume_score}%). Complete more sections to reach 75%."
+            detail=f"Resume completeness score must be 50% or higher to download PDF (Current: {resume_score}%). Complete more sections to reach 50%."
         )
     
     try:

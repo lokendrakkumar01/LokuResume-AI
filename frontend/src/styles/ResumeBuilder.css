@@ -79,19 +79,27 @@
 .progress-bar {
     display: flex;
     align-items: center;
-    justify-content: space-between;
+    justify-content: flex-start;
     gap: 8px;
     padding: 14px 18px;
     background: var(--card-bg);
     border: 1px solid var(--card-border);
     border-radius: var(--radius-lg);
     overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+    scroll-behavior: smooth;
+    scrollbar-width: none;
+    -ms-overflow-style: none;
+}
+
+.progress-bar::-webkit-scrollbar {
+    display: none;
 }
 
 .progress-step {
-    flex: 1;
-    min-width: 34px;
-    height: 34px;
+    flex-shrink: 0;
+    min-width: 38px;
+    height: 38px;
     border-radius: 50%;
     background: rgba(148, 163, 184, 0.15);
     color: var(--text-muted);
@@ -243,8 +251,81 @@
 }
 
 @media (max-width: 768px) {
-    .resume-builder { padding: 16px; }
-    .builder-header { flex-direction: column; align-items: flex-start; }
-    .builder-form { padding: 20px 16px; }
-    .form-row { grid-template-columns: 1fr; }
+    .resume-builder {
+        padding: 14px 12px;
+        padding-bottom: 96px !important;
+        gap: 16px;
+    }
+    .builder-header {
+        flex-direction: column;
+        align-items: stretch;
+        padding: 16px 14px;
+        gap: 14px;
+    }
+    .builder-header h1 {
+        font-size: 1.3rem;
+    }
+    .header-actions {
+        width: 100%;
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 8px;
+    }
+    .header-actions .btn {
+        width: 100%;
+        justify-content: center;
+        text-align: center;
+        font-size: 0.82rem;
+        padding: 8px 10px;
+    }
+    .progress-bar {
+        padding: 8px 10px;
+        gap: 6px;
+        border-radius: var(--radius-md);
+    }
+    .builder-form {
+        padding: 18px 14px;
+        border-radius: var(--radius-md);
+        gap: 18px;
+    }
+    .form-row {
+        grid-template-columns: 1fr;
+        gap: 10px;
+    }
+    .form-navigation {
+        flex-direction: column-reverse;
+        gap: 10px;
+    }
+    .form-navigation > div {
+        width: 100%;
+        display: flex;
+        gap: 8px;
+    }
+    .form-navigation button {
+        flex: 1;
+        justify-content: center;
+        text-align: center;
+    }
+    .score-display {
+        flex-direction: column;
+        gap: 8px;
+        align-items: flex-start;
+        padding: 14px;
+    }
+}
+
+@media (max-width: 480px) {
+    .resume-builder {
+        padding: 10px 8px;
+        padding-bottom: 96px !important;
+    }
+    .header-actions {
+        grid-template-columns: 1fr;
+    }
+    .form-navigation > div {
+        flex-direction: column;
+    }
+    .repeatable-item {
+        padding: 14px 10px;
+    }
 }

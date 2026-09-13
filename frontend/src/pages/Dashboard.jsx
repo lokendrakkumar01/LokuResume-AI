@@ -233,8 +233,8 @@ function Dashboard() {
       };
 
       const handleDownload = async (id, name, score) => {
-            if (score !== undefined && score < 75) {
-                  showToast(`Resume score is ${score}%. Complete at least 75% of your resume to unlock PDF download.`, 'warning');
+            if (score !== undefined && score < 50) {
+                  showToast(`Resume score is ${score}%. Complete at least 50% of your resume to unlock PDF download.`, 'warning');
                   return;
             }
             try {
@@ -256,7 +256,7 @@ function Dashboard() {
             } catch (error) {
                   console.error('PDF Download Error:', error);
                   if (error.response?.status === 403) {
-                        showToast('Resume score must be at least 75% to download PDF. Please complete your resume.', 'warning');
+                        showToast('Resume score must be at least 50% to download PDF. Please complete your resume.', 'warning');
                   } else {
                         showToast('Failed to generate PDF', 'error');
                   }
@@ -266,7 +266,7 @@ function Dashboard() {
       const getScoreColor = (score) => {
             const s = score || 0;
             if (s < 50) return 'score-red';
-            if (s < 75) return 'score-orange';
+            if (s < 70) return 'score-orange';
             return 'score-green';
       };
 
@@ -275,8 +275,8 @@ function Dashboard() {
             const matchesSearch = (r.personal_info?.name || '').toLowerCase().includes(searchQuery.toLowerCase()) ||
                                   (r.personal_info?.email || '').toLowerCase().includes(searchQuery.toLowerCase());
             const score = r.score || 0;
-            if (filterScore === 'unlocked') return matchesSearch && score >= 75;
-            if (filterScore === 'improving') return matchesSearch && score < 75;
+            if (filterScore === 'unlocked') return matchesSearch && score >= 50;
+            if (filterScore === 'improving') return matchesSearch && score < 50;
             return matchesSearch;
       });
 
@@ -284,7 +284,7 @@ function Dashboard() {
       const totalResumes = resumes.length;
       const avgScore = totalResumes > 0 ? (resumes.reduce((acc, r) => acc + (r.score || 0), 0) / totalResumes).toFixed(1) : 0;
       const highScore = totalResumes > 0 ? Math.max(...resumes.map(r => r.score || 0)) : 0;
-      const unlockedCount = resumes.filter(r => (r.score || 0) >= 75).length;
+      const unlockedCount = resumes.filter(r => (r.score || 0) >= 50).length;
 
       return (
             <div className="dashboard">
@@ -429,8 +429,8 @@ function Dashboard() {
                                           style={{ width: 'auto' }}
                                     >
                                           <option value="all">All Scores</option>
-                                          <option value="unlocked">Unlocked (75%+)</option>
-                                          <option value="improving">Needs Work (&lt;75%)</option>
+                                          <option value="unlocked">Unlocked (50%+)</option>
+                                          <option value="improving">Needs Work (&lt;50%)</option>
                                     </select>
 
                                     <button onClick={createSampleResume} className="btn btn-secondary" title="Auto-populate with high ATS score demo data">
@@ -496,7 +496,7 @@ function Dashboard() {
                                                             className="card-score-fill"
                                                             style={{
                                                                   width: `${Math.min(100, Math.max(5, resume.score))}%`,
-                                                                  background: resume.score >= 75 ? 'linear-gradient(90deg, #10b981, #059669)' : 'linear-gradient(90deg, #ef4444, #f59e0b)'
+                                                                  background: resume.score >= 50 ? 'linear-gradient(90deg, #10b981, #059669)' : 'linear-gradient(90deg, #ef4444, #f59e0b)'
                                                             }}
                                                       />
                                                 </div>
@@ -516,9 +516,9 @@ function Dashboard() {
                                                       </div>
                                                 </div>
 
-                                                {resume.score < 75 && (
+                                                {resume.score < 50 && (
                                                       <div className="resume-locked">
-                                                            🔒 Score 75%+ to unlock PDF download ({resume.score}% / 75%)
+                                                            🔒 Score 50%+ to unlock PDF download ({resume.score}% / 50%)
                                                       </div>
                                                 )}
 
@@ -539,7 +539,7 @@ function Dashboard() {
                                                             ✏️ Edit
                                                       </button>
 
-                                                      {resume.score >= 75 ? (
+                                                      {resume.score >= 50 ? (
                                                             <button
                                                                   onClick={() => handleDownload(resume.id, resume.personal_info?.name || 'My', resume.score)}
                                                                   className="btn btn-sm btn-primary"
@@ -553,7 +553,7 @@ function Dashboard() {
                                                                   onClick={() => handleDownload(resume.id, resume.personal_info?.name || 'My', resume.score)}
                                                                   className="btn btn-sm btn-secondary"
                                                                   style={{ opacity: 0.65, cursor: 'not-allowed' }}
-                                                                  title={`Resume score is ${resume.score}%. Reach 75% to unlock PDF download`}
+                                                                  title={`Resume score is ${resume.score}%. Reach 50% to unlock PDF download`}
                                                             >
                                                                   🔒 {resume.score}%
                                                             </button>
@@ -567,7 +567,7 @@ function Dashboard() {
                                                             🎯 ATS Match
                                                       </button>
 
-                                                      {resume.score >= 75 && (
+                                                      {resume.score >= 50 && (
                                                             <button
                                                                   onClick={() => handleDuplicate(resume.id)}
                                                                   className="btn btn-sm btn-success"

@@ -172,7 +172,22 @@
 }
 
 @media (max-width: 600px) {
+    .ats-modal-overlay {
+        padding: 10px;
+    }
+    .ats-modal-card {
+        padding: 20px 16px;
+        max-height: 94dvh;
+        border-radius: var(--radius-md);
+    }
+    .ats-modal-header h2 {
+        font-size: 1.2rem;
+    }
+    .ats-score-number {
+        font-size: 2.2rem;
+    }
     .ats-details-grid {
         grid-template-columns: 1fr;
+        gap: 12px;
     }
 }

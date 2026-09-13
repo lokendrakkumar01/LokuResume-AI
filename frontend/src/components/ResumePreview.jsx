@@ -97,7 +97,7 @@ function ResumePreview({ formData, score, onDownloadPDF, onClose }) {
       } = formData;
 
       const effectiveScore = score !== undefined ? score : (formData.score || 0);
-      const isUnlocked = effectiveScore >= 75;
+      const isUnlocked = effectiveScore >= 50;
 
       const colorPresets = ['#e11d48', '#4f46e5', '#059669', '#2563eb', '#7c3aed', '#0f766e', '#1e293b'];
 
@@ -128,7 +128,7 @@ function ResumePreview({ formData, score, onDownloadPDF, onClose }) {
 
       const handleDownloadClick = () => {
             if (!isUnlocked) {
-                  alert(`Resume score is ${effectiveScore}%. PDF download unlocks once your resume completeness reaches 75% or higher. Please complete your skills, projects, certifications, or achievements.`);
+                  alert(`Resume score is ${effectiveScore}%. PDF download unlocks once your resume completeness reaches 50% or higher. Please complete your skills, projects, certifications, or achievements.`);
                   return;
             }
             if (onDownloadPDF) {
@@ -164,7 +164,7 @@ function ResumePreview({ formData, score, onDownloadPDF, onClose }) {
                                                       border: `1px solid ${isUnlocked ? 'rgba(16, 185, 129, 0.3)' : 'rgba(245, 158, 11, 0.3)'}`
                                                 }}
                                           >
-                                                Score: {effectiveScore}% {isUnlocked ? '✓ Unlocked' : '🔒 (75% to download)'}
+                                                Score: {effectiveScore}% {isUnlocked ? '✓ Unlocked' : '🔒 (50% to download)'}
                                           </span>
                                     </div>
                                     <div className="preview-quick-actions">
@@ -196,9 +196,9 @@ function ResumePreview({ formData, score, onDownloadPDF, onClose }) {
                                                       className="btn btn-sm btn-secondary"
                                                       onClick={handleDownloadClick}
                                                       style={{ opacity: 0.7, cursor: 'not-allowed' }}
-                                                      title={`Resume score is ${effectiveScore}%. Reach 75% to download official PDF.`}
+                                                      title={`Resume score is ${effectiveScore}%. Reach 50% to download official PDF.`}
                                                 >
-                                                      🔒 Download PDF ({effectiveScore}% / 75%)
+                                                      🔒 Download PDF ({effectiveScore}% / 50%)
                                                 </button>
                                           )}
                                           <button
