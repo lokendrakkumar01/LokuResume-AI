@@ -17,6 +17,10 @@ services:
         generateValue: true
       - key: ACCESS_TOKEN_EXPIRE_MINUTES
         value: "43200"
+      - key: ADMIN_EMAIL
+        value: "admin@lokiresume.com"
+      - key: ADMIN_PASSWORD
+        value: "AdminLoku@2026!#Secret"
       - key: FRONTEND_URL
         fromService:
           type: web

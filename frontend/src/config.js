@@ -1,16 +1,27 @@
-let rawApiUrl = (import.meta.env.VITE_API_URL || 'http://localhost:8000').trim();
+const getApiBaseUrl = () => {
+  let envUrl = (import.meta.env.VITE_API_URL || '').trim();
 
-// Strip trailing slash if present
-if (rawApiUrl.endsWith('/')) {
-  rawApiUrl = rawApiUrl.slice(0, -1);
-}
+  // If env variable is set and not empty, prioritize it
+  if (envUrl && envUrl !== 'http://localhost:8000') {
+    if (envUrl.endsWith('/')) envUrl = envUrl.slice(0, -1);
+    if (!envUrl.startsWith('http://') && !envUrl.startsWith('https://')) {
+      envUrl = `https://${envUrl}`;
+    }
+    return envUrl;
+  }
 
-// If host is provided without protocol (e.g. render host: my-backend.onrender.com), prepend https://
-if (rawApiUrl && !rawApiUrl.startsWith('http://') && !rawApiUrl.startsWith('https://')) {
-  rawApiUrl = `https://${rawApiUrl}`;
-}
+  // Runtime detection: if running on onrender.com or external domain, connect to live Render backend
+  if (typeof window !== 'undefined') {
+    const hostname = window.location.hostname;
+    if (hostname.includes('onrender.com') || (hostname !== 'localhost' && hostname !== '127.0.0.1')) {
+      return 'https://lokiresume-backend.onrender.com';
+    }
+  }
 
-const API_BASE_URL = rawApiUrl;
+  return 'http://localhost:8000';
+};
+
+const API_BASE_URL = getApiBaseUrl();
 
 export default {
   API_BASE_URL,
