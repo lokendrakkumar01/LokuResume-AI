@@ -76,9 +76,10 @@ const getDisplayLabel = (url, fallback) => {
       }
 };
 
-function ResumePreview({ formData, score, onDownloadPDF, onUpdatePreferences, onClose }) {
-      const [template, setTemplate] = useState(formData.template_style || 'modern');
-      const [accentColor, setAccentColor] = useState(formData.pdf_preferences?.accent_color || '#111827');
+function ResumePreview({ formData = {}, score, onDownloadPDF, onUpdatePreferences, onClose }) {
+      const safeFormData = formData || {};
+      const [template, setTemplate] = useState(safeFormData.template_style || 'modern');
+      const [accentColor, setAccentColor] = useState(safeFormData.pdf_preferences?.accent_color || '#111827');
       const [zoom, setZoom] = useState(1);
       const [fitScale, setFitScale] = useState(1);
       const containerRef = useRef(null);
@@ -97,9 +98,9 @@ function ResumePreview({ formData, score, onDownloadPDF, onUpdatePreferences, on
             interests = [],
             custom_sections = [],
             pdf_preferences = {}
-      } = formData;
+      } = safeFormData;
 
-      const effectiveScore = score !== undefined ? score : (formData.score || 0);
+      const effectiveScore = score !== undefined ? score : (safeFormData.score || 0);
       const isUnlocked = effectiveScore >= 50;
 
       // 5 Standard Platform Colors: Black (#111827), Blue (#1e40af), Green (#059669), Purple (#7c3aed), Red (#dc2626)
@@ -111,11 +112,37 @@ function ResumePreview({ formData, score, onDownloadPDF, onUpdatePreferences, on
             { name: 'Red', hex: '#dc2626' }
       ];
 
+      // Auto-compute fit scale on mount and resize
+      useEffect(() => {
+            const computeFitScale = () => {
+                  if (containerRef.current) {
+                        const availableWidth = containerRef.current.clientWidth - 32;
+                        const calculated = Math.min(1.1, Math.max(0.35, availableWidth / 760));
+                        setFitScale(calculated);
+                        if (window.innerWidth < 768) {
+                              setZoom(calculated);
+                        }
+                  }
+            };
+
+            computeFitScale();
+            window.addEventListener('resize', computeFitScale);
+            return () => window.removeEventListener('resize', computeFitScale);
+      }, []);
+
       // Keep state in sync if parent formData updates
       useEffect(() => {
-            if (formData.template_style) setTemplate(formData.template_style);
-            if (formData.pdf_preferences?.accent_color) setAccentColor(formData.pdf_preferences.accent_color);
-      }, [formData.template_style, formData.pdf_preferences?.accent_color]);
+            if (safeFormData.template_style) setTemplate(safeFormData.template_style);
+            if (safeFormData.pdf_preferences?.accent_color) setAccentColor(safeFormData.pdf_preferences.accent_color);
+      }, [safeFormData.template_style, safeFormData.pdf_preferences?.accent_color]);
+
+      const handleFit = () => {
+            setZoom(fitScale);
+      };
+
+      const handlePrint = () => {
+            window.print();
+      };
 
       const handleTemplateChange = (t) => {
             setTemplate(t);
@@ -234,7 +261,7 @@ function ResumePreview({ formData, score, onDownloadPDF, onUpdatePreferences, on
                                           {colorPresets.map((c) => (
                                                 <button
                                                       key={c.hex}
-                                                      className={`color-dot ${accentColor.toLowerCase() === c.hex.toLowerCase() ? 'selected' : ''}`}
+                                                      className={`color-dot ${(accentColor || '#111827').toLowerCase() === c.hex.toLowerCase() ? 'selected' : ''}`}
                                                       style={{ backgroundColor: c.hex }}
                                                       onClick={() => handleColorChange(c.hex)}
                                                       title={`${c.name} (${c.hex})`}

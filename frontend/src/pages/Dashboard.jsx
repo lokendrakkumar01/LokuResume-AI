@@ -4,6 +4,7 @@ import { useAuth } from '../context/AuthContext';
 import { useToast } from '../context/ToastContext';
 import ATSAnalyzerModal from '../components/ATSAnalyzerModal';
 import ResumePreview from '../components/ResumePreview';
+import ErrorBoundary from '../components/ErrorBoundary';
 import axios from 'axios';
 import config from '../config';
 import '../styles/Dashboard.css';
@@ -32,6 +33,45 @@ function Dashboard() {
       const { showToast } = useToast();
       const navigate = useNavigate();
 
+      const fetchBroadcast = async () => {
+            try {
+                  const res = await axios.get(`${config.API_BASE_URL}/admin/public-broadcast`);
+                  if (res.data?.broadcast?.active) {
+                        setBroadcast(res.data.broadcast);
+                  }
+            } catch {
+                  // ignore
+            }
+      };
+
+      const fetchFeatures = async () => {
+            try {
+                  const res = await axios.get(`${config.API_BASE_URL}/admin/public-features`);
+                  if (res.data?.features) {
+                        setFeatures(res.data.features);
+                  }
+            } catch {
+                  // ignore
+            }
+      };
+
+      const fetchResumes = async () => {
+            try {
+                  const response = await axios.get(`${config.API_BASE_URL}/resumes`, {
+                        headers: getAuthHeader()
+                  });
+                  setResumes(response.data);
+                  localStorage.setItem('cached_resumes', JSON.stringify(response.data));
+                  setLoading(false);
+            } catch (error) {
+                  console.error('Failed to fetch resumes:', error);
+                  if (!localStorage.getItem('cached_resumes')) {
+                        showToast('Failed to load resumes', 'error');
+                  }
+                  setLoading(false);
+            }
+      };
+
       useEffect(() => {
             fetchResumes();
             fetchBroadcast();
@@ -57,45 +97,6 @@ function Dashboard() {
                   window.removeEventListener('keydown', handleKeyDown);
             };
       }, [deleteTarget, previewResume, selectedResumeForATS]);
-
-      const fetchBroadcast = async () => {
-            try {
-                  const res = await axios.get(`${config.API_BASE_URL}/admin/public-broadcast`);
-                  if (res.data?.broadcast?.active) {
-                        setBroadcast(res.data.broadcast);
-                  }
-            } catch (e) {
-                  // ignore
-            }
-      };
-
-      const fetchFeatures = async () => {
-            try {
-                  const res = await axios.get(`${config.API_BASE_URL}/admin/public-features`);
-                  if (res.data?.features) {
-                        setFeatures(res.data.features);
-                  }
-            } catch (e) {
-                  // ignore
-            }
-      };
-
-      const fetchResumes = async () => {
-            try {
-                  const response = await axios.get(`${config.API_BASE_URL}/resumes`, {
-                        headers: getAuthHeader()
-                  });
-                  setResumes(response.data);
-                  localStorage.setItem('cached_resumes', JSON.stringify(response.data));
-                  setLoading(false);
-            } catch (error) {
-                  console.error('Failed to fetch resumes:', error);
-                  if (!localStorage.getItem('cached_resumes')) {
-                        showToast('Failed to load resumes', 'error');
-                  }
-                  setLoading(false);
-            }
-      };
 
       const confirmDelete = async () => {
             if (!deleteTarget) return;
@@ -593,12 +594,14 @@ function Dashboard() {
 
                   {/* Quick Live Preview Modal */}
                   {previewResume && (
-                        <ResumePreview
-                              formData={previewResume}
-                              score={previewResume.score}
-                              onDownloadPDF={() => handleDownload(previewResume.id, previewResume.personal_info?.name || 'Resume', previewResume.score)}
-                              onClose={() => setPreviewResume(null)}
-                        />
+                        <ErrorBoundary onReset={() => setPreviewResume(null)}>
+                              <ResumePreview
+                                    formData={previewResume}
+                                    score={previewResume.score}
+                                    onDownloadPDF={() => handleDownload(previewResume.id, previewResume.personal_info?.name || 'Resume', previewResume.score)}
+                                    onClose={() => setPreviewResume(null)}
+                              />
+                        </ErrorBoundary>
                   )}
 
                   {/* ATS Analyzer Modal */}

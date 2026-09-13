@@ -4,6 +4,7 @@ import { useAuth } from '../context/AuthContext';
 import { useToast } from '../context/ToastContext';
 import ATSAnalyzerModal from '../components/ATSAnalyzerModal';
 import ResumePreview from '../components/ResumePreview';
+import ErrorBoundary from '../components/ErrorBoundary';
 import axios from 'axios';
 import config from '../config';
 import '../styles/ResumeBuilder.css';
@@ -1839,13 +1840,15 @@ function ResumeBuilder() {
 
                   {/* Modals */}
                   {showPreview && (
-                        <ResumePreview
-                              formData={formData}
-                              score={liveATSScore}
-                              onDownloadPDF={handleDownloadPDF}
-                              onUpdatePreferences={handleUpdatePreferences}
-                              onClose={() => setShowPreview(false)}
-                        />
+                        <ErrorBoundary onReset={() => setShowPreview(false)}>
+                              <ResumePreview
+                                    formData={formData}
+                                    score={liveATSScore}
+                                    onDownloadPDF={handleDownloadPDF}
+                                    onUpdatePreferences={handleUpdatePreferences}
+                                    onClose={() => setShowPreview(false)}
+                              />
+                        </ErrorBoundary>
                   )}
 
                   {showATSModal && (

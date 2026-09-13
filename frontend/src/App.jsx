@@ -5,6 +5,7 @@ import { ThemeProvider } from './context/ThemeContext';
 import { ToastProvider } from './context/ToastContext';
 import ThemeToggle from './components/ThemeToggle';
 import AIChatAssistant from './components/AIChatAssistant';
+import ErrorBoundary from './components/ErrorBoundary';
 import Login from './pages/Login';
 import Signup from './pages/Signup';
 import Dashboard from './pages/Dashboard';
@@ -21,18 +22,19 @@ function App() {
   useEffect(() => {
     try {
       axios.get(`${config.API_BASE_URL}/health`).catch(() => {});
-    } catch (e) {
+    } catch {
       // safe ignore
     }
   }, []);
 
   return (
-    <ThemeProvider>
-      <ToastProvider>
-        <AuthProvider>
-          <Router>
-            <ThemeToggle />
-            <AIChatAssistant />
+    <ErrorBoundary>
+      <ThemeProvider>
+        <ToastProvider>
+          <AuthProvider>
+            <Router>
+              <ThemeToggle />
+              <AIChatAssistant />
             <Routes>
               <Route path="/" element={<Landing />} />
               <Route
@@ -106,6 +108,7 @@ function App() {
         </AuthProvider>
       </ToastProvider>
     </ThemeProvider>
+    </ErrorBoundary>
   );
 }
 
