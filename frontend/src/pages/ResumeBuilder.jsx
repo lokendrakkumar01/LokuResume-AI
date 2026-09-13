@@ -49,6 +49,7 @@ function ResumeBuilder() {
                         name: '',
                         email: '',
                         phone: '',
+                        location: '',
                         linkedin: '',
                         github: '',
                         leetcode: '',
@@ -91,14 +92,17 @@ function ResumeBuilder() {
             const p = formData.personal_info || {};
             if (p.name && p.email) pts += 15;
             if (p.phone) pts += 5;
+            if (p.location) pts += 5;
             if (p.headline) pts += 10;
             if (p.linkedin || p.github || p.portfolio) pts += 5;
-            if (formData.summary && formData.summary.trim().split(/\s+/).filter(Boolean).length >= 25) pts += 15;
+            if (formData.summary && formData.summary.trim().split(/\s+/).filter(Boolean).length >= 20) pts += 15;
             if (formData.education && formData.education.length > 0 && formData.education[0].degree) pts += 10;
             if (formData.skills && formData.skills.length >= 4) pts += 15;
-            if (formData.projects && formData.projects.length > 0 && formData.projects[0].title) pts += 15;
+            if (formData.projects && formData.projects.length > 0 && formData.projects[0].title) pts += 10;
             if (formData.experience && formData.experience.length > 0 && formData.experience[0].company) pts += 5;
-            if ((formData.certifications && formData.certifications.length > 0) || (formData.achievements && formData.achievements.length > 0)) pts += 5;
+            if (formData.certifications && formData.certifications.length > 0 && formData.certifications[0].name) pts += 5;
+            if (formData.achievements && formData.achievements.length > 0 && formData.achievements[0].title) pts += 5;
+            if (formData.coding_profiles && formData.coding_profiles.length > 0) pts += 5;
             return Math.min(100, pts);
       }, [formData]);
 
@@ -112,9 +116,31 @@ function ResumeBuilder() {
                   if (data.certifications && data.certifications.length > 0) {
                         data.certifications = data.certifications.map(cert => {
                               if (typeof cert === 'string') {
-                                    return { name: cert, file_data: '', file_url: '', issued_by: '', date: '' };
+                                    return { name: cert, file_data: '', file_url: '', issued_by: '', date: '', link: '', skills_learned: '' };
                               }
-                              return cert;
+                              return {
+                                    name: cert.name || '',
+                                    file_data: cert.file_data || '',
+                                    file_url: cert.file_url || '',
+                                    issued_by: cert.issued_by || '',
+                                    date: cert.date || '',
+                                    link: cert.link || '',
+                                    skills_learned: cert.skills_learned || ''
+                              };
+                        });
+                  }
+
+                  if (data.achievements && data.achievements.length > 0) {
+                        data.achievements = data.achievements.map(ach => {
+                              if (typeof ach === 'string') {
+                                    return { title: ach, description: '', date: '', link: '' };
+                              }
+                              return {
+                                    title: ach.title || '',
+                                    description: ach.description || '',
+                                    date: ach.date || '',
+                                    link: ach.link || ''
+                              };
                         });
                   }
 
@@ -171,6 +197,68 @@ function ResumeBuilder() {
             }
       };
 
+      // Download PDF Handler with 75% Score Enforcement
+      const handleDownloadPDF = async () => {
+            const currentScore = score !== null ? score : liveATSScore;
+            if (currentScore < 75) {
+                  showToast(`⚠️ Resume completeness is ${Math.round(currentScore)}%. Complete at least 75% to download PDF!`, 'warning');
+                  return;
+            }
+
+            let resumeId = id;
+            if (!resumeId) {
+                  if (!formData.personal_info?.name || !formData.personal_info?.email) {
+                        showToast('Please enter your Name and Email in Step 1 before downloading', 'warning');
+                        setCurrentStep(1);
+                        return;
+                  }
+                  showToast('Saving resume before downloading PDF...', 'info');
+                  try {
+                        const saveRes = await axios.post(`${config.API_BASE_URL}/resumes`, formData, {
+                              headers: getAuthHeader()
+                        });
+                        resumeId = saveRes.data.id;
+                        setFormData(saveRes.data);
+                        setScore(saveRes.data.score);
+                        localStorage.removeItem('resume_draft');
+                  } catch (err) {
+                        showToast('Failed to save resume for PDF export', 'error');
+                        return;
+                  }
+            } else {
+                  // Save latest changes before downloading
+                  try {
+                        const updateRes = await axios.put(`${config.API_BASE_URL}/resumes/${resumeId}`, formData, {
+                              headers: getAuthHeader()
+                        });
+                        setScore(updateRes.data.score);
+                  } catch (err) {
+                        console.error('Auto-save before download warning:', err);
+                  }
+            }
+
+            try {
+                  showToast('Generating official PDF...', 'info');
+                  const response = await axios.get(`${config.API_BASE_URL}/resumes/${resumeId}/download`, {
+                        headers: getAuthHeader(),
+                        responseType: 'blob'
+                  });
+
+                  const url = window.URL.createObjectURL(new Blob([response.data]));
+                  const link = document.createElement('a');
+                  link.href = url;
+                  const safeName = (formData.personal_info?.name || 'Resume').replace(/\s+/g, '_');
+                  link.setAttribute('download', `${safeName}_Resume.pdf`);
+                  document.body.appendChild(link);
+                  link.click();
+                  link.remove();
+                  showToast('🎉 PDF downloaded successfully!', 'success');
+            } catch (error) {
+                  console.error('PDF Download Error:', error);
+                  showToast('Failed to generate PDF. Ensure resume score is at least 75%', 'error');
+            }
+      };
+
       // 1-Click Auto-fill Sample Data
       const handleAutoFill = () => {
             setFormData({
@@ -178,56 +266,93 @@ function ResumeBuilder() {
                         name: 'Alex Morgan',
                         email: 'alex.morgan@example.com',
                         phone: '+1 (555) 234-5678',
+                        location: 'San Francisco, CA',
                         linkedin: 'https://linkedin.com/in/alexmorgan',
                         github: 'https://github.com/alexmorgan',
                         leetcode: 'https://leetcode.com/alexmorgan',
-                        problem_solving: 'https://hackerrank.com/alexmorgan',
+                        problem_solving: 'https://leetcode.com/alexmorgan',
                         portfolio: 'https://alexmorgan.dev',
-                        headline: 'Senior Full-Stack Software Engineer | Distributed Systems',
+                        headline: 'Full-Stack Developer | C, Java, React, Node.js',
                         profile_photo: formData.personal_info?.profile_photo || ''
                   },
                   coding_profiles: [
                         { platform: 'LeetCode', link: 'https://leetcode.com/alexmorgan', headline: 'Knight Rank (2150 Rating) | 650+ Solved' },
                         { platform: 'GitHub', link: 'https://github.com/alexmorgan', headline: '1,200+ Contributions in 2025' }
                   ],
-                  summary: 'Accomplished Senior Full-Stack Engineer with 5+ years of experience architecting high-throughput microservices, real-time data pipelines, and responsive web platforms. Proven track record reducing API latency by 45% and cutting AWS infrastructure costs by 30%.',
+                  summary: 'Accomplished Full-Stack Developer with strong foundations in data structures, distributed systems, and responsive web applications. Demonstrated track record building high-impact full-stack software and optimizing system workflows.',
                   education: [
-                        { degree: 'B.S. in Computer Science', college: 'University of California, Berkeley', year: '2016 - 2020', grade: '3.9 GPA' }
+                        { degree: 'B.Tech | Computer Science Engineering (2024-2028)', college: 'Shri Ramswaroop Memorial University', year: '2024 - 2028', grade: 'GPA: 8.8 / 10' },
+                        { degree: 'Class XII (2024)', college: 'Gandhi Smarak Inter College Etah', year: '2024', grade: 'Percentage: 74' }
                   ],
-                  skills: ['React.js', 'TypeScript', 'Node.js', 'Python', 'FastAPI', 'AWS', 'Docker', 'PostgreSQL', 'MongoDB', 'Redis', 'Tailwind CSS', 'CI/CD', 'REST APIs'],
+                  skills: ['HTML/CSS', 'React.js', 'Node.js', 'Express.js', 'MongoDB', 'JavaScript', 'Java', 'C', 'Deep Learning', 'REST APIs', 'Git', 'Collaboration', 'Problem-Solving'],
                   projects: [
                         {
-                              title: 'AI Resume & Career Engine',
-                              technologies: 'React, FastAPI, MongoDB, OpenAI API',
-                              description: 'Architected an automated career platform serving 15,000+ engineers with instant ATS scoring and real-time bullet enhancement.',
-                              repository_url: 'https://github.com/alexmorgan/resume-ai',
-                              live_demo_url: 'https://resume-ai-demo.com'
+                              title: 'ZUNO',
+                              technologies: 'HTML/CSS, React.js, Node.js, MongoDB, JavaScript, Express.js, Mongoose',
+                              description: 'ZUNO is a social media web application where users can share posts and communicate through personal chat and group chat.',
+                              repository_url: 'https://github.com/alexmorgan/zuno',
+                              live_demo_url: 'https://zuno-app.demo.com',
+                              date: '2025'
                         },
                         {
-                              title: 'Real-Time Telemetry Observability',
-                              technologies: 'Node.js, TypeScript, Redis Streams, Docker',
-                              description: 'Engineered a real-time event streaming pipeline handling 30,000 telemetry events/sec with sub-15ms dashboard chart rendering.'
+                              title: 'Habit Tracker',
+                              technologies: 'HTML/CSS, React.js, Node.js, MongoDB, JavaScript, Express.js, GitHub',
+                              description: 'Developed a habit tracking web application to help users create, manage, and track their daily habits and build consistent routines.',
+                              repository_url: 'https://github.com/alexmorgan/habit-tracker',
+                              live_demo_url: 'https://habit-tracker.demo.com',
+                              date: '2026'
                         }
                   ],
                   experience: [
                         {
-                              company: 'Apex Digital Systems',
-                              role: 'Senior Full-Stack Engineer',
-                              duration: '2022 - Present',
-                              description: 'Spearheaded modern cloud architecture across 14 microservices. Mentored 6 junior engineers and improved team sprint velocity by 25%.'
-                        },
-                        {
-                              company: 'NextGen Cloud Labs',
-                              role: 'Software Engineer',
-                              duration: '2020 - 2022',
-                              description: 'Engineered backend REST endpoints in Python & FastAPI with 99.98% uptime SLA. Built automated test suites achieving 92% coverage.'
+                              company: 'Coding Block',
+                              role: 'MERN Stack and DSA Intern',
+                              duration: 'Jun 2026 - Jul 2026',
+                              description: 'Developed web applications using MERN stack and strengthened DSA skills through problem solving. Worked with React, Node.js, Express.js, APIs, GitHub and modern web development practices.'
                         }
                   ],
                   certifications: [
-                        { name: 'AWS Certified Solutions Architect', issued_by: 'Amazon Web Services', date: '2023', file_data: '', file_url: '' }
+                        {
+                              name: 'Prompt Engineering Mastery',
+                              issued_by: 'Sunstone School of Technology',
+                              date: 'May 2026',
+                              link: 'https://coursera.org/verify/prompt-eng-mastery',
+                              skills_learned: 'Ethical Hacking, Prompt Optimization',
+                              file_data: '',
+                              file_url: ''
+                        },
+                        {
+                              name: 'Cyber Security Associate Certification Programme',
+                              issued_by: 'Reliance Foundation Skilling Academy through Skill India Digital Hub',
+                              date: 'August 2025 - October 2025',
+                              link: 'https://skillindia.gov.in/verify/cyber-sec',
+                              skills_learned: 'Ethical Hacking, Network Security',
+                              file_data: '',
+                              file_url: ''
+                        },
+                        {
+                              name: 'JAVA PROGRAMMING',
+                              issued_by: 'NPTEL',
+                              date: 'July 2025 - December 2025',
+                              link: 'https://nptel.ac.in/verify/java-prog',
+                              skills_learned: 'Java, OOP, Collections',
+                              file_data: '',
+                              file_url: ''
+                        }
                   ],
                   achievements: [
-                        { title: '1st Place Winner - Silicon Valley Hackathon', description: 'Built an AI accessibility tool selected #1 out of 160 global teams.', date: '2023', link: '' }
+                        {
+                              title: "Organised 'Jashn-e-Azadi' event at SRMU campus",
+                              description: 'Organised and coordinated the Jashn-e-Azadi event at SRMU Campus, managing patriotic activities and coordinating participation of 150+ students. This experience strengthened leadership and teamwork.',
+                              date: '2025',
+                              link: 'https://linkedin.com/posts/jashn-e-azadi'
+                        },
+                        {
+                              title: 'Adobe University Hackathon',
+                              description: 'Participated in the Adobe University Hackathon 2026. Applied technical knowledge and collaborated in a competitive environment for creative problem-solving.',
+                              date: '2026',
+                              link: 'https://adobe-hackathon.example.com'
+                        }
                   ],
                   template_style: formData.template_style || 'modern',
                   pdf_preferences: formData.pdf_preferences || { background_color: '#ffffff', accent_color: '#e11d48' }
@@ -347,7 +472,7 @@ function ResumeBuilder() {
       const addProject = () => {
             setFormData({
                   ...formData,
-                  projects: [...(formData.projects || []), { title: '', technologies: '', description: '', repository_url: '', live_demo_url: '' }]
+                  projects: [...(formData.projects || []), { title: '', technologies: '', description: '', repository_url: '', live_demo_url: '', date: '' }]
             });
       };
       const updateProject = (index, field, value) => {
@@ -383,7 +508,7 @@ function ResumeBuilder() {
       const addCertification = () => {
             setFormData({
                   ...formData,
-                  certifications: [...(formData.certifications || []), { name: '', file_data: '', file_url: '', issued_by: '', date: '' }]
+                  certifications: [...(formData.certifications || []), { name: '', file_data: '', file_url: '', issued_by: '', date: '', link: '', skills_learned: '' }]
             });
       };
       const updateCertification = (index, field, value) => {
@@ -392,6 +517,21 @@ function ResumeBuilder() {
                   newCerts[index] = { ...newCerts[index], [field]: value };
                   setFormData({ ...formData, certifications: newCerts });
             }
+      };
+      const handleCertificateUpload = (index, e) => {
+            const file = e.target.files[0];
+            if (!file) return;
+            if (file.size > 2 * 1024 * 1024) {
+                  showToast('Certificate file should be under 2MB', 'warning');
+                  return;
+            }
+            const reader = new FileReader();
+            reader.onloadend = () => {
+                  updateCertification(index, 'file_data', reader.result);
+                  updateCertification(index, 'file_url', file.name);
+                  showToast(`Attached ${file.name}`, 'success');
+            };
+            reader.readAsDataURL(file);
       };
       const removeCertification = (index) => {
             setFormData({ ...formData, certifications: (formData.certifications || []).filter((_, i) => i !== index) });
@@ -491,6 +631,15 @@ function ResumeBuilder() {
                               </button>
                               <button onClick={() => setShowPreview(true)} type="button" className="btn btn-primary btn-sm">
                                     👁️ Preview
+                              </button>
+                              <button
+                                    onClick={handleDownloadPDF}
+                                    type="button"
+                                    className={`btn btn-sm ${liveATSScore >= 75 ? 'btn-success' : 'btn-secondary'}`}
+                                    title={liveATSScore >= 75 ? "Download Official PDF" : `Complete at least 75% of your resume to unlock PDF download (Current: ${Math.round(liveATSScore)}%)`}
+                                    style={liveATSScore >= 75 ? { background: 'linear-gradient(135deg, #10b981 0%, #059669 100%)', color: '#fff', border: 'none', fontWeight: 600 } : { opacity: 0.85 }}
+                              >
+                                    {liveATSScore >= 75 ? '📥 Download PDF' : `🔒 PDF (${Math.round(liveATSScore)}% / 75%)`}
                               </button>
                               <button onClick={handleSave} disabled={loading} type="button" className="btn btn-success btn-sm">
                                     {loading ? 'Saving...' : '💾 Save'}
@@ -650,27 +799,27 @@ function ResumeBuilder() {
                                                             ...formData,
                                                             personal_info: { ...formData.personal_info, phone: e.target.value }
                                                       })}
-                                                      placeholder="e.g. +1 (555) 234-5678"
+                                                      placeholder="e.g. +91 9568804305"
                                                       required
                                                 />
                                           </div>
                                           <div className="form-group">
-                                                <label>Portfolio URL</label>
+                                                <label>Location (City, State / Country)</label>
                                                 <input
-                                                      type="url"
-                                                      value={formData.personal_info?.portfolio || ''}
+                                                      type="text"
+                                                      value={formData.personal_info?.location || ''}
                                                       onChange={(e) => setFormData({
                                                             ...formData,
-                                                            personal_info: { ...formData.personal_info, portfolio: e.target.value }
+                                                            personal_info: { ...formData.personal_info, location: e.target.value }
                                                       })}
-                                                      placeholder="https://yourportfolio.com"
+                                                      placeholder="e.g. Etah, Uttar Pradesh"
                                                 />
                                           </div>
                                     </div>
 
                                     <div className="form-row">
                                           <div className="form-group">
-                                                <label>GitHub</label>
+                                                <label>GitHub Profile URL</label>
                                                 <input
                                                       type="url"
                                                       value={formData.personal_info?.github || ''}
@@ -682,7 +831,7 @@ function ResumeBuilder() {
                                                 />
                                           </div>
                                           <div className="form-group">
-                                                <label>LinkedIn</label>
+                                                <label>LinkedIn Profile URL</label>
                                                 <input
                                                       type="url"
                                                       value={formData.personal_info?.linkedin || ''}
@@ -691,6 +840,33 @@ function ResumeBuilder() {
                                                             personal_info: { ...formData.personal_info, linkedin: e.target.value }
                                                       })}
                                                       placeholder="https://linkedin.com/in/username"
+                                                />
+                                          </div>
+                                    </div>
+
+                                    <div className="form-row">
+                                          <div className="form-group">
+                                                <label>Problem Solving URL (LeetCode / GFG)</label>
+                                                <input
+                                                      type="url"
+                                                      value={formData.personal_info?.problem_solving || formData.personal_info?.leetcode || ''}
+                                                      onChange={(e) => setFormData({
+                                                            ...formData,
+                                                            personal_info: { ...formData.personal_info, problem_solving: e.target.value, leetcode: e.target.value }
+                                                      })}
+                                                      placeholder="https://leetcode.com/username"
+                                                />
+                                          </div>
+                                          <div className="form-group">
+                                                <label>Portfolio / Website URL</label>
+                                                <input
+                                                      type="url"
+                                                      value={formData.personal_info?.portfolio || ''}
+                                                      onChange={(e) => setFormData({
+                                                            ...formData,
+                                                            personal_info: { ...formData.personal_info, portfolio: e.target.value }
+                                                      })}
+                                                      placeholder="https://yourportfolio.com"
                                                 />
                                           </div>
                                     </div>
@@ -912,14 +1088,25 @@ function ResumeBuilder() {
                                                       </div>
                                                 </div>
 
-                                                <div className="form-group">
-                                                      <label>Project Title</label>
-                                                      <input
-                                                            type="text"
-                                                            value={proj.title}
-                                                            onChange={(e) => updateProject(index, 'title', e.target.value)}
-                                                            placeholder="AI Resume Platform"
-                                                      />
+                                                <div className="form-row">
+                                                      <div className="form-group">
+                                                            <label>Project Title</label>
+                                                            <input
+                                                                  type="text"
+                                                                  value={proj.title}
+                                                                  onChange={(e) => updateProject(index, 'title', e.target.value)}
+                                                                  placeholder="e.g. ZUNO / AI Resume Platform"
+                                                            />
+                                                      </div>
+                                                      <div className="form-group">
+                                                            <label>Year / Duration</label>
+                                                            <input
+                                                                  type="text"
+                                                                  value={proj.date || ''}
+                                                                  onChange={(e) => updateProject(index, 'date', e.target.value)}
+                                                                  placeholder="e.g. 2025"
+                                                            />
+                                                      </div>
                                                 </div>
                                                 <div className="form-group">
                                                       <label>Technologies Used</label>
@@ -1166,8 +1353,53 @@ function ResumeBuilder() {
                                                                   type="text"
                                                                   value={cert.date}
                                                                   onChange={(e) => updateCertification(index, 'date', e.target.value)}
-                                                                  placeholder="2023"
+                                                                  placeholder="e.g. May 2026 or 2025"
                                                             />
+                                                      </div>
+                                                </div>
+                                                <div className="form-group">
+                                                      <label>Skills Learned (Optional)</label>
+                                                      <input
+                                                            type="text"
+                                                            value={cert.skills_learned || ''}
+                                                            onChange={(e) => updateCertification(index, 'skills_learned', e.target.value)}
+                                                            placeholder="e.g. Ethical Hacking, Network Security, Java"
+                                                      />
+                                                </div>
+                                                <div className="form-row">
+                                                      <div className="form-group">
+                                                            <label>Proof / Credential Link (URL)</label>
+                                                            <input
+                                                                  type="url"
+                                                                  value={cert.link || ''}
+                                                                  onChange={(e) => updateCertification(index, 'link', e.target.value)}
+                                                                  placeholder="https://coursera.org/verify/..."
+                                                            />
+                                                      </div>
+                                                      <div className="form-group">
+                                                            <label>Upload Certificate (PDF / Image)</label>
+                                                            <input
+                                                                  type="file"
+                                                                  accept=".pdf,image/*"
+                                                                  onChange={(e) => handleCertificateUpload(index, e)}
+                                                                  className="file-input-compact"
+                                                            />
+                                                            {cert.file_url && (
+                                                                  <div style={{ marginTop: '6px', display: 'flex', alignItems: 'center', gap: '8px', fontSize: '0.85rem', color: '#10b981' }}>
+                                                                        <span>📎 Attached: <strong>{cert.file_url}</strong></span>
+                                                                        <button
+                                                                              type="button"
+                                                                              onClick={() => {
+                                                                                    updateCertification(index, 'file_data', '');
+                                                                                    updateCertification(index, 'file_url', '');
+                                                                              }}
+                                                                              style={{ background: 'none', border: 'none', color: '#ef4444', cursor: 'pointer', fontSize: '0.9rem' }}
+                                                                              title="Remove attached file"
+                                                                        >
+                                                                              ✕
+                                                                        </button>
+                                                                  </div>
+                                                            )}
                                                       </div>
                                                 </div>
                                           </div>
@@ -1223,6 +1455,26 @@ function ResumeBuilder() {
                                                             onChange={(e) => updateAchievement(index, 'title', e.target.value)}
                                                             placeholder="1st Place - Silicon Valley Hackathon"
                                                       />
+                                                </div>
+                                                <div className="form-row">
+                                                      <div className="form-group">
+                                                            <label>Date / Year</label>
+                                                            <input
+                                                                  type="text"
+                                                                  value={ach.date || ''}
+                                                                  onChange={(e) => updateAchievement(index, 'date', e.target.value)}
+                                                                  placeholder="2026 or Aug 2025"
+                                                            />
+                                                      </div>
+                                                      <div className="form-group">
+                                                            <label>Proof / Verification Link (URL)</label>
+                                                            <input
+                                                                  type="url"
+                                                                  value={ach.link || ''}
+                                                                  onChange={(e) => updateAchievement(index, 'link', e.target.value)}
+                                                                  placeholder="https://linkedin.com/posts/... or proof link"
+                                                            />
+                                                      </div>
                                                 </div>
                                                 <div className="form-group">
                                                       <label>Description</label>
@@ -1320,9 +1572,11 @@ function ResumeBuilder() {
                                     <div className="glass-panel" style={{ padding: '28px', textAlign: 'center' }}>
                                           <div style={{ fontSize: '2.5rem', marginBottom: '10px' }}>🚀</div>
                                           <h3>Your Resume Is Ready!</h3>
-                                          <p style={{ color: 'var(--text-muted)', marginTop: '8px', maxWidth: '500px', margin: '8px auto 0' }}>
-                                                Estimated ATS Score: <strong style={{ color: liveATSScore >= 70 ? '#10b981' : '#f59e0b' }}>{liveATSScore}%</strong>.
-                                                Save your resume to compute the official ATS breakdown and download high-resolution PDF.
+                                          <p style={{ color: 'var(--text-muted)', marginTop: '8px', maxWidth: '520px', margin: '8px auto 0' }}>
+                                                Resume Completeness / ATS Score: <strong style={{ color: liveATSScore >= 75 ? '#10b981' : '#f59e0b' }}>{liveATSScore}%</strong>.
+                                                {liveATSScore >= 75
+                                                      ? ' 🎉 Congratulations! You have reached 75%+ and PDF download is unlocked.'
+                                                      : ' ⚠️ 75% score required to download PDF. Fill in all sections (summary, skills, projects, certs, achievements).'}
                                           </p>
 
                                           <div style={{ marginTop: '24px', display: 'flex', justifyContent: 'center', gap: '14px', flexWrap: 'wrap' }}>
@@ -1334,6 +1588,18 @@ function ResumeBuilder() {
                                                 </button>
                                                 <button onClick={handleSave} disabled={loading} type="button" className="btn btn-success">
                                                       {loading ? 'Saving...' : '💾 Save Resume Now'}
+                                                </button>
+                                                <button
+                                                      onClick={handleDownloadPDF}
+                                                      type="button"
+                                                      className={`btn ${liveATSScore >= 75 ? 'btn-download-unlocked' : 'btn-download-locked'}`}
+                                                      style={
+                                                            liveATSScore >= 75
+                                                                  ? { background: 'linear-gradient(135deg, #10b981 0%, #059669 100%)', color: '#ffffff', fontWeight: 600 }
+                                                                  : { opacity: 0.75 }
+                                                      }
+                                                >
+                                                      {liveATSScore >= 75 ? `📄 Download Official PDF (${liveATSScore}%)` : `🔒 Download PDF (${liveATSScore}% / 75%)`}
                                                 </button>
                                           </div>
                                     </div>
@@ -1389,12 +1655,22 @@ function ResumeBuilder() {
                         >
                               {loading ? '...' : '💾 Save'}
                         </button>
+                        <button
+                              onClick={handleDownloadPDF}
+                              type="button"
+                              className={`btn btn-sm ${liveATSScore >= 75 ? 'btn-success' : 'btn-secondary'}`}
+                              title={liveATSScore >= 75 ? 'Download PDF' : 'Score must be at least 75% to download'}
+                        >
+                              {liveATSScore >= 75 ? '📄 PDF' : '🔒 75%'}
+                        </button>
                   </div>
 
                   {/* Modals */}
                   {showPreview && (
                         <ResumePreview
                               formData={formData}
+                              score={liveATSScore}
+                              onDownloadPDF={handleDownloadPDF}
                               onClose={() => setShowPreview(false)}
                         />
                   )}

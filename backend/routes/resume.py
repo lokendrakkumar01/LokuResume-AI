@@ -57,6 +57,7 @@ async def create_resume(resume: ResumeCreate, user_id: str = Depends(get_current
         "certifications": resume_dict["certifications"],
         "achievements": resume_dict.get("achievements", []),
         "coding_profiles": resume_dict.get("coding_profiles", []),
+        "template_style": resume_dict.get("template_style", "modern"),
         "pdf_preferences": pdf_prefs,
         "score": score,
         "score_breakdown": breakdown.model_dump(),
@@ -82,6 +83,7 @@ async def create_resume(resume: ResumeCreate, user_id: str = Depends(get_current
         certifications=resume_doc["certifications"],
         achievements=resume_doc["achievements"],
         coding_profiles=resume_doc.get("coding_profiles", []),
+        template_style=resume_doc.get("template_style", "modern"),
         pdf_preferences=resume_doc["pdf_preferences"],
         score=resume_doc["score"],
         score_breakdown=breakdown,
@@ -111,6 +113,7 @@ async def get_all_resumes(user_id: str = Depends(get_current_user)):
             certifications=resume["certifications"],
             achievements=resume.get("achievements", []),
             coding_profiles=resume.get("coding_profiles", []),
+            template_style=resume.get("template_style", "modern"),
             pdf_preferences=resume.get("pdf_preferences") or DEFAULT_PDF_PREFERENCES,
             score=resume["score"],
             score_breakdown=resume["score_breakdown"],
@@ -149,6 +152,7 @@ async def get_resume(resume_id: str, user_id: str = Depends(get_current_user)):
         certifications=resume["certifications"],
         achievements=resume.get("achievements", []),
         coding_profiles=resume.get("coding_profiles", []),
+        template_style=resume.get("template_style", "modern"),
         pdf_preferences=resume.get("pdf_preferences") or DEFAULT_PDF_PREFERENCES,
         score=resume["score"],
         score_breakdown=resume["score_breakdown"],
@@ -204,6 +208,7 @@ async def update_resume(resume_id: str, resume_update: ResumeUpdate, user_id: st
         certifications=existing_resume["certifications"],
         achievements=existing_resume.get("achievements", []),
         coding_profiles=existing_resume.get("coding_profiles", []),
+        template_style=existing_resume.get("template_style", "modern"),
         pdf_preferences=existing_resume.get("pdf_preferences") or DEFAULT_PDF_PREFERENCES,
         score=existing_resume["score"],
         score_breakdown=breakdown,
@@ -245,10 +250,10 @@ async def duplicate_resume(resume_id: str, user_id: str = Depends(get_current_us
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Resume not found")
     
     # Check score requirement
-    if resume["score"] < 65:
+    if resume.get("score", 0) < 75:
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
-            detail="Resume score must be 65% or higher to duplicate"
+            detail="Resume score must be 75% or higher to duplicate"
         )
     
     # Create duplicate
@@ -272,6 +277,7 @@ async def duplicate_resume(resume_id: str, user_id: str = Depends(get_current_us
         certifications=new_resume["certifications"],
         achievements=new_resume.get("achievements", []),
         coding_profiles=new_resume.get("coding_profiles", []),
+        template_style=new_resume.get("template_style", "modern"),
         pdf_preferences=new_resume.get("pdf_preferences") or DEFAULT_PDF_PREFERENCES,
         score=new_resume["score"],
         score_breakdown=new_resume["score_breakdown"],
@@ -323,6 +329,7 @@ async def generate_ai_resume(resume_id: str, user_id: str = Depends(get_current_
         certifications=resume["certifications"],
         achievements=resume.get("achievements", []),
         coding_profiles=resume.get("coding_profiles", []),
+        template_style=resume.get("template_style", "modern"),
         pdf_preferences=resume.get("pdf_preferences") or DEFAULT_PDF_PREFERENCES,
         score=resume["score"],
         score_breakdown=breakdown,
@@ -334,7 +341,7 @@ async def generate_ai_resume(resume_id: str, user_id: str = Depends(get_current_
 
 @router.get("/{resume_id}/download")
 async def download_resume(resume_id: str, user_id: str = Depends(get_current_user)):
-    """Generate and download resume PDF"""
+    """Generate and download resume PDF (Requires minimum 75% score)"""
     db = await get_database()
     
     try:
@@ -345,6 +352,14 @@ async def download_resume(resume_id: str, user_id: str = Depends(get_current_use
     resume = await db.resumes.find_one({"_id": obj_id, "user_id": user_id})
     if not resume:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Resume not found")
+    
+    # Check score requirement (must be >= 75% to download)
+    resume_score = resume.get("score", 0)
+    if resume_score < 75:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail=f"Resume completeness score must be 75% or higher to download PDF (Current: {resume_score}%). Complete more sections to reach 75%."
+        )
     
     try:
         # Get PDF preferences with defaults
@@ -363,7 +378,7 @@ async def download_resume(resume_id: str, user_id: str = Depends(get_current_use
             resume_for_pdf["certifications"] = sanitized_certs
         
         # Generate PDF
-        pdf_buffer = pdf_generator.generate_resume_pdf(resume_for_pdf, resume["score"], pdf_preferences)
+        pdf_buffer = pdf_generator.generate_resume_pdf(resume_for_pdf, resume_score, pdf_preferences)
         
         # Return PDF as downloadable file
         candidate_name = (resume.get('personal_info') or {}).get('name') or "Candidate"

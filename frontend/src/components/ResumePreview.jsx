@@ -76,7 +76,7 @@ const getDisplayLabel = (url, fallback) => {
       }
 };
 
-function ResumePreview({ formData, onClose }) {
+function ResumePreview({ formData, score, onDownloadPDF, onClose }) {
       const [template, setTemplate] = useState(formData.template_style || 'modern');
       const [accentColor, setAccentColor] = useState(formData.pdf_preferences?.accent_color || '#e11d48');
       const [zoom, setZoom] = useState(1);
@@ -95,6 +95,9 @@ function ResumePreview({ formData, onClose }) {
             coding_profiles = [],
             pdf_preferences = {}
       } = formData;
+
+      const effectiveScore = score !== undefined ? score : (formData.score || 0);
+      const isUnlocked = effectiveScore >= 75;
 
       const colorPresets = ['#e11d48', '#4f46e5', '#059669', '#2563eb', '#7c3aed', '#0f766e', '#1e293b'];
 
@@ -123,6 +126,24 @@ function ResumePreview({ formData, onClose }) {
             setZoom(fitScale);
       };
 
+      const handleDownloadClick = () => {
+            if (!isUnlocked) {
+                  alert(`Resume score is ${effectiveScore}%. PDF download unlocks once your resume completeness reaches 75% or higher. Please complete your skills, projects, certifications, or achievements.`);
+                  return;
+            }
+            if (onDownloadPDF) {
+                  onDownloadPDF();
+            } else {
+                  window.print();
+            }
+      };
+
+      // Helper to partition skills into Hard & Soft Skills if possible
+      const softSkillNames = ['collaboration', 'problem-solving', 'problem solving', 'teamwork', 'communication', 'leadership', 'adaptability', 'critical thinking'];
+      const rawSkillsList = (skills || []).map(s => (typeof s === 'object' ? s?.name || '' : String(s))).filter(Boolean);
+      const hardSkills = rawSkillsList.filter(s => !softSkillNames.includes(s.toLowerCase()));
+      const softSkills = rawSkillsList.filter(s => softSkillNames.includes(s.toLowerCase()));
+
       return (
             <div className="preview-modal-overlay" onClick={onClose}>
                   <div className="preview-modal" onClick={(e) => e.stopPropagation()}>
@@ -132,6 +153,19 @@ function ResumePreview({ formData, onClose }) {
                                     <div className="preview-title-wrap">
                                           <h2>📄 Resume Preview</h2>
                                           <span className="template-badge">{template.toUpperCase()}</span>
+                                          <span
+                                                style={{
+                                                      fontSize: '0.78rem',
+                                                      fontWeight: 700,
+                                                      padding: '2px 8px',
+                                                      borderRadius: '12px',
+                                                      background: isUnlocked ? 'rgba(16, 185, 129, 0.15)' : 'rgba(245, 158, 11, 0.15)',
+                                                      color: isUnlocked ? '#10b981' : '#f59e0b',
+                                                      border: `1px solid ${isUnlocked ? 'rgba(16, 185, 129, 0.3)' : 'rgba(245, 158, 11, 0.3)'}`
+                                                }}
+                                          >
+                                                Score: {effectiveScore}% {isUnlocked ? '✓ Unlocked' : '🔒 (75% to download)'}
+                                          </span>
                                     </div>
                                     <div className="preview-quick-actions">
                                           <button
@@ -142,12 +176,31 @@ function ResumePreview({ formData, onClose }) {
                                                 📱 Fit Screen
                                           </button>
                                           <button
-                                                className="btn btn-sm btn-primary"
+                                                className="btn btn-sm btn-secondary"
                                                 onClick={handlePrint}
-                                                title="Print / Save as PDF"
+                                                title="Print Preview"
                                           >
                                                 🖨️ Print
                                           </button>
+                                          {isUnlocked ? (
+                                                <button
+                                                      className="btn btn-sm btn-success"
+                                                      onClick={handleDownloadClick}
+                                                      style={{ background: 'linear-gradient(135deg, #10b981 0%, #059669 100%)', color: '#ffffff', border: 'none', fontWeight: 600 }}
+                                                      title="Download Official PDF"
+                                                >
+                                                      📄 Download PDF
+                                                </button>
+                                          ) : (
+                                                <button
+                                                      className="btn btn-sm btn-secondary"
+                                                      onClick={handleDownloadClick}
+                                                      style={{ opacity: 0.7, cursor: 'not-allowed' }}
+                                                      title={`Resume score is ${effectiveScore}%. Reach 75% to download official PDF.`}
+                                                >
+                                                      🔒 Download PDF ({effectiveScore}% / 75%)
+                                                </button>
+                                          )}
                                           <button
                                                 className="preview-close-btn"
                                                 onClick={onClose}
@@ -158,9 +211,8 @@ function ResumePreview({ formData, onClose }) {
                                     </div>
                               </div>
 
-                              {/* Secondary Toolbar (Scrollable on Mobile) */}
+                              {/* Secondary Toolbar */}
                               <div className="preview-toolbar-scrollable">
-                                    {/* Template Switcher */}
                                     <div className="preview-template-pills">
                                           {['modern', 'executive', 'tech', 'compact'].map((t) => (
                                                 <button
@@ -173,7 +225,6 @@ function ResumePreview({ formData, onClose }) {
                                           ))}
                                     </div>
 
-                                    {/* Color Picker Dots */}
                                     <div className="preview-color-dots">
                                           {colorPresets.map((c) => (
                                                 <button
@@ -186,7 +237,6 @@ function ResumePreview({ formData, onClose }) {
                                           ))}
                                     </div>
 
-                                    {/* Zoom Controls */}
                                     <div className="zoom-controls">
                                           <button onClick={() => setZoom((z) => Math.max(0.35, +(z - 0.1).toFixed(2)))} title="Zoom Out">-</button>
                                           <span onClick={handleFit} style={{ cursor: 'pointer' }} title="Click to auto-fit">{Math.round(zoom * 100)}%</span>
@@ -196,7 +246,7 @@ function ResumePreview({ formData, onClose }) {
                               </div>
                         </div>
 
-                        {/* Preview Document Viewport */}
+                        {/* Document Viewport */}
                         <div className="preview-content" ref={containerRef}>
                               <div
                                     className="resume-scaler-wrapper"
@@ -216,30 +266,37 @@ function ResumePreview({ formData, onClose }) {
                                                 position: 'absolute',
                                                 top: 0,
                                                 left: 0,
-                                                width: '760px'
+                                                width: '760px',
+                                                fontFamily: 'Inter, Segoe UI, Arial, sans-serif'
                                           }}
                                     >
-                                          {/* Header */}
-                                          <div className="resume-header">
+                                          {/* Header matching Reference Image */}
+                                          <div className="resume-header" style={{ textAlign: template === 'executive' ? 'center' : 'left', marginBottom: '16px' }}>
                                                 {personal_info.profile_photo && (
                                                       <img
                                                             src={personal_info.profile_photo}
                                                             alt="Profile"
-                                                            style={{ width: 70, height: 70, borderRadius: '50%', objectFit: 'cover', float: 'right' }}
+                                                            style={{ width: 68, height: 68, borderRadius: '50%', objectFit: 'cover', float: 'right' }}
                                                       />
                                                 )}
                                                 <div>
-                                                      <h1 className="name">{personal_info.name || 'Your Name'}</h1>
-                                                      <p className="title">{personal_info.headline || 'Full-Stack Developer'}</p>
-                                                      <div className="contact-links">
+                                                      <h1 className="name" style={{ margin: '0 0 4px 0', fontSize: '1.8rem', fontWeight: 800, letterSpacing: '0.5px', textTransform: 'uppercase' }}>
+                                                            {personal_info.name || 'Your Name'}
+                                                      </h1>
+                                                      {personal_info.headline && (
+                                                            <p className="title" style={{ margin: '0 0 8px 0', fontSize: '0.92rem', fontStyle: 'italic', color: '#475569' }}>
+                                                                  {personal_info.headline}
+                                                            </p>
+                                                      )}
+                                                      <div className="contact-links" style={{ justifyContent: template === 'executive' ? 'center' : 'flex-start' }}>
                                                             {personal_info.email && (
-                                                                  <a href={`mailto:${personal_info.email}`} className="contact-link" title={`Send email to ${personal_info.email}`}>
+                                                                  <a href={`mailto:${personal_info.email}`} className="contact-link" title={`Email: ${personal_info.email}`}>
                                                                         <MailIcon />
                                                                         <span>{personal_info.email}</span>
                                                                   </a>
                                                             )}
                                                             {personal_info.phone && (
-                                                                  <a href={`tel:${personal_info.phone}`} className="contact-link" title={`Call ${personal_info.phone}`}>
+                                                                  <a href={`tel:${personal_info.phone}`} className="contact-link" title={`Phone: ${personal_info.phone}`}>
                                                                         <PhoneIcon />
                                                                         <span>{personal_info.phone}</span>
                                                                   </a>
@@ -251,30 +308,30 @@ function ResumePreview({ formData, onClose }) {
                                                                   </span>
                                                             )}
                                                             {personal_info.github && (
-                                                                  <a href={formatUrl(personal_info.github)} target="_blank" rel="noopener noreferrer" className="contact-link" title="Visit GitHub Profile">
+                                                                  <a href={formatUrl(personal_info.github)} target="_blank" rel="noopener noreferrer" className="contact-link" title="GitHub">
                                                                         <GitHubIcon />
                                                                         <span>{getDisplayLabel(personal_info.github, 'GitHub')}</span>
                                                                         <ExternalLinkIcon />
                                                                   </a>
                                                             )}
                                                             {personal_info.linkedin && (
-                                                                  <a href={formatUrl(personal_info.linkedin)} target="_blank" rel="noopener noreferrer" className="contact-link" title="Visit LinkedIn Profile">
+                                                                  <a href={formatUrl(personal_info.linkedin)} target="_blank" rel="noopener noreferrer" className="contact-link" title="LinkedIn">
                                                                         <LinkedInIcon />
                                                                         <span>{getDisplayLabel(personal_info.linkedin, 'LinkedIn')}</span>
                                                                         <ExternalLinkIcon />
                                                                   </a>
                                                             )}
                                                             {personal_info.portfolio && (
-                                                                  <a href={formatUrl(personal_info.portfolio)} target="_blank" rel="noopener noreferrer" className="contact-link" title="Visit Portfolio">
+                                                                  <a href={formatUrl(personal_info.portfolio)} target="_blank" rel="noopener noreferrer" className="contact-link" title="Portfolio">
                                                                         <GlobeIcon />
                                                                         <span>{getDisplayLabel(personal_info.portfolio, 'Portfolio')}</span>
                                                                         <ExternalLinkIcon />
                                                                   </a>
                                                             )}
-                                                            {personal_info.leetcode && (
-                                                                  <a href={formatUrl(personal_info.leetcode)} target="_blank" rel="noopener noreferrer" className="contact-link" title="Visit LeetCode Profile">
+                                                            {(personal_info.leetcode || personal_info.problem_solving) && (
+                                                                  <a href={formatUrl(personal_info.leetcode || personal_info.problem_solving)} target="_blank" rel="noopener noreferrer" className="contact-link" title="Problem Solving Profile">
                                                                         <CodeIcon />
-                                                                        <span>{getDisplayLabel(personal_info.leetcode, 'LeetCode')}</span>
+                                                                        <span>{getDisplayLabel(personal_info.leetcode || personal_info.problem_solving, 'LeetCode')}</span>
                                                                         <ExternalLinkIcon />
                                                                   </a>
                                                             )}
@@ -282,88 +339,158 @@ function ResumePreview({ formData, onClose }) {
                                                 </div>
                                           </div>
 
-                                          {/* Summary */}
+                                          {/* SUMMARY */}
                                           {summary && (
                                                 <div className="resume-section">
-                                                      <h3 style={{ color: accentColor }}>Professional Summary</h3>
-                                                      <p>{summary}</p>
+                                                      <h3 style={{ color: accentColor, borderBottom: '1px solid #cbd5e1', paddingBottom: '3px', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
+                                                            SUMMARY
+                                                      </h3>
+                                                      <p style={{ margin: '4px 0', fontSize: '0.88rem', lineHeight: 1.45, color: '#1e293b' }}>
+                                                            {summary}
+                                                      </p>
                                                 </div>
                                           )}
 
-                                          {/* Skills */}
-                                          {skills && skills.length > 0 && (
+                                          {/* SKILLS */}
+                                          {rawSkillsList.length > 0 && (
                                                 <div className="resume-section">
-                                                      <h3 style={{ color: accentColor }}>Skills &amp; Expertise</h3>
-                                                      <p><strong>Technical Skills:</strong> {skills.map(s => (typeof s === 'object' ? s?.name || '' : String(s))).filter(Boolean).join(' • ')}</p>
+                                                      <h3 style={{ color: accentColor, borderBottom: '1px solid #cbd5e1', paddingBottom: '3px', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
+                                                            SKILLS
+                                                      </h3>
+                                                      <div style={{ fontSize: '0.88rem', lineHeight: 1.5, color: '#1e293b' }}>
+                                                            {hardSkills.length > 0 && (
+                                                                  <p style={{ margin: '3px 0' }}>
+                                                                        <strong>Hard Skills:</strong> {hardSkills.join(', ')}
+                                                                  </p>
+                                                            )}
+                                                            {softSkills.length > 0 && (
+                                                                  <p style={{ margin: '3px 0' }}>
+                                                                        <strong>Soft Skills:</strong> {softSkills.join(', ')}
+                                                                  </p>
+                                                            )}
+                                                            {hardSkills.length === 0 && softSkills.length === 0 && (
+                                                                  <p style={{ margin: '3px 0' }}>
+                                                                        <strong>Technical Skills:</strong> {rawSkillsList.join(', ')}
+                                                                  </p>
+                                                            )}
+                                                      </div>
                                                 </div>
                                           )}
 
-                                          {/* Projects */}
+                                          {/* TECHNICAL PROJECTS */}
                                           {projects && projects.length > 0 && (
                                                 <div className="resume-section">
-                                                      <h3 style={{ color: accentColor }}>Projects</h3>
-                                                      {projects.map((proj, index) => (
-                                                            <div key={index} className="section-item" style={{ marginBottom: 12 }}>
-                                                                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', flexWrap: 'wrap', gap: 6 }}>
-                                                                        <h4>
-                                                                              {proj?.title || 'Project'} {proj?.technologies && <em style={{ fontWeight: 'normal', color: '#64748b' }}>({proj.technologies})</em>}
-                                                                        </h4>
-                                                                        {(proj?.link || proj?.live_url || proj?.github_url) && (
-                                                                              <a
-                                                                                    href={formatUrl(proj?.link || proj?.live_url || proj?.github_url)}
-                                                                                    target="_blank"
-                                                                                    rel="noopener noreferrer"
-                                                                                    style={{ color: accentColor, fontSize: '0.82rem', fontWeight: 600, display: 'inline-flex', alignItems: 'center' }}
-                                                                              >
-                                                                                    Live Demo <ExternalLinkIcon />
-                                                                              </a>
+                                                      <h3 style={{ color: accentColor, borderBottom: '1px solid #cbd5e1', paddingBottom: '3px', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
+                                                            TECHNICAL PROJECTS
+                                                      </h3>
+                                                      {projects.map((proj, index) => {
+                                                            const repoLink = proj?.repository_url || proj?.github_url;
+                                                            const demoLink = proj?.live_demo_url || proj?.live_url || proj?.link;
+                                                            return (
+                                                                  <div key={index} className="section-item" style={{ marginBottom: '12px' }}>
+                                                                        {/* Row 1: Title (Tech) + Year */}
+                                                                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', flexWrap: 'wrap' }}>
+                                                                              <span style={{ fontSize: '0.92rem', fontWeight: 700, color: '#0f172a' }}>
+                                                                                    {proj?.title || 'Project'}
+                                                                                    {proj?.technologies && (
+                                                                                          <span style={{ fontWeight: 400, fontStyle: 'italic', color: '#475569', marginLeft: '6px' }}>
+                                                                                                ({proj.technologies})
+                                                                                          </span>
+                                                                                    )}
+                                                                              </span>
+                                                                              {proj?.date && (
+                                                                                    <span style={{ fontSize: '0.88rem', fontWeight: 700, color: '#0f172a' }}>
+                                                                                          {proj.date}
+                                                                                    </span>
+                                                                              )}
+                                                                        </div>
+
+                                                                        {/* Row 2: Dual Links (GitHub Repository | Live Demo) */}
+                                                                        {(repoLink || demoLink) && (
+                                                                              <div style={{ marginTop: '2px', fontSize: '0.82rem', fontWeight: 600 }}>
+                                                                                    {repoLink && (
+                                                                                          <a
+                                                                                                href={formatUrl(repoLink)}
+                                                                                                target="_blank"
+                                                                                                rel="noopener noreferrer"
+                                                                                                style={{ color: accentColor, textDecoration: 'none', display: 'inline-flex', alignItems: 'center' }}
+                                                                                          >
+                                                                                                GitHub Repository <ExternalLinkIcon />
+                                                                                          </a>
+                                                                                    )}
+                                                                                    {repoLink && demoLink && <span style={{ margin: '0 8px', color: '#94a3b8' }}>|</span>}
+                                                                                    {demoLink && (
+                                                                                          <a
+                                                                                                href={formatUrl(demoLink)}
+                                                                                                target="_blank"
+                                                                                                rel="noopener noreferrer"
+                                                                                                style={{ color: accentColor, textDecoration: 'none', display: 'inline-flex', alignItems: 'center' }}
+                                                                                          >
+                                                                                                Live Demo <ExternalLinkIcon />
+                                                                                          </a>
+                                                                                    )}
+                                                                              </div>
+                                                                        )}
+
+                                                                        {/* Row 3: Description Bullet Point */}
+                                                                        {proj?.description && (
+                                                                              <div style={{ marginTop: '4px', fontSize: '0.86rem', lineHeight: 1.45, color: '#334155' }}>
+                                                                                    <span style={{ marginRight: '6px', color: '#64748b' }}>•</span>
+                                                                                    {proj.description}
+                                                                              </div>
                                                                         )}
                                                                   </div>
-                                                                  <p>{proj?.description || ''}</p>
-                                                            </div>
-                                                      ))}
+                                                            );
+                                                      })}
                                                 </div>
                                           )}
 
-                                          {/* Experience */}
+                                          {/* WORK EXPERIENCE */}
                                           {experience && experience.length > 0 && (
                                                 <div className="resume-section">
-                                                      <h3 style={{ color: accentColor }}>Work Experience</h3>
+                                                      <h3 style={{ color: accentColor, borderBottom: '1px solid #cbd5e1', paddingBottom: '3px', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
+                                                            WORK EXPERIENCE
+                                                      </h3>
                                                       {experience.map((exp, index) => (
-                                                            <div key={index} className="section-item">
-                                                                  <h4>{exp?.role || 'Role'} - {exp?.company || 'Company'} <span style={{ float: 'right', fontWeight: 'normal', fontSize: '0.85rem' }}>{exp?.duration || ''}</span></h4>
-                                                                  <p>{exp?.description || ''}</p>
+                                                            <div key={index} className="section-item" style={{ marginBottom: '10px' }}>
+                                                                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', flexWrap: 'wrap' }}>
+                                                                        <span style={{ fontSize: '0.92rem', fontWeight: 700, color: '#0f172a' }}>
+                                                                              {exp?.role || 'Role'} - {exp?.company || 'Company'}
+                                                                        </span>
+                                                                        {exp?.duration && (
+                                                                              <span style={{ fontSize: '0.86rem', color: '#475569', fontWeight: 600 }}>
+                                                                                    {exp.duration}
+                                                                              </span>
+                                                                        )}
+                                                                  </div>
+                                                                  {exp?.description && (
+                                                                        <div style={{ marginTop: '4px', fontSize: '0.86rem', lineHeight: 1.45, color: '#334155' }}>
+                                                                              <span style={{ marginRight: '6px', color: '#64748b' }}>•</span>
+                                                                              {exp.description}
+                                                                        </div>
+                                                                  )}
                                                             </div>
                                                       ))}
                                                 </div>
                                           )}
 
-                                          {/* Education */}
-                                          {education && education.length > 0 && (
-                                                <div className="resume-section">
-                                                      <h3 style={{ color: accentColor }}>Education</h3>
-                                                      {education.map((edu, index) => (
-                                                            <div key={index} className="section-item">
-                                                                  <h4>{edu?.degree || 'Degree'} - {edu?.college || 'Institution'} <span style={{ float: 'right', fontWeight: 'normal' }}>{edu?.year || ''}</span></h4>
-                                                                  {edu?.grade && <p>Grade: {edu.grade}</p>}
-                                                            </div>
-                                                      ))}
-                                                </div>
-                                          )}
-
-                                          {/* Coding Profiles */}
+                                          {/* PROBLEM SOLVING & DATA STRUCTURES */}
                                           {coding_profiles && coding_profiles.length > 0 && (
                                                 <div className="resume-section">
-                                                      <h3 style={{ color: accentColor }}>Coding Profiles</h3>
+                                                      <h3 style={{ color: accentColor, borderBottom: '1px solid #cbd5e1', paddingBottom: '3px', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
+                                                            PROBLEM SOLVING &amp; DATA STRUCTURES
+                                                      </h3>
                                                       {coding_profiles.map((prof, index) => (
-                                                            <div key={index} className="profile-item" style={{ marginBottom: 6 }}>
-                                                                  <strong style={{ color: '#0f172a' }}>{prof?.platform || 'Profile'}:</strong> {prof?.headline || ''}{' '}
+                                                            <div key={index} style={{ marginBottom: '6px', fontSize: '0.88rem', lineHeight: 1.4, color: '#1e293b' }}>
+                                                                  <span style={{ marginRight: '6px', color: '#64748b' }}>•</span>
+                                                                  <strong style={{ color: '#0f172a' }}>{prof?.platform || 'Profile'}:</strong>{' '}
+                                                                  {prof?.headline || ''}{' '}
                                                                   {prof?.link && (
                                                                         <a
                                                                               href={formatUrl(prof.link)}
                                                                               target="_blank"
                                                                               rel="noopener noreferrer"
-                                                                              style={{ color: accentColor, fontWeight: 600, display: 'inline-flex', alignItems: 'center' }}
+                                                                              style={{ color: accentColor, fontWeight: 600, textDecoration: 'none', marginLeft: '6px', display: 'inline-flex', alignItems: 'center' }}
                                                                         >
                                                                               View Profile <ExternalLinkIcon />
                                                                         </a>
@@ -373,31 +500,140 @@ function ResumePreview({ formData, onClose }) {
                                                 </div>
                                           )}
 
-                                          {/* Certifications */}
-                                          {certifications && certifications.length > 0 && (
+                                          {/* EDUCATION */}
+                                          {education && education.length > 0 && (
                                                 <div className="resume-section">
-                                                      <h3 style={{ color: accentColor }}>Certifications</h3>
-                                                      <ul>
-                                                            {certifications.map((cert, index) => (
-                                                                  <li key={index}>
-                                                                        {typeof cert === 'string' ? cert : `${cert?.name || 'Certification'} ${cert?.issued_by ? `- ${cert.issued_by}` : ''}`}
-                                                                  </li>
-                                                            ))}
-                                                      </ul>
+                                                      <h3 style={{ color: accentColor, borderBottom: '1px solid #cbd5e1', paddingBottom: '3px', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
+                                                            EDUCATION
+                                                      </h3>
+                                                      {education.map((edu, index) => (
+                                                            <div key={index} className="section-item" style={{ marginBottom: '8px' }}>
+                                                                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', flexWrap: 'wrap' }}>
+                                                                        <span style={{ fontSize: '0.92rem', fontWeight: 700, color: '#0f172a' }}>
+                                                                              {edu?.degree || 'Degree'}
+                                                                        </span>
+                                                                        {edu?.grade && (
+                                                                              <span style={{ fontSize: '0.88rem', fontWeight: 700, color: '#0f172a' }}>
+                                                                                    {edu.grade}
+                                                                              </span>
+                                                                        )}
+                                                                  </div>
+                                                                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', flexWrap: 'wrap', marginTop: '2px' }}>
+                                                                        <span style={{ fontSize: '0.86rem', color: '#475569' }}>
+                                                                              {edu?.college || 'Institution'}
+                                                                        </span>
+                                                                        {edu?.year && (
+                                                                              <span style={{ fontSize: '0.86rem', color: '#475569', fontWeight: 500 }}>
+                                                                                    {edu.year}
+                                                                              </span>
+                                                                        )}
+                                                                  </div>
+                                                            </div>
+                                                      ))}
                                                 </div>
                                           )}
 
-                                          {/* Achievements */}
+                                          {/* CERTIFICATIONS */}
+                                          {certifications && certifications.length > 0 && (
+                                                <div className="resume-section">
+                                                      <h3 style={{ color: accentColor, borderBottom: '1px solid #cbd5e1', paddingBottom: '3px', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
+                                                            CERTIFICATIONS
+                                                      </h3>
+                                                      {certifications.map((cert, index) => {
+                                                            const certName = typeof cert === 'string' ? cert : (cert?.name || 'Certification');
+                                                            const issuer = typeof cert === 'object' ? cert?.issued_by : '';
+                                                            const date = typeof cert === 'object' ? cert?.date : '';
+                                                            const link = typeof cert === 'object' ? cert?.link : '';
+                                                            const fileUrl = typeof cert === 'object' ? (cert?.file_data || cert?.file_url) : '';
+                                                            const skillsLearned = typeof cert === 'object' ? cert?.skills_learned : '';
+
+                                                            return (
+                                                                  <div key={index} className="section-item" style={{ marginBottom: '10px' }}>
+                                                                        {/* Row 1: Cert Name + Date */}
+                                                                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', flexWrap: 'wrap' }}>
+                                                                              <span style={{ fontSize: '0.92rem', fontWeight: 700, color: '#0f172a' }}>
+                                                                                    {certName}
+                                                                              </span>
+                                                                              {date && (
+                                                                                    <span style={{ fontSize: '0.88rem', fontWeight: 700, color: '#0f172a' }}>
+                                                                                          {date}
+                                                                                    </span>
+                                                                              )}
+                                                                        </div>
+
+                                                                        {/* Row 2: Issuer + Proof Link / Certificate Link */}
+                                                                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', flexWrap: 'wrap', marginTop: '2px' }}>
+                                                                              <span style={{ fontSize: '0.86rem', color: '#475569' }}>
+                                                                                    {issuer}
+                                                                              </span>
+                                                                              <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
+                                                                                    {link && (
+                                                                                          <a
+                                                                                                href={formatUrl(link)}
+                                                                                                target="_blank"
+                                                                                                rel="noopener noreferrer"
+                                                                                                style={{ color: accentColor, fontSize: '0.82rem', fontWeight: 600, textDecoration: 'none', display: 'inline-flex', alignItems: 'center' }}
+                                                                                          >
+                                                                                                Verify Credential <ExternalLinkIcon />
+                                                                                          </a>
+                                                                                    )}
+                                                                                    {fileUrl && (
+                                                                                          <a
+                                                                                                href={fileUrl}
+                                                                                                target="_blank"
+                                                                                                rel="noopener noreferrer"
+                                                                                                style={{ color: '#059669', fontSize: '0.82rem', fontWeight: 600, textDecoration: 'none', display: 'inline-flex', alignItems: 'center' }}
+                                                                                          >
+                                                                                                View File 📎
+                                                                                          </a>
+                                                                                    )}
+                                                                              </div>
+                                                                        </div>
+
+                                                                        {/* Row 3: Skills Learned (Matching reference screenshot) */}
+                                                                        {skillsLearned && (
+                                                                              <div style={{ marginTop: '3px', fontSize: '0.84rem', color: '#475569', paddingLeft: '8px' }}>
+                                                                                    <span style={{ marginRight: '6px', color: '#94a3b8' }}>•</span>
+                                                                                    <em>Skills learned:</em> <strong>{skillsLearned}</strong>
+                                                                              </div>
+                                                                        )}
+                                                                  </div>
+                                                            );
+                                                      })}
+                                                </div>
+                                          )}
+
+                                          {/* ACHIEVEMENTS */}
                                           {achievements && achievements.length > 0 && (
                                                 <div className="resume-section">
-                                                      <h3 style={{ color: accentColor }}>Key Achievements</h3>
-                                                      <ul>
-                                                            {achievements.map((ach, index) => (
-                                                                  <li key={index}>
-                                                                        <strong>{ach?.title || 'Achievement'}</strong>: {ach?.description || ''}
-                                                                  </li>
-                                                            ))}
-                                                      </ul>
+                                                      <h3 style={{ color: accentColor, borderBottom: '1px solid #cbd5e1', paddingBottom: '3px', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
+                                                            ACHIEVEMENTS
+                                                      </h3>
+                                                      {achievements.map((ach, index) => {
+                                                            const title = typeof ach === 'string' ? ach : (ach?.title || 'Achievement');
+                                                            const date = typeof ach === 'object' ? ach?.date : '';
+                                                            const desc = typeof ach === 'object' ? ach?.description : '';
+                                                            const link = typeof ach === 'object' ? ach?.link : '';
+
+                                                            return (
+                                                                  <div key={index} style={{ marginBottom: '8px', fontSize: '0.88rem', lineHeight: 1.45, color: '#1e293b' }}>
+                                                                        <span style={{ marginRight: '6px', color: '#64748b' }}>•</span>
+                                                                        <strong style={{ color: '#0f172a' }}>{title}</strong>
+                                                                        {date && <span style={{ color: '#475569', fontWeight: 600 }}> ({date})</span>}
+                                                                        {desc && <span>: {desc}</span>}
+                                                                        {link && (
+                                                                              <a
+                                                                                    href={formatUrl(link)}
+                                                                                    target="_blank"
+                                                                                    rel="noopener noreferrer"
+                                                                                    style={{ color: accentColor, fontWeight: 600, textDecoration: 'none', marginLeft: '6px', display: 'inline-flex', alignItems: 'center' }}
+                                                                              >
+                                                                                    [View Proof <ExternalLinkIcon />]
+                                                                              </a>
+                                                                        )}
+                                                                  </div>
+                                                            );
+                                                      })}
                                                 </div>
                                           )}
                                     </div>

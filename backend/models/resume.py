@@ -6,6 +6,7 @@ class PersonalInfo(BaseModel):
     name: Optional[str] = ""
     email: Optional[str] = ""
     phone: Optional[str] = ""
+    location: Optional[str] = ""  # City, State / Country
     linkedin: Optional[str] = ""
     github: Optional[str] = ""
     leetcode: Optional[str] = ""
@@ -26,6 +27,7 @@ class Project(BaseModel):
     description: Optional[str] = ""
     repository_url: Optional[str] = ""
     live_demo_url: Optional[str] = ""
+    date: Optional[str] = ""  # Year or date range e.g. "2025"
 
 class Experience(BaseModel):
     company: Optional[str] = ""
@@ -39,12 +41,14 @@ class Certification(BaseModel):
     file_url: Optional[str] = ""  # URL for certificate file (optional)
     issued_by: Optional[str] = ""
     date: Optional[str] = ""
+    link: Optional[str] = ""  # Proof link / Certificate verification URL
+    skills_learned: Optional[str] = ""  # e.g. "Java", "Ethical Hacking"
 
 class Achievement(BaseModel):
     title: Optional[str] = ""
     description: Optional[str] = ""
     date: Optional[str] = ""
-    link: Optional[str] = ""  # URL for achievement proof/details
+    link: Optional[str] = ""  # URL for achievement proof/details / certificate link
 
 class CodingProfile(BaseModel):
     platform: Optional[str] = ""
@@ -65,7 +69,8 @@ class Resume(BaseModel):
     skills: List[str]
     certifications: List[Certification]
     achievements: List[Achievement]
-    coding_profiles: List[CodingProfile] = []  # New section for coding profiles
+    coding_profiles: List[CodingProfile] = []
+    template_style: Optional[str] = "modern"
     pdf_preferences: Optional[PDFPreferences] = None
     created_at: datetime = datetime.now()
 
@@ -87,6 +92,7 @@ class ResumeCreate(BaseModel):
     certifications: List[Certification] = []
     achievements: List[Achievement] = []
     coding_profiles: List[CodingProfile] = []
+    template_style: Optional[str] = "modern"
     pdf_preferences: Optional[PDFPreferences] = None
 
 class ResumeUpdate(BaseModel):
@@ -99,6 +105,7 @@ class ResumeUpdate(BaseModel):
     certifications: Optional[List[Certification]] = None
     achievements: Optional[List[Achievement]] = None
     coding_profiles: Optional[List[CodingProfile]] = None
+    template_style: Optional[str] = None
     pdf_preferences: Optional[PDFPreferences] = None
 
 class ResumeResponse(BaseModel):
@@ -113,6 +120,7 @@ class ResumeResponse(BaseModel):
     certifications: List[Certification] = []
     achievements: List[Achievement] = []
     coding_profiles: List[CodingProfile] = []
+    template_style: Optional[str] = "modern"
     pdf_preferences: Optional[PDFPreferences] = PDFPreferences(background_color="#ffffff", accent_color="#1a73e8")
     score: float = 0
     score_breakdown: ScoreBreakdown = ScoreBreakdown()

@@ -11,7 +11,9 @@ class ResumeScorer:
         'developed', 'implemented', 'designed', 'created', 'built', 'led',
         'managed', 'coordinated', 'analyzed', 'optimized', 'streamlined',
         'python', 'javascript', 'react', 'node', 'aws', 'docker', 'kubernetes',
-        'agile', 'scrum', 'git', 'api', 'database', 'sql', 'nosql'
+        'agile', 'scrum', 'git', 'api', 'database', 'sql', 'nosql', 'java',
+        'mongodb', 'express', 'html', 'css', 'dsa', 'rest', 'full-stack',
+        'security', 'engineering', 'solutions', 'c++', 'linux'
     ]
     
     ACTION_VERBS = [
@@ -236,19 +238,39 @@ class ResumeScorer:
     
     def _score_keywords(self, resume: dict, missing_keywords: List[str]) -> float:
         """Score ATS keyword optimization (15 points max)"""
+        # Collect text from certifications, achievements, coding profiles
+        cert_text = ' '.join([
+            (c.get('name', '') + ' ' + c.get('skills_learned', '') + ' ' + c.get('issued_by', ''))
+            if isinstance(c, dict) else str(c)
+            for c in resume.get('certifications', [])
+        ])
+        ach_text = ' '.join([
+            (a.get('title', '') + ' ' + a.get('description', ''))
+            if isinstance(a, dict) else str(a)
+            for a in resume.get('achievements', [])
+        ])
+        prof_text = ' '.join([
+            (p.get('platform', '') + ' ' + p.get('headline', ''))
+            if isinstance(p, dict) else str(p)
+            for p in resume.get('coding_profiles', [])
+        ])
+
         # Combine all text from resume
         resume_text = ' '.join([
             resume.get('summary', ''),
-            ' '.join(resume.get('skills', [])),
-            ' '.join([p.get('description', '') + p.get('technologies', '') for p in resume.get('projects', [])]),
-            ' '.join([e.get('description', '') for e in resume.get('experience', [])])
+            ' '.join([s if isinstance(s, str) else s.get('name', '') for s in resume.get('skills', [])]),
+            ' '.join([p.get('description', '') + ' ' + p.get('technologies', '') for p in resume.get('projects', [])]),
+            ' '.join([e.get('description', '') + ' ' + e.get('role', '') for e in resume.get('experience', [])]),
+            cert_text,
+            ach_text,
+            prof_text
         ]).lower()
         
         # Check for keywords
         keywords_found = sum(1 for keyword in self.ATS_KEYWORDS if keyword in resume_text)
         
-        # Score based on keywords found
-        score = min(keywords_found * 0.5, 15)
+        # Score based on keywords found (up to 15 points)
+        score = min(keywords_found * 1.0, 15)
         
         # Find missing important keywords
         for keyword in self.ATS_KEYWORDS[:15]:  # Check top 15 keywords
@@ -283,15 +305,16 @@ class ResumeScorer:
         if resume.get('projects'):
             score += 2
         
-        # Coding Profiles (bonus 1 point, capped at 10)
-        if resume.get('coding_profiles'):
+        # Certifications or Achievements (1 point)
+        if resume.get('certifications') or resume.get('achievements'):
             score += 1
             
-        # LinkedIn/GitHub (1 point)
-        if personal_info.get('linkedin') or personal_info.get('github'):
+        # Coding Profiles / Links (bonus 1 point, capped at 10)
+        if resume.get('coding_profiles') or personal_info.get('linkedin') or personal_info.get('github'):
             score += 1
             
         return min(score, 10)
 
 # Create singleton instance
 scorer = ResumeScorer()
+resume_scorer = scorer

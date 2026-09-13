@@ -211,6 +211,37 @@
 .score-display .orange { color: #f59e0b; }
 .score-display .red { color: #ef4444; }
 
+.btn-download-unlocked {
+    background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+    color: #ffffff !important;
+    font-weight: 700;
+    box-shadow: 0 4px 14px rgba(16, 185, 129, 0.35);
+    transition: all 0.2s ease;
+}
+
+.btn-download-unlocked:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 6px 20px rgba(16, 185, 129, 0.45);
+}
+
+.btn-download-locked {
+    opacity: 0.7;
+    cursor: not-allowed !important;
+    background: rgba(148, 163, 184, 0.15) !important;
+    color: var(--text-muted) !important;
+    border: 1px dashed var(--card-border) !important;
+}
+
+.file-input-compact {
+    font-size: 0.85rem;
+    padding: 6px 10px;
+    border: 1px solid var(--card-border);
+    border-radius: var(--radius-sm);
+    background: var(--card-bg);
+    color: var(--text-main);
+    width: 100%;
+}
+
 @media (max-width: 768px) {
     .resume-builder { padding: 16px; }
     .builder-header { flex-direction: column; align-items: flex-start; }
