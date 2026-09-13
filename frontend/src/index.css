@@ -1,12 +1,12 @@
 :root {
-  --primary: #4f46e5;
-  --primary-color: #4f46e5;
-  --primary-hover: #4338ca;
-  --secondary-gradient: linear-gradient(135deg, #3b82f6 0%, #06b6d4 100%);
-  --primary-gradient: linear-gradient(135deg, #4f46e5 0%, #7c3aed 50%, #2563eb 100%);
-  --accent-color: #06b6d4;
-  --bg-gradient: radial-gradient(circle at 15% 15%, rgba(99, 102, 241, 0.08) 0%, transparent 40%),
-                 radial-gradient(circle at 85% 85%, rgba(168, 85, 247, 0.08) 0%, transparent 40%),
+  --primary: #e11d48;
+  --primary-color: #e11d48;
+  --primary-hover: #be123c;
+  --secondary-gradient: linear-gradient(135deg, #fb7185 0%, #f43f5e 100%);
+  --primary-gradient: linear-gradient(135deg, #e11d48 0%, #be123c 50%, #9f1239 100%);
+  --accent-color: #f43f5e;
+  --bg-gradient: radial-gradient(circle at 15% 15%, rgba(225, 29, 72, 0.06) 0%, transparent 40%),
+                 radial-gradient(circle at 85% 85%, rgba(244, 63, 94, 0.05) 0%, transparent 40%),
                  #f8fafc;
   --card-bg: rgba(255, 255, 255, 0.85);
   --card-border: rgba(226, 232, 240, 0.8);
@@ -16,7 +16,7 @@
   --text-inverse: #ffffff;
   --shadow-sm: 0 2px 8px rgba(0, 0, 0, 0.04);
   --shadow-md: 0 10px 25px -5px rgba(0, 0, 0, 0.08), 0 8px 10px -6px rgba(0, 0, 0, 0.04);
-  --shadow-lg: 0 20px 40px -15px rgba(99, 102, 241, 0.18);
+  --shadow-lg: 0 20px 40px -15px rgba(225, 29, 72, 0.18);
   --radius-sm: 8px;
   --radius-md: 14px;
   --radius-lg: 20px;
@@ -25,12 +25,12 @@
 }
 
 [data-theme='dark'] {
-  --primary: #6366f1;
-  --primary-color: #6366f1;
-  --primary-hover: #4f46e5;
-  --primary-gradient: linear-gradient(135deg, #6366f1 0%, #a855f7 50%, #3b82f6 100%);
-  --bg-gradient: radial-gradient(circle at 10% 20%, rgba(99, 102, 241, 0.15) 0%, transparent 45%),
-                 radial-gradient(circle at 90% 80%, rgba(217, 70, 239, 0.12) 0%, transparent 45%),
+  --primary: #f43f5e;
+  --primary-color: #f43f5e;
+  --primary-hover: #e11d48;
+  --primary-gradient: linear-gradient(135deg, #f43f5e 0%, #e11d48 50%, #be123c 100%);
+  --bg-gradient: radial-gradient(circle at 10% 20%, rgba(225, 29, 72, 0.12) 0%, transparent 45%),
+                 radial-gradient(circle at 90% 80%, rgba(244, 63, 94, 0.08) 0%, transparent 45%),
                  #090d16;
   --card-bg: rgba(18, 24, 38, 0.75);
   --card-border: rgba(255, 255, 255, 0.08);
@@ -82,7 +82,7 @@ body {
 .glass-card:hover {
   transform: translateY(-3px);
   box-shadow: var(--shadow-lg);
-  border-color: rgba(99, 102, 241, 0.3);
+  border-color: rgba(225, 29, 72, 0.3);
 }
 
 /* Global Button Styling */
@@ -105,12 +105,12 @@ body {
 .btn-primary {
   background: var(--primary-gradient);
   color: #ffffff;
-  box-shadow: 0 4px 14px rgba(79, 70, 229, 0.35);
+  box-shadow: 0 4px 14px rgba(225, 29, 72, 0.35);
 }
 
 .btn-primary:hover {
   transform: translateY(-2px);
-  box-shadow: 0 6px 20px rgba(79, 70, 229, 0.45);
+  box-shadow: 0 6px 20px rgba(225, 29, 72, 0.45);
   opacity: 0.95;
 }
 
@@ -121,9 +121,9 @@ body {
 }
 
 .btn-secondary:hover {
-  background: rgba(99, 102, 241, 0.1);
+  background: rgba(225, 29, 72, 0.08);
   color: var(--primary-color);
-  border-color: rgba(99, 102, 241, 0.3);
+  border-color: rgba(225, 29, 72, 0.3);
 }
 
 .btn-success {
@@ -196,7 +196,7 @@ select {
 input:focus, textarea:focus, select:focus {
   border-color: var(--primary-color);
   background: rgba(255, 255, 255, 0.95);
-  box-shadow: 0 0 0 4px rgba(99, 102, 241, 0.15);
+  box-shadow: 0 0 0 4px rgba(225, 29, 72, 0.15);
 }
 
 [data-theme='dark'] input:focus,

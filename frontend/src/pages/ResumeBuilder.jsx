@@ -68,7 +68,7 @@ function ResumeBuilder() {
                   template_style: 'modern',
                   pdf_preferences: {
                         background_color: '#ffffff',
-                        accent_color: '#4f46e5'
+                        accent_color: '#e11d48'
                   }
             };
       });
@@ -121,7 +121,7 @@ function ResumeBuilder() {
                   if (!data.pdf_preferences) {
                         data.pdf_preferences = {
                               background_color: '#ffffff',
-                              accent_color: '#4f46e5'
+                              accent_color: '#e11d48'
                         };
                   }
                   if (!data.template_style) {
@@ -230,7 +230,7 @@ function ResumeBuilder() {
                         { title: '1st Place Winner - Silicon Valley Hackathon', description: 'Built an AI accessibility tool selected #1 out of 160 global teams.', date: '2023', link: '' }
                   ],
                   template_style: formData.template_style || 'modern',
-                  pdf_preferences: formData.pdf_preferences || { background_color: '#ffffff', accent_color: '#4f46e5' }
+                  pdf_preferences: formData.pdf_preferences || { background_color: '#ffffff', accent_color: '#e11d48' }
             });
             showToast('Loaded complete sample resume data!', 'success');
       };
@@ -447,6 +447,7 @@ function ResumeBuilder() {
       ];
 
       const colorPresets = [
+            { name: 'Executive Red', color: '#e11d48' },
             { name: 'Indigo', color: '#4f46e5' },
             { name: 'Emerald', color: '#10b981' },
             { name: 'Purple', color: '#8b5cf6' },
@@ -543,7 +544,7 @@ function ResumeBuilder() {
                                                 ))}
                                                 <input
                                                       type="color"
-                                                      value={formData.pdf_preferences?.accent_color || '#4f46e5'}
+                                                      value={formData.pdf_preferences?.accent_color || '#e11d48'}
                                                       onChange={(e) => setFormData({
                                                             ...formData,
                                                             pdf_preferences: { ...formData.pdf_preferences, accent_color: e.target.value }

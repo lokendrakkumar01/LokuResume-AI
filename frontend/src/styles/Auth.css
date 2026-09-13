@@ -22,7 +22,7 @@
 .auth-orb-1 {
     width: 350px;
     height: 350px;
-    background: linear-gradient(135deg, #6366f1, #a855f7);
+    background: linear-gradient(135deg, #e11d48, #be123c);
     top: -50px;
     left: -50px;
 }
@@ -30,7 +30,7 @@
 .auth-orb-2 {
     width: 300px;
     height: 300px;
-    background: linear-gradient(135deg, #3b82f6, #06b6d4);
+    background: linear-gradient(135deg, #f43f5e, #fb7185);
     bottom: -50px;
     right: -50px;
     animation-delay: -6s;

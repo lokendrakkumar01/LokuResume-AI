@@ -33,7 +33,7 @@
 .admin-glow-orb-2 {
   width: 400px;
   height: 400px;
-  background: radial-gradient(circle, #4f46e5, #0ea5e9);
+  background: radial-gradient(circle, #be123c, #f43f5e);
   bottom: -80px;
   right: 15%;
   animation: adminPulse 10s ease-in-out infinite alternate-reverse;

@@ -197,7 +197,7 @@ function Dashboard() {
                         template_style: 'modern',
                         pdf_preferences: {
                               background_color: '#ffffff',
-                              accent_color: '#4f46e5'
+                              accent_color: '#e11d48'
                         }
                   };
 

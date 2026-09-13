@@ -12,20 +12,20 @@
     align-items: center;
     gap: 8px;
     padding: 12px 20px;
-    background: linear-gradient(135deg, #6366f1 0%, #8b5cf6 50%, #d946ef 100%);
+    background: linear-gradient(135deg, #e11d48 0%, #be123c 50%, #881337 100%);
     color: #ffffff;
     border: none;
     border-radius: var(--radius-full);
     cursor: pointer;
     font-size: 0.95rem;
     font-weight: 700;
-    box-shadow: 0 10px 25px rgba(99, 102, 241, 0.45);
+    box-shadow: 0 10px 25px rgba(225, 29, 72, 0.45);
     transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
 .ai-chat-trigger-btn:hover {
     transform: translateY(-3px) scale(1.04);
-    box-shadow: 0 14px 30px rgba(139, 92, 246, 0.55);
+    box-shadow: 0 14px 30px rgba(225, 29, 72, 0.55);
 }
 
 .trigger-icon {
