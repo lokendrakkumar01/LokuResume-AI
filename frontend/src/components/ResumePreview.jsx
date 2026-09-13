@@ -178,7 +178,7 @@ function ResumePreview({ formData, onClose }) {
                                           {skills && skills.length > 0 && (
                                                 <div className="resume-section">
                                                       <h3 style={{ color: accentColor }}>Skills &amp; Expertise</h3>
-                                                      <p><strong>Technical Skills:</strong> {skills.join(' • ')}</p>
+                                                      <p><strong>Technical Skills:</strong> {skills.map(s => (typeof s === 'object' ? s?.name || '' : String(s))).filter(Boolean).join(' • ')}</p>
                                                 </div>
                                           )}
 
@@ -188,8 +188,8 @@ function ResumePreview({ formData, onClose }) {
                                                       <h3 style={{ color: accentColor }}>Projects</h3>
                                                       {projects.map((proj, index) => (
                                                             <div key={index} className="section-item">
-                                                                  <h4>{proj.title} {proj.technologies && <em>({proj.technologies})</em>}</h4>
-                                                                  <p>{proj.description}</p>
+                                                                  <h4>{proj?.title || 'Project'} {proj?.technologies && <em>({proj.technologies})</em>}</h4>
+                                                                  <p>{proj?.description || ''}</p>
                                                             </div>
                                                       ))}
                                                 </div>
@@ -201,8 +201,8 @@ function ResumePreview({ formData, onClose }) {
                                                       <h3 style={{ color: accentColor }}>Work Experience</h3>
                                                       {experience.map((exp, index) => (
                                                             <div key={index} className="section-item">
-                                                                  <h4>{exp.role} - {exp.company} <span style={{ float: 'right', fontWeight: 'normal', fontSize: '0.85rem' }}>{exp.duration}</span></h4>
-                                                                  <p>{exp.description}</p>
+                                                                  <h4>{exp?.role || 'Role'} - {exp?.company || 'Company'} <span style={{ float: 'right', fontWeight: 'normal', fontSize: '0.85rem' }}>{exp?.duration || ''}</span></h4>
+                                                                  <p>{exp?.description || ''}</p>
                                                             </div>
                                                       ))}
                                                 </div>
@@ -214,8 +214,8 @@ function ResumePreview({ formData, onClose }) {
                                                       <h3 style={{ color: accentColor }}>Education</h3>
                                                       {education.map((edu, index) => (
                                                             <div key={index} className="section-item">
-                                                                  <h4>{edu.degree} - {edu.college} <span style={{ float: 'right', fontWeight: 'normal' }}>{edu.year}</span></h4>
-                                                                  {edu.grade && <p>Grade: {edu.grade}</p>}
+                                                                  <h4>{edu?.degree || 'Degree'} - {edu?.college || 'Institution'} <span style={{ float: 'right', fontWeight: 'normal' }}>{edu?.year || ''}</span></h4>
+                                                                  {edu?.grade && <p>Grade: {edu.grade}</p>}
                                                             </div>
                                                       ))}
                                                 </div>
@@ -227,7 +227,7 @@ function ResumePreview({ formData, onClose }) {
                                                       <h3 style={{ color: accentColor }}>Coding Profiles</h3>
                                                       {coding_profiles.map((prof, index) => (
                                                             <div key={index} className="profile-item">
-                                                                  <strong>{prof.platform}:</strong> {prof.headline} — <a href={prof.link} target="_blank" rel="noreferrer">View Profile</a>
+                                                                  <strong>{prof?.platform || 'Profile'}:</strong> {prof?.headline || ''} {prof?.link && <>— <a href={prof.link} target="_blank" rel="noreferrer">View Profile</a></>}
                                                             </div>
                                                       ))}
                                                 </div>
@@ -240,7 +240,7 @@ function ResumePreview({ formData, onClose }) {
                                                       <ul>
                                                             {certifications.map((cert, index) => (
                                                                   <li key={index}>
-                                                                        {typeof cert === 'string' ? cert : `${cert.name} ${cert.issued_by ? `- ${cert.issued_by}` : ''}`}
+                                                                        {typeof cert === 'string' ? cert : `${cert?.name || 'Certification'} ${cert?.issued_by ? `- ${cert.issued_by}` : ''}`}
                                                                   </li>
                                                             ))}
                                                       </ul>
@@ -254,7 +254,7 @@ function ResumePreview({ formData, onClose }) {
                                                       <ul>
                                                             {achievements.map((ach, index) => (
                                                                   <li key={index}>
-                                                                        <strong>{ach.title}</strong>: {ach.description}
+                                                                        <strong>{ach?.title || 'Achievement'}</strong>: {ach?.description || ''}
                                                                   </li>
                                                             ))}
                                                       </ul>

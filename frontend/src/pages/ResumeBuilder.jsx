@@ -312,96 +312,107 @@ function ResumeBuilder() {
       const addEducation = () => {
             setFormData({
                   ...formData,
-                  education: [...formData.education, { degree: '', college: '', year: '', grade: '' }]
+                  education: [...(formData.education || []), { degree: '', college: '', year: '', grade: '' }]
             });
       };
       const updateEducation = (index, field, value) => {
-            const newEducation = [...formData.education];
-            newEducation[index][field] = value;
-            setFormData({ ...formData, education: newEducation });
+            const newEducation = [...(formData.education || [])];
+            if (newEducation[index]) {
+                  newEducation[index] = { ...newEducation[index], [field]: value };
+                  setFormData({ ...formData, education: newEducation });
+            }
       };
       const removeEducation = (index) => {
-            setFormData({ ...formData, education: formData.education.filter((_, i) => i !== index) });
+            setFormData({ ...formData, education: (formData.education || []).filter((_, i) => i !== index) });
       };
 
       // Skills handlers
       const handleAddSkill = (skillToAdd) => {
             const skill = (skillToAdd || skillInput).trim();
+            const currentSkills = formData.skills || [];
             if (skill) {
-                  if (formData.skills.includes(skill)) {
+                  if (currentSkills.includes(skill)) {
                         showToast('Skill already added', 'info');
                   } else {
-                        setFormData({ ...formData, skills: [...formData.skills, skill] });
+                        setFormData({ ...formData, skills: [...currentSkills, skill] });
                         setSkillInput('');
                   }
             }
       };
       const removeSkill = (index) => {
-            setFormData({ ...formData, skills: formData.skills.filter((_, i) => i !== index) });
+            setFormData({ ...formData, skills: (formData.skills || []).filter((_, i) => i !== index) });
       };
 
       // Projects handlers
       const addProject = () => {
             setFormData({
                   ...formData,
-                  projects: [...formData.projects, { title: '', technologies: '', description: '', repository_url: '', live_demo_url: '' }]
+                  projects: [...(formData.projects || []), { title: '', technologies: '', description: '', repository_url: '', live_demo_url: '' }]
             });
       };
       const updateProject = (index, field, value) => {
-            const newProjects = [...formData.projects];
-            newProjects[index][field] = value;
-            setFormData({ ...formData, projects: newProjects });
+            const newProjects = [...(formData.projects || [])];
+            if (newProjects[index]) {
+                  newProjects[index] = { ...newProjects[index], [field]: value };
+                  setFormData({ ...formData, projects: newProjects });
+            }
       };
       const removeProject = (index) => {
-            setFormData({ ...formData, projects: formData.projects.filter((_, i) => i !== index) });
+            setFormData({ ...formData, projects: (formData.projects || []).filter((_, i) => i !== index) });
       };
 
       // Experience handlers
       const addExperience = () => {
             setFormData({
                   ...formData,
-                  experience: [...formData.experience, { company: '', role: '', duration: '', description: '' }]
+                  experience: [...(formData.experience || []), { company: '', role: '', duration: '', description: '' }]
             });
       };
       const updateExperience = (index, field, value) => {
-            const newExperience = [...formData.experience];
-            newExperience[index][field] = value;
-            setFormData({ ...formData, experience: newExperience });
+            const newExperience = [...(formData.experience || [])];
+            if (newExperience[index]) {
+                  newExperience[index] = { ...newExperience[index], [field]: value };
+                  setFormData({ ...formData, experience: newExperience });
+            }
       };
       const removeExperience = (index) => {
-            setFormData({ ...formData, experience: formData.experience.filter((_, i) => i !== index) });
+            setFormData({ ...formData, experience: (formData.experience || []).filter((_, i) => i !== index) });
       };
 
       // Certifications handlers
       const addCertification = () => {
             setFormData({
                   ...formData,
-                  certifications: [...formData.certifications, { name: '', file_data: '', file_url: '', issued_by: '', date: '' }]
+                  certifications: [...(formData.certifications || []), { name: '', file_data: '', file_url: '', issued_by: '', date: '' }]
             });
       };
       const updateCertification = (index, field, value) => {
-            const newCerts = [...formData.certifications];
-            newCerts[index][field] = value;
-            setFormData({ ...formData, certifications: newCerts });
+            const newCerts = [...(formData.certifications || [])];
+            if (newCerts[index]) {
+                  newCerts[index] = { ...newCerts[index], [field]: value };
+                  setFormData({ ...formData, certifications: newCerts });
+            }
       };
       const removeCertification = (index) => {
-            setFormData({ ...formData, certifications: formData.certifications.filter((_, i) => i !== index) });
+            setFormData({ ...formData, certifications: (formData.certifications || []).filter((_, i) => i !== index) });
       };
 
       // Achievements handlers
       const addAchievement = () => {
             setFormData({
                   ...formData,
-                  achievements: [...formData.achievements, { title: '', description: '', date: '', link: '' }]
+                  achievements: [...(formData.achievements || []), { title: '', description: '', date: '', link: '' }]
             });
       };
       const updateAchievement = (index, field, value) => {
-            const newAchievements = [...formData.achievements];
-            newAchievements[index][field] = value;
-            setFormData({ ...formData, achievements: newAchievements });
+            const newAchievements = [...(formData.achievements || [])];
+            if (newAchievements[index]) {
+                  newAchievements[index] = { ...newAchievements[index], [field]: value };
+                  setFormData({ ...formData, achievements: newAchievements });
+            }
       };
       const removeAchievement = (index) => {
-            setFormData({ ...formData, achievements: formData.achievements.filter((_, i) => i !== index) });
+            setFormData({ ...formData, achievements: (formData.achievements || []).filter((_, i) => i !== index) });
       };
 
       // Coding Profiles handlers
@@ -412,14 +423,14 @@ function ResumeBuilder() {
             });
       };
       const updateCodingProfile = (index, field, value) => {
-            const newProfiles = [...formData.coding_profiles];
-            newProfiles[index][field] = value;
-            setFormData({ ...formData, coding_profiles: newProfiles });
+            const newProfiles = [...(formData.coding_profiles || [])];
+            if (newProfiles[index]) {
+                  newProfiles[index] = { ...newProfiles[index], [field]: value };
+                  setFormData({ ...formData, coding_profiles: newProfiles });
+            }
       };
       const removeCodingProfile = (index) => {
-            const newProfiles = [...formData.coding_profiles];
-            newProfiles.splice(index, 1);
-            setFormData({ ...formData, coding_profiles: newProfiles });
+            setFormData({ ...formData, coding_profiles: (formData.coding_profiles || []).filter((_, i) => i !== index) });
       };
 
       const stepsList = [

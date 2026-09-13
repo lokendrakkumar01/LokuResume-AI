@@ -197,7 +197,8 @@ function Dashboard() {
                   const url = window.URL.createObjectURL(new Blob([response.data]));
                   const link = document.createElement('a');
                   link.href = url;
-                  link.setAttribute('download', `${name.replace(/\s+/g, '_')}_Resume.pdf`);
+                  const safeName = (name || 'Resume').replace(/\s+/g, '_');
+                  link.setAttribute('download', `${safeName}_Resume.pdf`);
                   document.body.appendChild(link);
                   link.click();
                   link.remove();
@@ -209,8 +210,9 @@ function Dashboard() {
       };
 
       const getScoreColor = (score) => {
-            if (score < 50) return 'score-red';
-            if (score < 65) return 'score-orange';
+            const s = score || 0;
+            if (s < 50) return 'score-red';
+            if (s < 65) return 'score-orange';
             return 'score-green';
       };
 
@@ -218,16 +220,17 @@ function Dashboard() {
       const filteredResumes = resumes.filter((r) => {
             const matchesSearch = (r.personal_info?.name || '').toLowerCase().includes(searchQuery.toLowerCase()) ||
                                   (r.personal_info?.email || '').toLowerCase().includes(searchQuery.toLowerCase());
-            if (filterScore === 'unlocked') return matchesSearch && r.score >= 65;
-            if (filterScore === 'improving') return matchesSearch && r.score < 65;
+            const score = r.score || 0;
+            if (filterScore === 'unlocked') return matchesSearch && score >= 65;
+            if (filterScore === 'improving') return matchesSearch && score < 65;
             return matchesSearch;
       });
 
       // Calculate Metrics
       const totalResumes = resumes.length;
-      const avgScore = totalResumes > 0 ? (resumes.reduce((acc, r) => acc + r.score, 0) / totalResumes).toFixed(1) : 0;
-      const highScore = totalResumes > 0 ? Math.max(...resumes.map(r => r.score)) : 0;
-      const unlockedCount = resumes.filter(r => r.score >= 65).length;
+      const avgScore = totalResumes > 0 ? (resumes.reduce((acc, r) => acc + (r.score || 0), 0) / totalResumes).toFixed(1) : 0;
+      const highScore = totalResumes > 0 ? Math.max(...resumes.map(r => r.score || 0)) : 0;
+      const unlockedCount = resumes.filter(r => (r.score || 0) >= 65).length;
 
       return (
             <div className="dashboard">

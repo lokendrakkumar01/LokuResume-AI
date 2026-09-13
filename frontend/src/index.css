@@ -1,8 +1,9 @@
 :root {
-  --primary-gradient: linear-gradient(135deg, #4f46e5 0%, #7c3aed 50%, #2563eb 100%);
+  --primary: #4f46e5;
   --primary-color: #4f46e5;
   --primary-hover: #4338ca;
   --secondary-gradient: linear-gradient(135deg, #3b82f6 0%, #06b6d4 100%);
+  --primary-gradient: linear-gradient(135deg, #4f46e5 0%, #7c3aed 50%, #2563eb 100%);
   --accent-color: #06b6d4;
   --bg-gradient: radial-gradient(circle at 15% 15%, rgba(99, 102, 241, 0.08) 0%, transparent 40%),
                  radial-gradient(circle at 85% 85%, rgba(168, 85, 247, 0.08) 0%, transparent 40%),
@@ -24,9 +25,10 @@
 }
 
 [data-theme='dark'] {
-  --primary-gradient: linear-gradient(135deg, #6366f1 0%, #a855f7 50%, #3b82f6 100%);
+  --primary: #6366f1;
   --primary-color: #6366f1;
   --primary-hover: #4f46e5;
+  --primary-gradient: linear-gradient(135deg, #6366f1 0%, #a855f7 50%, #3b82f6 100%);
   --bg-gradient: radial-gradient(circle at 10% 20%, rgba(99, 102, 241, 0.15) 0%, transparent 45%),
                  radial-gradient(circle at 90% 80%, rgba(217, 70, 239, 0.12) 0%, transparent 45%),
                  #090d16;

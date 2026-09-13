@@ -366,7 +366,11 @@ async def download_resume(resume_id: str, user_id: str = Depends(get_current_use
         pdf_buffer = pdf_generator.generate_resume_pdf(resume_for_pdf, resume["score"], pdf_preferences)
         
         # Return PDF as downloadable file
-        filename = f"{resume['personal_info']['name'].replace(' ', '_')}_Resume.pdf"
+        candidate_name = (resume.get('personal_info') or {}).get('name') or "Candidate"
+        safe_name = "".join(c for c in candidate_name.replace(' ', '_') if c.isalnum() or c in ('_', '-'))
+        if not safe_name:
+            safe_name = "Resume"
+        filename = f"{safe_name}_Resume.pdf"
         
         return StreamingResponse(
             pdf_buffer,

@@ -65,31 +65,31 @@ function ATSAnalyzerModal({ resume, onClose }) {
                               {result && (
                                     <div className="ats-result-container fade-in">
                                           <div className="ats-score-badge-card">
-                                                <div className="ats-score-number">{result.match_score}%</div>
+                                                <div className="ats-score-number">{result.match_score ?? 0}%</div>
                                                 <div className="ats-score-label">Job Match Confidence</div>
                                           </div>
 
                                           <div className="ats-details-grid">
                                                 <div className="ats-detail-box matching">
-                                                      <h4>✅ Matched Keywords ({result.matching_keywords.length})</h4>
+                                                      <h4>✅ Matched Keywords ({(result.matching_keywords || []).length})</h4>
                                                       <div className="ats-pills">
-                                                            {result.matching_keywords.length > 0 ? (
+                                                            {(result.matching_keywords || []).length > 0 ? (
                                                                   result.matching_keywords.map((kw, i) => <span key={i} className="pill pill-green">{kw}</span>)
                                                             ) : <span className="text-muted">None matched</span>}
                                                       </div>
                                                 </div>
 
                                                 <div className="ats-detail-box missing">
-                                                      <h4>❌ Missing Keywords ({result.missing_keywords.length})</h4>
+                                                      <h4>❌ Missing Keywords ({(result.missing_keywords || []).length})</h4>
                                                       <div className="ats-pills">
-                                                            {result.missing_keywords.length > 0 ? (
+                                                            {(result.missing_keywords || []).length > 0 ? (
                                                                   result.missing_keywords.map((kw, i) => <span key={i} className="pill pill-red">{kw}</span>)
                                                             ) : <span className="text-muted">None missing!</span>}
                                                       </div>
                                                 </div>
                                           </div>
 
-                                          {result.recommendations.length > 0 && (
+                                          {(result.recommendations || []).length > 0 && (
                                                 <div className="ats-recommendations">
                                                       <h4>💡 Recommendations</h4>
                                                       <ul>
