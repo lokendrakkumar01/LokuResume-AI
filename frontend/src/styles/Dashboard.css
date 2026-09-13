@@ -519,3 +519,114 @@
         justify-content: center;
     }
 }
+
+/* Delete Confirmation Modal */
+.delete-modal-card {
+    padding: 28px 24px;
+    text-align: center;
+    max-width: 440px;
+    width: 100%;
+    margin: auto;
+    border: 1px solid rgba(239, 68, 68, 0.25);
+    border-radius: var(--radius-lg);
+    box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.6), 0 0 35px rgba(239, 68, 68, 0.2);
+}
+
+.delete-modal-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    margin-bottom: 16px;
+    position: relative;
+}
+
+.delete-modal-icon-badge {
+    width: 56px;
+    height: 56px;
+    border-radius: 50%;
+    background: rgba(239, 68, 68, 0.12);
+    border: 1.5px solid rgba(239, 68, 68, 0.3);
+    color: #ef4444;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin: 0 auto;
+    box-shadow: 0 8px 20px rgba(239, 68, 68, 0.25);
+}
+
+.delete-modal-close {
+    position: absolute;
+    top: -6px;
+    right: -4px;
+    width: 32px;
+    height: 32px;
+    border-radius: 50%;
+    border: 1px solid var(--card-border);
+    background: var(--glass-bg);
+    color: var(--text-muted);
+    font-size: 0.95rem;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: var(--transition);
+}
+
+.delete-modal-close:hover {
+    color: #ef4444;
+    background: rgba(239, 68, 68, 0.15);
+    border-color: rgba(239, 68, 68, 0.3);
+}
+
+.delete-modal-title {
+    font-size: 1.3rem;
+    font-weight: 800;
+    color: var(--text-main);
+    margin-bottom: 10px;
+}
+
+.delete-modal-text {
+    font-size: 0.92rem;
+    color: var(--text-muted);
+    line-height: 1.55;
+    margin-bottom: 24px;
+}
+
+.delete-modal-text strong {
+    color: var(--text-main);
+    word-break: break-word;
+}
+
+.delete-modal-actions {
+    display: flex;
+    gap: 12px;
+    justify-content: center;
+}
+
+.delete-btn-cancel {
+    flex: 1;
+}
+
+.delete-btn-confirm {
+    flex: 1.2;
+    background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%);
+    box-shadow: 0 4px 14px rgba(239, 68, 68, 0.4);
+}
+
+.delete-btn-confirm:hover {
+    box-shadow: 0 6px 20px rgba(239, 68, 68, 0.55);
+}
+
+@media (max-width: 768px) {
+    .delete-modal-card {
+        padding: 22px 18px;
+        max-width: calc(100vw - 32px);
+    }
+    .delete-modal-actions {
+        flex-direction: column-reverse;
+        gap: 10px;
+    }
+    .delete-modal-actions button {
+        width: 100%;
+    }
+}

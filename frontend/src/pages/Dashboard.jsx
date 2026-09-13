@@ -38,6 +38,26 @@ function Dashboard() {
             fetchFeatures();
       }, []);
 
+      useEffect(() => {
+            const handleKeyDown = (e) => {
+                  if (e.key === 'Escape') {
+                        if (deleteTarget) setDeleteTarget(null);
+                        if (previewResume) setPreviewResume(null);
+                        if (selectedResumeForATS) setSelectedResumeForATS(null);
+                  }
+            };
+            if (deleteTarget || previewResume || selectedResumeForATS) {
+                  document.body.style.overflow = 'hidden';
+                  window.addEventListener('keydown', handleKeyDown);
+            } else {
+                  document.body.style.overflow = '';
+            }
+            return () => {
+                  document.body.style.overflow = '';
+                  window.removeEventListener('keydown', handleKeyDown);
+            };
+      }, [deleteTarget, previewResume, selectedResumeForATS]);
+
       const fetchBroadcast = async () => {
             try {
                   const res = await axios.get(`${config.API_BASE_URL}/admin/public-broadcast`);
@@ -570,19 +590,28 @@ function Dashboard() {
                   {/* Custom Glassmorphic Delete Modal */}
                   {deleteTarget && (
                         <div className="modal-overlay" onClick={() => setDeleteTarget(null)}>
-                              <div className="glass-card modal-content" onClick={(e) => e.stopPropagation()} style={{ maxWidth: 440, padding: 28 }}>
-                                    <h3 style={{ color: '#ef4444', marginBottom: 12, display: 'flex', alignItems: 'center', gap: 8 }}>
-                                          ⚠️ Delete Resume
-                                    </h3>
-                                    <p style={{ color: 'var(--text-main)', marginBottom: 20 }}>
-                                          Are you sure you want to delete <strong>"{deleteTarget.name}"</strong>? This action is permanent and cannot be undone.
+                              <div className="glass-card modal-content delete-modal-card" onClick={(e) => e.stopPropagation()}>
+                                    <div className="delete-modal-header">
+                                          <div className="delete-modal-icon-badge">
+                                                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                                                      <polyline points="3 6 5 6 21 6"></polyline>
+                                                      <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
+                                                      <line x1="10" y1="11" x2="10" y2="17"></line>
+                                                      <line x1="14" y1="11" x2="14" y2="17"></line>
+                                                </svg>
+                                          </div>
+                                          <button className="delete-modal-close" onClick={() => setDeleteTarget(null)} title="Close">✕</button>
+                                    </div>
+                                    <h3 className="delete-modal-title">Delete Resume?</h3>
+                                    <p className="delete-modal-text">
+                                          Are you sure you want to permanently delete <strong>"{deleteTarget.name}"</strong>? All associated ATS scores, tailored versions, and PDF downloads will be removed.
                                     </p>
-                                    <div style={{ display: 'flex', gap: 12, justifyContent: 'flex-end' }}>
-                                          <button onClick={() => setDeleteTarget(null)} className="btn btn-secondary">
-                                                Cancel
+                                    <div className="delete-modal-actions">
+                                          <button onClick={() => setDeleteTarget(null)} className="btn btn-secondary delete-btn-cancel">
+                                                Keep Resume
                                           </button>
-                                          <button onClick={confirmDelete} className="btn btn-danger">
-                                                Confirm Delete
+                                          <button onClick={confirmDelete} className="btn btn-danger delete-btn-confirm">
+                                                🗑️ Yes, Delete
                                           </button>
                                     </div>
                               </div>
