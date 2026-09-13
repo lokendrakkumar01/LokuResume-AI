@@ -35,3 +35,7 @@ class BroadcastRequest(BaseModel):
     message: str
     type: Optional[str] = "info"  # "info", "warning", "success", "alert"
     active: Optional[bool] = True
+
+class FeatureFlagsUpdateRequest(BaseModel):
+    features: dict
+

@@ -1,12 +1,69 @@
 from fastapi import APIRouter, HTTPException, Depends, status, Header, Query
 from auth.jwt_handler import get_admin_from_token
 from database import get_database
-from models.user import BroadcastRequest
-from datetime import datetime, timezone
+from models.user import BroadcastRequest, FeatureFlagsUpdateRequest
+from datetime import datetime, timezone, timedelta
 from bson import ObjectId
-from typing import Optional, List
+from typing import Optional, List, Dict, Any
 
 router = APIRouter(prefix="/admin", tags=["Admin Portal"])
+
+DEFAULT_FEATURES: Dict[str, Any] = {
+    "ai_voice_assistant": {
+        "id": "ai_voice_assistant",
+        "name": "Gemini AI Voice Interview & Career Coach",
+        "description": "Multilingual interactive voice assistant for real-time interview prep, resume guidance, and career coaching.",
+        "status": "public",  # "public" | "premium" | "disabled"
+        "badge": "Pro Voice AI",
+        "category": "Artificial Intelligence",
+        "icon": "🎙️"
+    },
+    "ai_ats_deep_audit": {
+        "id": "ai_ats_deep_audit",
+        "name": "100% Deep ATS Resume Optimizer & Auto-Keywords",
+        "description": "Comprehensive ATS scan with intelligent keyword recommendations to maximize job match score.",
+        "status": "public",
+        "badge": "Pro ATS",
+        "category": "Artificial Intelligence",
+        "icon": "🎯"
+    },
+    "premium_templates": {
+        "id": "premium_templates",
+        "name": "Executive & Designer Resume Templates",
+        "description": "Unlock modern executive, creative designer, and tech-focused resume layout designs.",
+        "status": "public",
+        "badge": "Executive Suite",
+        "category": "Design & Themes",
+        "icon": "🎨"
+    },
+    "hd_pdf_export": {
+        "id": "hd_pdf_export",
+        "name": "Vector High-Definition PDF Export",
+        "description": "Crystal-clear, watermark-free vector PDF download with custom theme palettes and fonts.",
+        "status": "public",
+        "badge": "Vector HD",
+        "category": "Export Tools",
+        "icon": "📄"
+    },
+    "ai_bullet_generator": {
+        "id": "ai_bullet_generator",
+        "name": "AI Work Experience Bullet Generator",
+        "description": "Generate impactful action-driven achievement bullets with quantified metrics in one click.",
+        "status": "public",
+        "badge": "AI Magic",
+        "category": "Artificial Intelligence",
+        "icon": "⚡"
+    },
+    "unlimited_resumes": {
+        "id": "unlimited_resumes",
+        "name": "Unlimited Resume Variations & Profiles",
+        "description": "Build and manage unlimited customized resumes tailored for different job applications.",
+        "status": "public",
+        "badge": "Unlimited",
+        "category": "Platform Storage",
+        "icon": "🚀"
+    }
+}
 
 async def get_current_admin(authorization: str = Header(None)) -> str:
     """Security dependency: verifies caller possesses valid master admin token"""
@@ -41,28 +98,56 @@ async def get_public_broadcast():
         }
     }
 
+@router.get("/public-features")
+async def get_public_features():
+    """Public endpoint: returns active platform feature flags to all clients"""
+    db = await get_database()
+    setting = await db.platform_settings.find_one({"key": "features"})
+    if not setting or not setting.get("features"):
+        return {"features": DEFAULT_FEATURES}
+    
+    # Merge defaults with any saved overrides
+    merged = {**DEFAULT_FEATURES}
+    for k, v in setting["features"].items():
+        if k in merged:
+            merged[k] = {**merged[k], **v}
+        else:
+            merged[k] = v
+            
+    return {"features": merged}
+
 @router.get("/stats")
 async def get_admin_stats(admin_id: str = Depends(get_current_admin)):
-    """Comprehensive system metrics and platform health overview"""
+    """Comprehensive real-time system metrics and platform health overview"""
     db = await get_database()
+    now = datetime.now(timezone.utc)
+    yesterday = now - timedelta(days=1)
+    last_week = now - timedelta(days=7)
     
-    # User counts
+    # Real User counts from MongoDB Atlas
     total_users = await db.users.count_documents({})
     admin_users = await db.users.count_documents({"role": "admin"})
     regular_users = total_users - admin_users
     
-    # Resume counts
-    total_resumes = await db.resumes.count_documents({})
+    # Real 24h and 7d new registrations
+    new_users_24h = await db.users.count_documents({"created_at": {"$gte": yesterday}})
+    new_users_7d = await db.users.count_documents({"created_at": {"$gte": last_week}})
     
-    # Calculate Average ATS Score
+    # Real Resume counts from MongoDB Atlas
+    total_resumes = await db.resumes.count_documents({})
+    new_resumes_24h = await db.resumes.count_documents({"created_at": {"$gte": yesterday}})
+    new_resumes_7d = await db.resumes.count_documents({"created_at": {"$gte": last_week}})
+    
+    # Calculate Real Average ATS Score
     pipeline = [
+        {"$match": {"score": {"$exists": True, "$ne": None}}},
         {"$group": {"_id": None, "avg_score": {"$avg": "$score"}, "max_score": {"$max": "$score"}, "min_score": {"$min": "$score"}}}
     ]
     score_stats = await db.resumes.aggregate(pipeline).to_list(1)
     avg_ats_score = round(score_stats[0]["avg_score"], 1) if score_stats and score_stats[0]["avg_score"] is not None else 0
     highest_score = round(score_stats[0]["max_score"], 1) if score_stats and score_stats[0]["max_score"] is not None else 0
     
-    # Broadcast setting
+    # Real Broadcast setting
     broadcast_doc = await db.platform_settings.find_one({"key": "broadcast"})
     current_broadcast = None
     if broadcast_doc:
@@ -73,14 +158,31 @@ async def get_admin_stats(admin_id: str = Depends(get_current_admin)):
             "updated_at": broadcast_doc.get("updated_at")
         }
     
+    # Features overview
+    features_doc = await db.platform_settings.find_one({"key": "features"})
+    active_features = features_doc.get("features", DEFAULT_FEATURES) if features_doc else DEFAULT_FEATURES
+    public_count = sum(1 for f in active_features.values() if f.get("status") == "public")
+    premium_count = sum(1 for f in active_features.values() if f.get("status") == "premium")
+    disabled_count = sum(1 for f in active_features.values() if f.get("status") == "disabled")
+    
     return {
         "total_users": total_users,
         "admin_users": admin_users,
         "regular_users": regular_users,
+        "new_users_24h": new_users_24h,
+        "new_users_7d": new_users_7d,
         "total_resumes": total_resumes,
+        "new_resumes_24h": new_resumes_24h,
+        "new_resumes_7d": new_resumes_7d,
         "avg_ats_score": avg_ats_score,
         "highest_score": highest_score,
         "active_broadcast": current_broadcast,
+        "features_summary": {
+            "total": len(active_features),
+            "public": public_count,
+            "premium": premium_count,
+            "disabled": disabled_count
+        },
         "system_status": {
             "database": "Online (MongoDB Atlas)",
             "api_health": "Operational",
@@ -107,7 +209,9 @@ async def get_all_users(
     user_list = []
     for u in users:
         uid_str = str(u["_id"])
-        resume_count = await db.resumes.count_documents({"user_id": uid_str})
+        resume_count = await db.resumes.count_documents({
+            "$or": [{"user_id": uid_str}, {"user_id": u["_id"]}]
+        })
         user_list.append({
             "id": uid_str,
             "name": u.get("name", "Unknown"),
@@ -138,8 +242,10 @@ async def delete_user(user_id: str, admin_id: str = Depends(get_current_admin)):
     if not target_user:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="User not found")
         
-    # Delete associated resumes
-    resume_del_res = await db.resumes.delete_many({"user_id": user_id})
+    # Delete associated resumes (both string and ObjectId)
+    resume_del_res = await db.resumes.delete_many({
+        "$or": [{"user_id": user_id}, {"user_id": obj_id}]
+    })
     
     # Delete user record
     await db.users.delete_one({"_id": obj_id})
@@ -168,7 +274,8 @@ async def get_all_resumes(
         uid = r.get("user_id")
         if uid and uid not in user_cache:
             try:
-                u_doc = await db.users.find_one({"_id": ObjectId(uid)})
+                search_filter = {"$or": [{"_id": ObjectId(uid)}]} if ObjectId.is_valid(str(uid)) else {"$or": [{"_id": uid}]}
+                u_doc = await db.users.find_one(search_filter)
                 user_cache[uid] = {
                     "name": u_doc.get("name", "User") if u_doc else "Unknown",
                     "email": u_doc.get("email", "") if u_doc else ""
@@ -191,7 +298,7 @@ async def get_all_resumes(
                 
         resume_list.append({
             "id": str(r["_id"]),
-            "user_id": uid,
+            "user_id": str(uid),
             "owner_name": user_info["name"],
             "owner_email": user_info["email"],
             "candidate_name": cand_name,
@@ -219,6 +326,56 @@ async def delete_resume_admin(resume_id: str, admin_id: str = Depends(get_curren
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Resume not found")
         
     return {"message": "Resume successfully deleted from platform", "resume_id": resume_id}
+
+@router.get("/features")
+async def get_admin_features(admin_id: str = Depends(get_current_admin)):
+    """Master Admin: Get all platform features and their current status flags"""
+    db = await get_database()
+    setting = await db.platform_settings.find_one({"key": "features"})
+    
+    saved_features = setting.get("features", {}) if setting else {}
+    merged = {**DEFAULT_FEATURES}
+    for k, v in saved_features.items():
+        if k in merged:
+            merged[k] = {**merged[k], **v}
+        else:
+            merged[k] = v
+            
+    return {
+        "features": merged,
+        "updated_at": setting.get("updated_at") if setting else None
+    }
+
+@router.post("/features")
+async def update_admin_features(req: FeatureFlagsUpdateRequest, admin_id: str = Depends(get_current_admin)):
+    """Master Admin: Update platform feature access levels (public, premium, disabled)"""
+    db = await get_database()
+    setting = await db.platform_settings.find_one({"key": "features"})
+    current_features = setting.get("features", DEFAULT_FEATURES) if setting else DEFAULT_FEATURES
+    
+    merged = {**current_features}
+    for feat_id, incoming in req.features.items():
+        if feat_id in merged:
+            status_val = incoming.get("status")
+            if status_val in ["public", "premium", "disabled"]:
+                merged[feat_id]["status"] = status_val
+        elif feat_id in DEFAULT_FEATURES:
+            status_val = incoming.get("status")
+            if status_val in ["public", "premium", "disabled"]:
+                merged[feat_id] = {**DEFAULT_FEATURES[feat_id], "status": status_val}
+                
+    now = datetime.now(timezone.utc)
+    await db.platform_settings.update_one(
+        {"key": "features"},
+        {"$set": {"features": merged, "updated_at": now}},
+        upsert=True
+    )
+    
+    return {
+        "message": "Platform feature flags successfully updated and deployed live!",
+        "features": merged,
+        "updated_at": now
+    }
 
 @router.get("/broadcast")
 async def get_admin_broadcast(admin_id: str = Depends(get_current_admin)):

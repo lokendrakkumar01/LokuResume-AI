@@ -19,6 +19,10 @@ function AdminDashboard() {
   const [userSearch, setUserSearch] = useState('');
   const [resumeSearch, setResumeSearch] = useState('');
 
+  // Feature Flags state
+  const [features, setFeatures] = useState({});
+  const [featuresSaving, setFeaturesSaving] = useState(false);
+
   // Password change state
   const [currentPassword, setCurrentPassword] = useState('');
   const [newPassword, setNewPassword] = useState('');
@@ -35,11 +39,12 @@ function AdminDashboard() {
       setRefreshing(true);
       const headers = getAuthHeader();
 
-      const [statsRes, usersRes, resumesRes, broadcastRes] = await Promise.all([
+      const [statsRes, usersRes, resumesRes, broadcastRes, featuresRes] = await Promise.all([
         axios.get(`${config.API_BASE_URL}/admin/stats`, { headers }).catch(e => ({ data: null })),
         axios.get(`${config.API_BASE_URL}/admin/users`, { headers }).catch(e => ({ data: { users: [] } })),
         axios.get(`${config.API_BASE_URL}/admin/resumes`, { headers }).catch(e => ({ data: { resumes: [] } })),
-        axios.get(`${config.API_BASE_URL}/admin/broadcast`, { headers }).catch(e => ({ data: { broadcast: null } }))
+        axios.get(`${config.API_BASE_URL}/admin/broadcast`, { headers }).catch(e => ({ data: { broadcast: null } })),
+        axios.get(`${config.API_BASE_URL}/admin/features`, { headers }).catch(e => ({ data: { features: {} } }))
       ]);
 
       if (statsRes.data) setStats(statsRes.data);
@@ -47,6 +52,9 @@ function AdminDashboard() {
       if (resumesRes.data?.resumes) setResumes(resumesRes.data.resumes);
       if (broadcastRes.data?.broadcast) {
         setBroadcast(broadcastRes.data.broadcast);
+      }
+      if (featuresRes.data?.features) {
+        setFeatures(featuresRes.data.features);
       }
     } catch (err) {
       console.error('Error fetching admin data:', err);
@@ -125,6 +133,44 @@ function AdminDashboard() {
       showToast('Platform broadcast banner deactivated.', 'success');
     } catch (err) {
       showToast('Failed to clear broadcast banner.', 'error');
+    }
+  };
+
+  // Handle feature status toggle
+  const handleFeatureStatusChange = (featureId, newStatus) => {
+    setFeatures(prev => ({
+      ...prev,
+      [featureId]: {
+        ...prev[featureId],
+        status: newStatus
+      }
+    }));
+  };
+
+  // Handle setting all features to Public (Free for All)
+  const handleMakeAllFeaturesPublic = () => {
+    setFeatures(prev => {
+      const updated = { ...prev };
+      Object.keys(updated).forEach(k => {
+        updated[k] = { ...updated[k], status: 'public' };
+      });
+      return updated;
+    });
+    showToast('All features set to Public (Free for All)! Click "Deploy Feature Flags" to save.', 'info');
+  };
+
+  // Save feature flags to MongoDB
+  const handleSaveFeatures = async () => {
+    setFeaturesSaving(true);
+    try {
+      const headers = getAuthHeader();
+      await axios.post(`${config.API_BASE_URL}/admin/features`, { features }, { headers });
+      showToast('Platform feature flags deployed live to all users!', 'success');
+      fetchDashboardData();
+    } catch (err) {
+      showToast('Failed to deploy feature flags', 'error');
+    } finally {
+      setFeaturesSaving(false);
     }
   };
 
@@ -269,6 +315,16 @@ function AdminDashboard() {
           </button>
 
           <button
+            className={`admin-nav-item ${activeTab === 'features' ? 'active' : ''}`}
+            onClick={() => setActiveTab('features')}
+          >
+            <svg viewBox="0 0 24 24" fill="none" strokeWidth="2">
+              <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2" />
+            </svg>
+            <span>Feature Controls ({Object.keys(features).length || 6})</span>
+          </button>
+
+          <button
             className={`admin-nav-item ${activeTab === 'broadcast' ? 'active' : ''}`}
             onClick={() => setActiveTab('broadcast')}
           >
@@ -329,7 +385,9 @@ function AdminDashboard() {
                   <div className="admin-stat-info">
                     <span className="admin-stat-label">Total Users</span>
                     <span className="admin-stat-value">{stats?.total_users ?? users.length}</span>
-                    <span className="admin-stat-sub">{stats?.admin_users ?? 1} Superadmin</span>
+                    <span className="admin-stat-sub">
+                      {stats?.new_users_24h !== undefined ? `+${stats.new_users_24h} today • +${stats.new_users_7d} this wk` : `${stats?.admin_users ?? 1} Superadmin`}
+                    </span>
                   </div>
                   <div className="admin-stat-icon blue">
                     <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
@@ -343,7 +401,9 @@ function AdminDashboard() {
                   <div className="admin-stat-info">
                     <span className="admin-stat-label">Resumes Created</span>
                     <span className="admin-stat-value">{stats?.total_resumes ?? resumes.length}</span>
-                    <span className="admin-stat-sub">Across All Templates</span>
+                    <span className="admin-stat-sub">
+                      {stats?.new_resumes_24h !== undefined ? `+${stats.new_resumes_24h} today • +${stats.new_resumes_7d} this wk` : 'Across All Templates'}
+                    </span>
                   </div>
                   <div className="admin-stat-icon purple">
                     <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
@@ -357,7 +417,7 @@ function AdminDashboard() {
                   <div className="admin-stat-info">
                     <span className="admin-stat-label">Avg ATS Score</span>
                     <span className="admin-stat-value">{stats?.avg_ats_score ?? 0}%</span>
-                    <span className="admin-stat-sub">Peak: {stats?.highest_score ?? 0}%</span>
+                    <span className="admin-stat-sub">Peak ATS: {stats?.highest_score ?? 0}%</span>
                   </div>
                   <div className="admin-stat-icon green">
                     <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
@@ -368,11 +428,28 @@ function AdminDashboard() {
 
                 <div className="admin-stat-card">
                   <div className="admin-stat-info">
+                    <span className="admin-stat-label">Feature Switches</span>
+                    <span className="admin-stat-value" style={{ fontSize: '1.35rem' }}>
+                      {stats?.features_summary ? `${stats.features_summary.public} Public` : '6 Active'}
+                    </span>
+                    <span className="admin-stat-sub">
+                      {stats?.features_summary ? `${stats.features_summary.premium} Pro • ${stats.features_summary.disabled} Paused` : 'Admin Controlled'}
+                    </span>
+                  </div>
+                  <div className="admin-stat-icon purple">
+                    <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                      <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2" />
+                    </svg>
+                  </div>
+                </div>
+
+                <div className="admin-stat-card">
+                  <div className="admin-stat-info">
                     <span className="admin-stat-label">Global Alert</span>
-                    <span className="admin-stat-value" style={{ fontSize: '1.25rem' }}>
+                    <span className="admin-stat-value" style={{ fontSize: '1.35rem' }}>
                       {broadcast?.active ? 'Active' : 'Disabled'}
                     </span>
-                    <span className="admin-stat-sub">{broadcast?.active ? 'Showing to all visitors' : 'No banner active'}</span>
+                    <span className="admin-stat-sub">{broadcast?.active ? 'Live across app' : 'No banner active'}</span>
                   </div>
                   <div className="admin-stat-icon red">
                     <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
@@ -604,6 +681,133 @@ function AdminDashboard() {
                     </tbody>
                   </table>
                 </div>
+              </div>
+            </div>
+          )}
+
+          {/* TAB: FEATURE CONTROLS */}
+          {activeTab === 'features' && (
+            <div>
+              <div className="admin-header-row">
+                <div>
+                  <h2 className="admin-section-title">Platform Feature Master Controls</h2>
+                  <p className="admin-section-subtitle">
+                    Control which premium features are 100% Free/Public for all users, locked behind VIP Pro, or paused for maintenance.
+                  </p>
+                </div>
+              </div>
+
+              {/* Action Bar */}
+              <div className="admin-feature-actions-bar">
+                <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+                  <span style={{ fontSize: '1.4rem' }}>⚡</span>
+                  <div>
+                    <strong style={{ color: '#ffffff', fontSize: '0.95rem' }}>Instant Feature Access Controls</strong>
+                    <p style={{ margin: 0, fontSize: '0.8rem', color: '#94a3b8' }}>
+                      Toggle any feature to Public (Free for all users) or Premium (Pro VIP). Saves directly into MongoDB Atlas.
+                    </p>
+                  </div>
+                </div>
+
+                <div style={{ display: 'flex', gap: '0.75rem', alignItems: 'center', flexWrap: 'wrap' }}>
+                  <button
+                    type="button"
+                    onClick={handleMakeAllFeaturesPublic}
+                    className="admin-btn-secondary"
+                    title="Unlock every feature for free for all platform users"
+                  >
+                    <span>🟢 Make All Public (Free)</span>
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={handleSaveFeatures}
+                    className="admin-btn-primary"
+                    disabled={featuresSaving}
+                  >
+                    {featuresSaving ? (
+                      <>
+                        <span className="admin-btn-spinner"></span>
+                        <span>Deploying Changes...</span>
+                      </>
+                    ) : (
+                      <>
+                        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
+                          <path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z" />
+                          <polyline points="17 21 17 13 7 13 7 21" />
+                          <polyline points="7 3 7 8 15 8" />
+                        </svg>
+                        <span>Deploy Feature Flags</span>
+                      </>
+                    )}
+                  </button>
+                </div>
+              </div>
+
+              {/* Features Grid */}
+              <div className="admin-features-grid">
+                {Object.entries(features).length === 0 ? (
+                  <div className="admin-empty-state" style={{ gridColumn: '1 / -1' }}>
+                    Loading feature flags from cloud database...
+                  </div>
+                ) : (
+                  Object.entries(features).map(([featId, feat]) => {
+                    const status = feat.status || 'public';
+                    return (
+                      <div key={featId} className={`admin-feature-card status-${status}`}>
+                        <div>
+                          <div className="admin-feature-header">
+                            <div className="admin-feature-meta">
+                              <span className="admin-feature-icon">{feat.icon || '✨'}</span>
+                              <div className="admin-feature-title-box">
+                                <h4>{feat.name}</h4>
+                                <span className="admin-feature-category">{feat.category || 'Feature'}</span>
+                              </div>
+                            </div>
+                            <span className={`admin-feature-badge-pill badge-${status}`}>
+                              {status === 'public' ? 'Free for All' : status === 'premium' ? 'Pro VIP' : 'Disabled'}
+                            </span>
+                          </div>
+
+                          <p className="admin-feature-desc">{feat.description}</p>
+                        </div>
+
+                        {/* 3-Way Toggle Button Group */}
+                        <div className="admin-toggle-group">
+                          <button
+                            type="button"
+                            className={`admin-toggle-btn btn-public ${status === 'public' ? 'active' : ''}`}
+                            onClick={() => handleFeatureStatusChange(featId, 'public')}
+                            title="Make this feature 100% free and open for all users"
+                          >
+                            <span>🟢</span>
+                            <span>Public (Free)</span>
+                          </button>
+
+                          <button
+                            type="button"
+                            className={`admin-toggle-btn btn-premium ${status === 'premium' ? 'active' : ''}`}
+                            onClick={() => handleFeatureStatusChange(featId, 'premium')}
+                            title="Restrict this feature to Premium / VIP tier"
+                          >
+                            <span>💎</span>
+                            <span>Pro VIP</span>
+                          </button>
+
+                          <button
+                            type="button"
+                            className={`admin-toggle-btn btn-disabled ${status === 'disabled' ? 'active' : ''}`}
+                            onClick={() => handleFeatureStatusChange(featId, 'disabled')}
+                            title="Temporarily pause or disable this feature"
+                          >
+                            <span>⚪</span>
+                            <span>Disabled</span>
+                          </button>
+                        </div>
+                      </div>
+                    );
+                  })
+                )}
               </div>
             </div>
           )}

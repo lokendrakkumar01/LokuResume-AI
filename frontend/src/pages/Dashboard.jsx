@@ -26,6 +26,7 @@ function Dashboard() {
       const [previewResume, setPreviewResume] = useState(null);
       const [deleteTarget, setDeleteTarget] = useState(null); // { id, name }
       const [broadcast, setBroadcast] = useState(null);
+      const [features, setFeatures] = useState({});
 
       const { user, logout, getAuthHeader, isAdmin } = useAuth();
       const { showToast } = useToast();
@@ -34,6 +35,7 @@ function Dashboard() {
       useEffect(() => {
             fetchResumes();
             fetchBroadcast();
+            fetchFeatures();
       }, []);
 
       const fetchBroadcast = async () => {
@@ -41,6 +43,17 @@ function Dashboard() {
                   const res = await axios.get(`${config.API_BASE_URL}/admin/public-broadcast`);
                   if (res.data?.broadcast?.active) {
                         setBroadcast(res.data.broadcast);
+                  }
+            } catch (e) {
+                  // ignore
+            }
+      };
+
+      const fetchFeatures = async () => {
+            try {
+                  const res = await axios.get(`${config.API_BASE_URL}/admin/public-features`);
+                  if (res.data?.features) {
+                        setFeatures(res.data.features);
                   }
             } catch (e) {
                   // ignore
@@ -347,7 +360,17 @@ function Dashboard() {
                                           <p>Step-by-step guidance on reaching 90%+ ATS score, Google XYZ formula, and in-demand skills.</p>
                                     </div>
                               </div>
-                              <div className="ai-coach-banner-actions">
+                              <div className="ai-coach-banner-actions" style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', flexWrap: 'wrap' }}>
+                                    {features?.ai_voice_assistant?.status === 'public' && (
+                                          <span style={{ fontSize: '0.75rem', fontWeight: '800', background: 'rgba(16, 185, 129, 0.2)', color: '#34d399', border: '1px solid rgba(16, 185, 129, 0.4)', padding: '0.25rem 0.65rem', borderRadius: '20px' }}>
+                                                ✨ Free for All (Unlocked by Admin)
+                                          </span>
+                                    )}
+                                    {features?.ai_voice_assistant?.status === 'premium' && (
+                                          <span style={{ fontSize: '0.75rem', fontWeight: '800', background: 'rgba(245, 158, 11, 0.2)', color: '#fbbf24', border: '1px solid rgba(245, 158, 11, 0.4)', padding: '0.25rem 0.65rem', borderRadius: '20px' }}>
+                                                💎 Pro VIP Feature
+                                          </span>
+                                    )}
                                     <button
                                           type="button"
                                           className="btn btn-primary btn-sm"
