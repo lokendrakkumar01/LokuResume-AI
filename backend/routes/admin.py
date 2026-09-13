@@ -358,14 +358,14 @@ async def get_all_users(
     db = await get_database()
     query = {}
     
-    if search and search.strip():
+    if isinstance(search, str) and search.strip():
         regex = {"$regex": search.strip(), "$options": "i"}
         query["$or"] = [{"name": regex}, {"email": regex}]
         
-    if role and role != "all":
+    if isinstance(role, str) and role.strip() and role != "all":
         query["role"] = role
         
-    if status_filter and status_filter != "all":
+    if isinstance(status_filter, str) and status_filter.strip() and status_filter != "all":
         query["status"] = status_filter
     
     cursor = db.users.find(query).sort("created_at", -1)
@@ -592,7 +592,7 @@ async def get_all_resumes(
         cand_email = personal_info.get("email") or user_info["email"]
         target_role = r.get("target_role") or personal_info.get("headline") or "Software Engineer"
         
-        if search and search.strip():
+        if isinstance(search, str) and search.strip():
             s = search.strip().lower()
             if not (s in cand_name.lower() or s in cand_email.lower() or s in target_role.lower()):
                 continue

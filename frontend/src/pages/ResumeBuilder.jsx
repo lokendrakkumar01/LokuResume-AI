@@ -214,6 +214,9 @@ function ResumeBuilder() {
       const handleUpdatePreferences = async (newPrefs) => {
             const nextTemplate = newPrefs.template_style || formData.template_style || 'modern';
             const nextColor = newPrefs.accent_color || formData.pdf_preferences?.accent_color || '#111827';
+            const nextIncludePhoto = newPrefs.include_photo !== undefined
+                  ? newPrefs.include_photo
+                  : (formData.pdf_preferences?.include_photo !== undefined ? formData.pdf_preferences.include_photo : true);
 
             const updated = {
                   ...formData,
@@ -221,7 +224,8 @@ function ResumeBuilder() {
                   pdf_preferences: {
                         ...(formData.pdf_preferences || {}),
                         background_color: '#ffffff',
-                        accent_color: nextColor
+                        accent_color: nextColor,
+                        include_photo: nextIncludePhoto
                   }
             };
             setFormData(updated);
@@ -230,7 +234,8 @@ function ResumeBuilder() {
                   try {
                         await axios.put(`${config.API_BASE_URL}/resumes/${id}/preferences`, {
                               template_style: nextTemplate,
-                              accent_color: nextColor
+                              accent_color: nextColor,
+                              include_photo: nextIncludePhoto
                         }, { headers: getAuthHeader() });
                   } catch (e) {
                         console.warn('Sync preferences error:', e);
@@ -288,6 +293,9 @@ function ResumeBuilder() {
 
             const targetTemplate = overrides.template_style || formData.template_style || 'modern';
             const targetColor = overrides.accent_color || formData.pdf_preferences?.accent_color || '#111827';
+            const targetIncludePhoto = overrides.include_photo !== undefined
+                  ? overrides.include_photo
+                  : (formData.pdf_preferences?.include_photo !== undefined ? formData.pdf_preferences.include_photo : true);
 
             let resumeId = id;
             if (!resumeId) {
@@ -303,7 +311,8 @@ function ResumeBuilder() {
                               template_style: targetTemplate,
                               pdf_preferences: {
                                     ...(formData.pdf_preferences || {}),
-                                    accent_color: targetColor
+                                    accent_color: targetColor,
+                                    include_photo: targetIncludePhoto
                               }
                         };
                         const saveRes = await axios.post(`${config.API_BASE_URL}/resumes`, payload, {
@@ -325,7 +334,8 @@ function ResumeBuilder() {
                               template_style: targetTemplate,
                               pdf_preferences: {
                                     ...(formData.pdf_preferences || {}),
-                                    accent_color: targetColor
+                                    accent_color: targetColor,
+                                    include_photo: targetIncludePhoto
                               }
                         }, {
                               headers: getAuthHeader()
@@ -341,7 +351,8 @@ function ResumeBuilder() {
                   showToast('Generating official PDF...', 'info');
                   const queryParams = new URLSearchParams({
                         accent_color: targetColor,
-                        template_style: targetTemplate
+                        template_style: targetTemplate,
+                        include_photo: targetIncludePhoto
                   }).toString();
 
                   const response = await axios.get(`${config.API_BASE_URL}/resumes/${resumeId}/download?${queryParams}`, {
@@ -527,15 +538,34 @@ function ResumeBuilder() {
                   }
                   const reader = new FileReader();
                   reader.onloadend = () => {
-                        setFormData({
+                        const updated = {
                               ...formData,
-                              personal_info: { ...formData.personal_info, profile_photo: reader.result }
-                        });
+                              personal_info: { ...formData.personal_info, profile_photo: reader.result },
+                              pdf_preferences: {
+                                    ...(formData.pdf_preferences || {}),
+                                    include_photo: true
+                              }
+                        };
+                        setFormData(updated);
+                        showToast('Profile photo uploaded and enabled!', 'success');
                   };
                   reader.readAsDataURL(file);
-            } else {
+            } else if (file) {
                   showToast('Please select a valid image file', 'warning');
             }
+      };
+
+      const handleRemovePhoto = () => {
+            setFormData({
+                  ...formData,
+                  personal_info: { ...formData.personal_info, profile_photo: '' }
+            });
+            showToast('Profile photo removed', 'info');
+      };
+
+      const handleTogglePhoto = (included) => {
+            handleUpdatePreferences({ include_photo: included });
+            showToast(included ? 'Photo will appear on your resume & PDF' : 'Photo will be omitted from your resume & PDF', 'info');
       };
 
       // Repeatable field handlers
@@ -861,10 +891,85 @@ function ResumeBuilder() {
                                     <h2>👤 Step 1: Personal Information</h2>
                                     <p className="step-description">Add your contact details and professional links</p>
 
-                                    <div className="form-group">
-                                          <label>Profile Photo (Optional)</label>
-                                          <input type="file" accept="image/*" onChange={handlePhotoUpload} />
-                                          {formData.personal_info?.profile_photo && <small>✅ Profile Photo Selected</small>}
+                                    <div className="form-group photo-management-card" style={{
+                                          background: 'rgba(255, 255, 255, 0.03)',
+                                          border: '1px solid var(--card-border, #334155)',
+                                          borderRadius: '12px',
+                                          padding: '16px',
+                                          marginBottom: '20px'
+                                    }}>
+                                          <label style={{ display: 'block', fontWeight: 600, marginBottom: '10px', fontSize: '0.95rem' }}>
+                                                📸 Profile Photo (Optional on Resume &amp; PDF)
+                                          </label>
+
+                                          {formData.personal_info?.profile_photo ? (
+                                                <div style={{ display: 'flex', alignItems: 'center', gap: '16px', flexWrap: 'wrap' }}>
+                                                      <img
+                                                            src={formData.personal_info.profile_photo}
+                                                            alt="Profile Preview"
+                                                            style={{
+                                                                  width: '68px',
+                                                                  height: '68px',
+                                                                  borderRadius: '50%',
+                                                                  objectFit: 'cover',
+                                                                  border: '2px solid var(--primary-color, #e11d48)',
+                                                                  boxShadow: '0 4px 12px rgba(0,0,0,0.25)'
+                                                            }}
+                                                      />
+                                                      <div style={{ flex: 1, minWidth: '220px' }}>
+                                                            <label style={{ display: 'flex', alignItems: 'center', gap: '8px', cursor: 'pointer', fontWeight: 600, fontSize: '0.9rem', marginBottom: '6px' }}>
+                                                                  <input
+                                                                        type="checkbox"
+                                                                        checked={formData.pdf_preferences?.include_photo !== false}
+                                                                        onChange={(e) => handleTogglePhoto(e.target.checked)}
+                                                                        style={{ width: '18px', height: '18px', accentColor: '#e11d48', cursor: 'pointer' }}
+                                                                  />
+                                                                  <span>Include photo on Resume &amp; PDF</span>
+                                                            </label>
+                                                            <div style={{ fontSize: '0.78rem', color: formData.pdf_preferences?.include_photo !== false ? '#10b981' : '#94a3b8' }}>
+                                                                  {formData.pdf_preferences?.include_photo !== false
+                                                                        ? '✅ Photo will appear on your resume & downloaded PDF'
+                                                                        : '👁️ Photo is hidden (will NOT appear on resume or PDF)'}
+                                                            </div>
+                                                      </div>
+                                                      <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
+                                                            <label className="btn btn-sm btn-secondary" style={{ cursor: 'pointer', margin: 0 }}>
+                                                                  🔄 Change
+                                                                  <input type="file" accept="image/*" onChange={handlePhotoUpload} style={{ display: 'none' }} />
+                                                            </label>
+                                                            <button
+                                                                  type="button"
+                                                                  className="btn btn-sm btn-outline-danger"
+                                                                  onClick={handleRemovePhoto}
+                                                                  title="Delete photo permanently from resume"
+                                                                  style={{ padding: '6px 12px', borderColor: '#ef4444', color: '#ef4444' }}
+                                                            >
+                                                                  🗑️ Remove
+                                                            </button>
+                                                      </div>
+                                                </div>
+                                          ) : (
+                                                <div style={{
+                                                      display: 'flex',
+                                                      flexDirection: 'column',
+                                                      alignItems: 'center',
+                                                      justifyContent: 'center',
+                                                      border: '2px dashed var(--card-border, #475569)',
+                                                      borderRadius: '10px',
+                                                      padding: '20px',
+                                                      textAlign: 'center',
+                                                      background: 'rgba(255, 255, 255, 0.01)'
+                                                }}>
+                                                      <div style={{ fontSize: '1.8rem', marginBottom: '6px' }}>🖼️</div>
+                                                      <label className="btn btn-sm btn-primary" style={{ cursor: 'pointer', margin: '6px 0', background: 'var(--primary-color, #e11d48)', borderColor: 'var(--primary-color, #e11d48)' }}>
+                                                            Choose Profile Photo
+                                                            <input type="file" accept="image/*" onChange={handlePhotoUpload} style={{ display: 'none' }} />
+                                                      </label>
+                                                      <span style={{ fontSize: '0.78rem', color: '#94a3b8', marginTop: '4px' }}>
+                                                            Supports JPG, PNG (Max 2MB). You can easily toggle it on or off anytime.
+                                                      </span>
+                                                </div>
+                                          )}
                                     </div>
 
                                     <div className="form-group">

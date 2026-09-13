@@ -233,14 +233,20 @@ function Dashboard() {
             }
       };
 
-      const handleDownload = async (id, name, score) => {
+      const handleDownload = async (id, name, score, options = {}) => {
             if (score !== undefined && score < 50) {
                   showToast(`Resume score is ${score}%. Complete at least 50% of your resume to unlock PDF download.`, 'warning');
                   return;
             }
             try {
                   showToast('Generating PDF...', 'info');
-                  const response = await axios.get(`${config.API_BASE_URL}/resumes/${id}/download`, {
+                  const queryParams = new URLSearchParams();
+                  if (options.template_style) queryParams.append('template_style', options.template_style);
+                  if (options.accent_color) queryParams.append('accent_color', options.accent_color);
+                  if (options.include_photo !== undefined) queryParams.append('include_photo', options.include_photo);
+
+                  const queryString = queryParams.toString() ? `?${queryParams.toString()}` : '';
+                  const response = await axios.get(`${config.API_BASE_URL}/resumes/${id}/download${queryString}`, {
                         headers: getAuthHeader(),
                         responseType: 'blob'
                   });
@@ -598,7 +604,19 @@ function Dashboard() {
                               <ResumePreview
                                     formData={previewResume}
                                     score={previewResume.score}
-                                    onDownloadPDF={() => handleDownload(previewResume.id, previewResume.personal_info?.name || 'Resume', previewResume.score)}
+                                    onDownloadPDF={(opts) => handleDownload(previewResume.id, previewResume.personal_info?.name || 'Resume', previewResume.score, opts)}
+                                    onUpdatePreferences={async (prefs) => {
+                                          try {
+                                                await axios.put(`${config.API_BASE_URL}/resumes/${previewResume.id}/preferences`, prefs, { headers: getAuthHeader() });
+                                                setPreviewResume(prev => ({
+                                                      ...prev,
+                                                      template_style: prefs.template_style || prev.template_style,
+                                                      pdf_preferences: { ...(prev.pdf_preferences || {}), ...prefs }
+                                                }));
+                                          } catch (err) {
+                                                console.warn('Sync preferences error in Dashboard:', err);
+                                          }
+                                    }}
                                     onClose={() => setPreviewResume(null)}
                               />
                         </ErrorBoundary>

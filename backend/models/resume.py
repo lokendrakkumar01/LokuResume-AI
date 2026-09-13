@@ -66,6 +66,7 @@ class PDFPreferences(BaseModel):
     model_config = ConfigDict(extra='allow')
     background_color: str = "#ffffff"
     accent_color: str = "#111827"
+    include_photo: Optional[bool] = True
 
 class Resume(BaseModel):
     model_config = ConfigDict(extra='allow')
@@ -145,7 +146,7 @@ class ResumeResponse(BaseModel):
     interests: List[str] = []
     custom_sections: List[Dict[str, Any]] = []
     template_style: Optional[str] = "modern"
-    pdf_preferences: Optional[PDFPreferences] = PDFPreferences(background_color="#ffffff", accent_color="#111827")
+    pdf_preferences: Optional[PDFPreferences] = PDFPreferences(background_color="#ffffff", accent_color="#111827", include_photo=True)
     score: float = 0
     score_breakdown: ScoreBreakdown = ScoreBreakdown()
     suggestions: List[str] = []

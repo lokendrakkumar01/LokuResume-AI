@@ -14,12 +14,13 @@ from typing import List, Optional, Dict, Any
 
 router = APIRouter(prefix="/resumes", tags=["Resumes"])
 
-DEFAULT_PDF_PREFERENCES = {"background_color": "#ffffff", "accent_color": "#111827"}
+DEFAULT_PDF_PREFERENCES = {"background_color": "#ffffff", "accent_color": "#111827", "include_photo": True}
 
 class PreferencesUpdateRequest(BaseModel):
     template_style: Optional[str] = None
     accent_color: Optional[str] = None
     background_color: Optional[str] = None
+    include_photo: Optional[bool] = None
 
 async def get_current_user(authorization: str = Header(None)):
     """Dependency to extract and verify user from JWT token"""
@@ -396,6 +397,8 @@ async def update_resume_preferences(
         update_fields["pdf_preferences.accent_color"] = prefs.accent_color
     if prefs.background_color:
         update_fields["pdf_preferences.background_color"] = prefs.background_color
+    if prefs.include_photo is not None:
+        update_fields["pdf_preferences.include_photo"] = prefs.include_photo
         
     result = await db.resumes.update_one(
         {"_id": obj_id, "user_id": user_id},
@@ -411,6 +414,7 @@ async def download_resume(
     resume_id: str, 
     accent_color: Optional[str] = None, 
     template_style: Optional[str] = None, 
+    include_photo: Optional[bool] = None,
     user_id: str = Depends(get_current_user)
 ):
     """Generate and download resume PDF (Requires minimum 50% score)"""
@@ -439,6 +443,9 @@ async def download_resume(
         if accent_color:
             pdf_preferences["accent_color"] = accent_color
             await db.resumes.update_one({"_id": obj_id}, {"$set": {"pdf_preferences.accent_color": accent_color}})
+        if include_photo is not None:
+            pdf_preferences["include_photo"] = include_photo
+            await db.resumes.update_one({"_id": obj_id}, {"$set": {"pdf_preferences.include_photo": include_photo}})
         
         # Sanitize certifications - remove large base64 file_data before PDF generation
         resume_for_pdf = resume.copy()

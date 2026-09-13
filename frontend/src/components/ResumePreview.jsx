@@ -80,6 +80,11 @@ function ResumePreview({ formData = {}, score, onDownloadPDF, onUpdatePreference
       const safeFormData = formData || {};
       const [template, setTemplate] = useState(safeFormData.template_style || 'modern');
       const [accentColor, setAccentColor] = useState(safeFormData.pdf_preferences?.accent_color || '#111827');
+      const [includePhoto, setIncludePhoto] = useState(
+            safeFormData.pdf_preferences?.include_photo !== undefined
+                  ? safeFormData.pdf_preferences.include_photo
+                  : (!!safeFormData.personal_info?.profile_photo)
+      );
       const [zoom, setZoom] = useState(1);
       const [fitScale, setFitScale] = useState(1);
       const containerRef = useRef(null);
@@ -134,7 +139,10 @@ function ResumePreview({ formData = {}, score, onDownloadPDF, onUpdatePreference
       useEffect(() => {
             if (safeFormData.template_style) setTemplate(safeFormData.template_style);
             if (safeFormData.pdf_preferences?.accent_color) setAccentColor(safeFormData.pdf_preferences.accent_color);
-      }, [safeFormData.template_style, safeFormData.pdf_preferences?.accent_color]);
+            if (safeFormData.pdf_preferences?.include_photo !== undefined) {
+                  setIncludePhoto(safeFormData.pdf_preferences.include_photo);
+            }
+      }, [safeFormData.template_style, safeFormData.pdf_preferences?.accent_color, safeFormData.pdf_preferences?.include_photo]);
 
       const handleFit = () => {
             setZoom(fitScale);
@@ -144,17 +152,24 @@ function ResumePreview({ formData = {}, score, onDownloadPDF, onUpdatePreference
             window.print();
       };
 
+      const handleTogglePhoto = (val) => {
+            setIncludePhoto(val);
+            if (onUpdatePreferences) {
+                  onUpdatePreferences({ template_style: template, accent_color: accentColor, include_photo: val });
+            }
+      };
+
       const handleTemplateChange = (t) => {
             setTemplate(t);
             if (onUpdatePreferences) {
-                  onUpdatePreferences({ template_style: t, accent_color: accentColor });
+                  onUpdatePreferences({ template_style: t, accent_color: accentColor, include_photo: includePhoto });
             }
       };
 
       const handleColorChange = (c) => {
             setAccentColor(c);
             if (onUpdatePreferences) {
-                  onUpdatePreferences({ template_style: template, accent_color: c });
+                  onUpdatePreferences({ template_style: template, accent_color: c, include_photo: includePhoto });
             }
       };
 
@@ -164,7 +179,7 @@ function ResumePreview({ formData = {}, score, onDownloadPDF, onUpdatePreference
                   return;
             }
             if (onDownloadPDF) {
-                  onDownloadPDF({ template_style: template, accent_color: accentColor });
+                  onDownloadPDF({ template_style: template, accent_color: accentColor, include_photo: includePhoto });
             } else {
                   window.print();
             }
@@ -269,6 +284,17 @@ function ResumePreview({ formData = {}, score, onDownloadPDF, onUpdatePreference
                                           ))}
                                     </div>
 
+                                    {personal_info?.profile_photo && (
+                                          <button
+                                                type="button"
+                                                className={`photo-toggle-pill ${includePhoto ? 'active' : 'off'}`}
+                                                onClick={() => handleTogglePhoto(!includePhoto)}
+                                                title={includePhoto ? "Photo is currently ON. Click to hide photo." : "Photo is currently OFF. Click to show photo."}
+                                          >
+                                                {includePhoto ? '📷 Photo: ON' : '📷 Photo: OFF'}
+                                          </button>
+                                    )}
+
                                     <div className="zoom-controls">
                                           <button onClick={() => setZoom((z) => Math.max(0.35, +(z - 0.1).toFixed(2)))} title="Zoom Out">-</button>
                                           <span onClick={handleFit} style={{ cursor: 'pointer' }} title="Click to auto-fit">{Math.round(zoom * 100)}%</span>
@@ -304,7 +330,7 @@ function ResumePreview({ formData = {}, score, onDownloadPDF, onUpdatePreference
                                     >
                                           {/* Header matching Reference Image */}
                                           <div className="resume-header" style={{ textAlign: template === 'executive' ? 'center' : 'left', marginBottom: '16px' }}>
-                                                {personal_info.profile_photo && (
+                                                {includePhoto && personal_info.profile_photo && (
                                                       <img
                                                             src={personal_info.profile_photo}
                                                             alt="Profile"

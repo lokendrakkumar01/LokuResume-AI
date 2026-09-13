@@ -9,6 +9,52 @@ from datetime import datetime
 import base64
 import re
 
+try:
+    from PIL import Image as PILImage, ImageDraw, ImageOps
+    PIL_AVAILABLE = True
+except ImportError:
+    PIL_AVAILABLE = False
+
+def process_profile_photo(photo_str: str, target_size=(200, 200), circular: bool = True):
+    """Process a base64 image or url into a clean, circular thumbnail for ReportLab PDF"""
+    if not PIL_AVAILABLE or not photo_str or not isinstance(photo_str, str):
+        return None
+    try:
+        photo_str = photo_str.strip()
+        if not photo_str:
+            return None
+        
+        # Handle data uri prefix
+        if "," in photo_str:
+            photo_data = photo_str.split(",", 1)[1]
+        else:
+            photo_data = photo_str
+            
+        raw_bytes = base64.b64decode(photo_data)
+        img = PILImage.open(BytesIO(raw_bytes)).convert("RGBA")
+        
+        # Fit / crop to square
+        img = ImageOps.fit(img, target_size, method=PILImage.Resampling.LANCZOS)
+        
+        if circular:
+            # Create circular mask
+            mask = PILImage.new("L", target_size, 0)
+            draw = ImageDraw.Draw(mask)
+            draw.ellipse((0, 0, target_size[0], target_size[1]), fill=255)
+            
+            # Put mask into alpha channel
+            output_img = PILImage.new("RGBA", target_size, (255, 255, 255, 0))
+            output_img.paste(img, (0, 0), mask=mask)
+        else:
+            output_img = img
+            
+        out_buf = BytesIO()
+        output_img.save(out_buf, format="PNG")
+        out_buf.seek(0)
+        return out_buf
+    except Exception as e:
+        return None
+
 def clean_url(url: str) -> str:
     """Ensure url has a valid protocol for clickable links"""
     if not url:
@@ -191,14 +237,22 @@ class PDFGenerator:
             elements.append(top_bar)
             elements.append(Spacer(1, 0.06*inch))
         
+        # Check user's preference for photo
+        # Preference defaults to True, but user can explicitly disable it or omit photo
+        include_photo_pref = pdf_preferences.get('include_photo')
+        if include_photo_pref is None:
+            include_photo_pref = True
+        
+        raw_photo = personal_info.get('profile_photo', '')
+        photo_buf = None
+        if include_photo_pref and raw_photo:
+            photo_buf = process_profile_photo(raw_photo, target_size=(200, 200), circular=True)
+
         # 1. Candidate Name
         candidate_name = personal_info.get('name', '').strip() or "Your Name"
-        elements.append(Paragraph(escape_xml(candidate_name), name_style))
         
         # 2. Headline / Professional Subtitle
         headline = personal_info.get('headline', '').strip()
-        if headline:
-            elements.append(Paragraph(f"<i>{escape_xml(headline)}</i>", headline_style))
         
         # 3. Contact Details & Social Links Bar
         contact_line_1 = []
@@ -222,13 +276,46 @@ class PDFGenerator:
         if personal_info.get('portfolio'):
             p_url = clean_url(personal_info['portfolio'])
             contact_line_2.append(f"🌐 <a href='{p_url}' color='{link_color}'><u>Portfolio ↗</u></a>")
+
+        if photo_buf:
+            photo_col_w = 1.15 * inch
+            text_col_w = page_width - photo_col_w
+            photo_img = Image(photo_buf, width=0.98 * inch, height=0.98 * inch)
+            
+            # Use left-aligned styles when placed alongside photo
+            photo_name_style = ParagraphStyle('PhotoName', parent=name_style, alignment=TA_LEFT)
+            photo_head_style = ParagraphStyle('PhotoHead', parent=headline_style, alignment=TA_LEFT)
+            photo_contact_style = ParagraphStyle('PhotoContact', parent=contact_style, alignment=TA_LEFT)
+            
+            text_elements = [Paragraph(escape_xml(candidate_name), photo_name_style)]
+            if headline:
+                text_elements.append(Paragraph(f"<i>{escape_xml(headline)}</i>", photo_head_style))
+            if contact_line_1:
+                text_elements.append(Paragraph(" &nbsp;|&nbsp; ".join(contact_line_1), photo_contact_style))
+            if contact_line_2:
+                text_elements.append(Paragraph(" &nbsp;|&nbsp; ".join(contact_line_2), photo_contact_style))
+                
+            header_table = Table([[text_elements, photo_img]], colWidths=[text_col_w, photo_col_w])
+            header_table.setStyle(TableStyle([
+                ('VALIGN', (0, 0), (-1, -1), 'MIDDLE'),
+                ('ALIGN', (1, 0), (1, 0), 'RIGHT'),
+                ('TOPPADDING', (0, 0), (-1, -1), 0),
+                ('BOTTOMPADDING', (0, 0), (-1, -1), 0),
+                ('LEFTPADDING', (0, 0), (-1, -1), 0),
+                ('RIGHTPADDING', (0, 0), (-1, -1), 0),
+            ]))
+            elements.append(header_table)
+        else:
+            # Full width candidate header (No photo)
+            elements.append(Paragraph(escape_xml(candidate_name), name_style))
+            if headline:
+                elements.append(Paragraph(f"<i>{escape_xml(headline)}</i>", headline_style))
+            if contact_line_1:
+                elements.append(Paragraph(" &nbsp;|&nbsp; ".join(contact_line_1), contact_style))
+            if contact_line_2:
+                elements.append(Paragraph(" &nbsp;|&nbsp; ".join(contact_line_2), contact_style))
         
-        if contact_line_1:
-            elements.append(Paragraph(" &nbsp;|&nbsp; ".join(contact_line_1), contact_style))
-        if contact_line_2:
-            elements.append(Paragraph(" &nbsp;|&nbsp; ".join(contact_line_2), contact_style))
-        
-        elements.append(Spacer(1, 0.03*inch))
+        elements.append(Spacer(1, 0.03 * inch))
         
         # 4. Professional Summary (Optional)
         summary = resume.get('summary', '').strip()
