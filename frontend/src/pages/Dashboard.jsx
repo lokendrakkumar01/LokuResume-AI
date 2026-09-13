@@ -9,8 +9,17 @@ import config from '../config';
 import '../styles/Dashboard.css';
 
 function Dashboard() {
-      const [resumes, setResumes] = useState([]);
-      const [loading, setLoading] = useState(true);
+      const [resumes, setResumes] = useState(() => {
+            try {
+                  const cached = localStorage.getItem('cached_resumes');
+                  return cached ? JSON.parse(cached) : [];
+            } catch (e) {
+                  return [];
+            }
+      });
+      const [loading, setLoading] = useState(() => {
+            return !localStorage.getItem('cached_resumes');
+      });
       const [searchQuery, setSearchQuery] = useState('');
       const [filterScore, setFilterScore] = useState('all');
       const [selectedResumeForATS, setSelectedResumeForATS] = useState(null);
@@ -31,10 +40,13 @@ function Dashboard() {
                         headers: getAuthHeader()
                   });
                   setResumes(response.data);
+                  localStorage.setItem('cached_resumes', JSON.stringify(response.data));
                   setLoading(false);
             } catch (error) {
                   console.error('Failed to fetch resumes:', error);
-                  showToast('Failed to load resumes', 'error');
+                  if (!localStorage.getItem('cached_resumes')) {
+                        showToast('Failed to load resumes', 'error');
+                  }
                   setLoading(false);
             }
       };
@@ -42,15 +54,26 @@ function Dashboard() {
       const confirmDelete = async () => {
             if (!deleteTarget) return;
 
+            const targetId = deleteTarget.id;
+            const targetName = deleteTarget.name;
+            const previousResumes = [...resumes];
+
+            // Optimistic Instant Removal from UI
+            const updated = resumes.filter((r) => r.id !== targetId);
+            setResumes(updated);
+            localStorage.setItem('cached_resumes', JSON.stringify(updated));
+            setDeleteTarget(null);
+            showToast(`Resume "${targetName}" deleted`, 'info');
+
             try {
-                  await axios.delete(`${config.API_BASE_URL}/resumes/${deleteTarget.id}`, {
+                  await axios.delete(`${config.API_BASE_URL}/resumes/${targetId}`, {
                         headers: getAuthHeader()
                   });
-                  showToast(`Resume "${deleteTarget.name}" deleted`, 'info');
-                  setDeleteTarget(null);
-                  fetchResumes();
             } catch (error) {
-                  showToast('Failed to delete resume', 'error');
+                  // Rollback on failure
+                  setResumes(previousResumes);
+                  localStorage.setItem('cached_resumes', JSON.stringify(previousResumes));
+                  showToast('Failed to delete resume on server', 'error');
             }
       };
 
@@ -291,9 +314,18 @@ function Dashboard() {
 
                         {/* Resume List Grid */}
                         {loading ? (
-                              <div className="glass-panel" style={{ padding: '60px 40px', textAlign: 'center' }}>
-                                    <div className="loading-spinner" style={{ margin: '0 auto 16px' }}></div>
-                                    <p style={{ color: 'var(--text-muted)' }}>Loading resumes...</p>
+                              <div className="resumes-grid">
+                                    {[1, 2, 3].map((sk) => (
+                                          <div key={sk} className="resume-card skeleton-card">
+                                                <div className="skeleton-line skeleton-title"></div>
+                                                <div className="skeleton-line skeleton-meta"></div>
+                                                <div className="skeleton-bar"></div>
+                                                <div className="skeleton-actions">
+                                                      <div className="skeleton-btn"></div>
+                                                      <div className="skeleton-btn"></div>
+                                                </div>
+                                          </div>
+                                    ))}
                               </div>
                         ) : filteredResumes.length === 0 ? (
                               <div className="empty-state">
