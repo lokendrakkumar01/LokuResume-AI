@@ -248,8 +248,43 @@ async def ai_chat_assist(request: AIChatRequest):
                 "Give me 5 strong action verbs"
             ]
 
-    # 6. Interview Preparation & STAR Method
-    elif any(k in msg for k in ["interview", "star", "question", "tayari", "hr", "tips"]):
+    # 6. Step-by-Step Guidance & How to Build Resume
+    elif any(k in msg for k in ["guide", "start", "shuru", "madad", "help", "kese", "kaise", "step", "banao", "create", "onboard", "new", "tour", "batao"]):
+        if is_hindi:
+            reply = (
+                "✨ **LokuResume AI पर 90%+ ATS रेज़्युमे बनाने की 4 आसान स्टेप्स:**\n\n"
+                "1. 🚀 **शुरुआत (Start)**: Dashboard पर **'Create Resume'** दबाएं या तुरंत **'1-Click AI Sample'** लोड करें ताकि आपका समय बचे।\n"
+                "2. 📝 **समरी और प्रोफाइल**: Google XYZ फॉर्मूला ('Accomplished X by Y through Z') का उपयोग करके 40-70 शब्दों की मजबूत समरी लिखें और LeetCode/GitHub प्रोफाइल जोड़ें।\n"
+                "3. 💼 **10-15 मुख्य स्किल्स**: अपने फील्ड (उदा. React, Python, Docker, AWS) की जरूरी स्किल्स जोड़ें। प्रोजेक्ट्स में आंकड़े (उदा. '35% परफॉर्मेंस बूस्ट') जरूर लिखें।\n"
+                "4. 🎯 **ATS Job Matcher**: जिस कंपनी या जॉब में अप्लाई कर रहे हैं, उसकी जॉब डिस्क्रिप्शन पेस्ट करें। हमारा AI बताएगा कि कौन से कीवर्ड्स मिसिंग हैं।\n"
+                "5. 🖨️ **टेम्पलेट और PDF**: Modern, Tech या Executive टेम्पलेट चुनकर फ्री में हाई-रेजोल्यूशन PDF डाउनलोड करें!\n\n"
+                "💡 किसी भी सवाल के लिए माइक 🎙️ दबाकर मुझसे सीधे बात करें!"
+            )
+            suggestions = [
+                "ATS स्कोर 90%+ कैसे करें?",
+                "सॉफ्टवेयर इंजीनियर की समरी लिखो",
+                "5 दमदार एक्शन वर्ब्स बताओ",
+                "1-Click AI Sample कैसे इस्तेमाल करें?"
+            ]
+        else:
+            reply = (
+                "✨ **4 Fast Steps to Build a 90%+ ATS Resume with LokuResume AI:**\n\n"
+                "1. 🚀 **Get Started**: Click **'Create Resume'** or load the **'1-Click AI Sample'** on your dashboard to start with a proven layout.\n"
+                "2. 📝 **Summary & Profiles**: Craft a 40-70 word summary packed with metrics, and link your GitHub, LeetCode, and LinkedIn.\n"
+                "3. 💼 **10-15 Core Skills**: Include in-demand tech stack skills. In project bullet points, always quantify results (e.g. 'reduced latency by 45%').\n"
+                "4. 🎯 **Run ATS Job Matcher**: Paste your target job post into the ATS Analyzer to identify missing keywords and boost alignment.\n"
+                "5. 🖨️ **Templates & PDF**: Switch between Modern, Tech, Executive or Compact templates and download your clean PDF!\n\n"
+                "💡 Feel free to tap the microphone 🎙️ anytime to speak with me!"
+            )
+            suggestions = [
+                "How to get 90%+ ATS Score?",
+                "Write a summary for Full Stack Engineer",
+                "Give me 5 strong action verbs",
+                "How to use ATS Job Matcher?"
+            ]
+
+    # 7. Interview Preparation & STAR Method
+    elif any(k in msg for k in ["interview", "star method", "star technique", "question", "tayari", "hr interview", "hr round", "mock interview"]):
         if is_hindi:
             reply = (
                 "इंटरव्यू के लिए **STAR मेथड** का अभ्यास करें:\n"
@@ -279,7 +314,7 @@ async def ai_chat_assist(request: AIChatRequest):
                 "Skills for Cybersecurity"
             ]
 
-    # 7. Default / Conversational
+    # 8. Default / Conversational
     else:
         if is_hindi:
             reply = (

@@ -255,6 +255,64 @@
     background: rgba(99, 102, 241, 0.08);
 }
 
+.ai-icon-btn.guide-btn {
+    background: linear-gradient(135deg, rgba(99, 102, 241, 0.15) 0%, rgba(217, 70, 239, 0.15) 100%);
+    color: var(--primary-color);
+    font-weight: 700;
+    font-size: 0.78rem;
+    padding: 3px 8px;
+    border: 1px solid rgba(99, 102, 241, 0.3);
+    border-radius: var(--radius-full);
+}
+
+.ai-icon-btn.guide-btn:hover {
+    background: var(--primary-gradient);
+    color: #ffffff;
+    border-color: transparent;
+}
+
+.guide-indicator-badge {
+    display: inline-block;
+    background: linear-gradient(135deg, rgba(99, 102, 241, 0.15) 0%, rgba(217, 70, 239, 0.2) 100%);
+    border: 1px solid rgba(99, 102, 241, 0.3);
+    border-radius: var(--radius-full);
+    padding: 3px 10px;
+    font-size: 0.72rem;
+    font-weight: 800;
+    color: var(--primary-color);
+    margin-bottom: 8px;
+}
+
+.ai-message-row.guide-message .ai-msg-bubble {
+    border-color: rgba(99, 102, 241, 0.4);
+    box-shadow: 0 4px 18px rgba(99, 102, 241, 0.12);
+}
+
+.msg-inline-chips {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+    margin-top: 10px;
+}
+
+.msg-chip {
+    background: var(--card-bg);
+    border: 1px solid var(--card-border);
+    color: var(--primary-color);
+    padding: 3px 8px;
+    border-radius: var(--radius-full);
+    font-size: 0.72rem;
+    font-weight: 700;
+    cursor: pointer;
+    transition: var(--transition);
+}
+
+.msg-chip:hover {
+    background: var(--primary-color);
+    color: #ffffff;
+    border-color: var(--primary-color);
+}
+
 /* Typing Bubble */
 .typing-bubble {
     display: flex;

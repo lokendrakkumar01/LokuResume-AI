@@ -102,6 +102,10 @@ export const AuthProvider = ({ children }) => {
                   localStorage.setItem('token', access_token);
                   localStorage.setItem('user', JSON.stringify(userData));
 
+                  // Set session trigger for AI Voice & Chat Onboarding Guide
+                  sessionStorage.setItem('loku_ai_guide_trigger', JSON.stringify({ name: userData.name, action: 'login', timestamp: Date.now() }));
+                  window.dispatchEvent(new CustomEvent('trigger-loku-ai-guide', { detail: { name: userData.name, action: 'login' } }));
+
                   setToken(access_token);
                   setUser(userData);
 
@@ -126,6 +130,10 @@ export const AuthProvider = ({ children }) => {
 
                   localStorage.setItem('token', access_token);
                   localStorage.setItem('user', JSON.stringify(userData));
+
+                  // Set session trigger for AI Voice & Chat Onboarding Guide
+                  sessionStorage.setItem('loku_ai_guide_trigger', JSON.stringify({ name: userData.name, action: 'signup', timestamp: Date.now() }));
+                  window.dispatchEvent(new CustomEvent('trigger-loku-ai-guide', { detail: { name: userData.name, action: 'signup' } }));
 
                   setToken(access_token);
                   setUser(userData);

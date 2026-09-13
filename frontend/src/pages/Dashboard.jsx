@@ -281,6 +281,26 @@ function Dashboard() {
                               </div>
                         </div>
 
+                        {/* AI Career Coach Guidance Banner */}
+                        <div className="ai-coach-banner">
+                              <div className="ai-coach-banner-left">
+                                    <div className="ai-coach-avatar">🎙️</div>
+                                    <div>
+                                          <h3>AI Resume Career Coach &amp; Voice Guide</h3>
+                                          <p>Step-by-step guidance on reaching 90%+ ATS score, Google XYZ formula, and in-demand skills.</p>
+                                    </div>
+                              </div>
+                              <div className="ai-coach-banner-actions">
+                                    <button
+                                          type="button"
+                                          className="btn btn-primary btn-sm"
+                                          onClick={() => window.dispatchEvent(new CustomEvent('trigger-loku-ai-guide', { detail: { name: user?.name, action: 'manual' } }))}
+                                    >
+                                          🎙️ Start AI Voice Guide
+                                    </button>
+                              </div>
+                        </div>
+
                         {/* Controls Header */}
                         <div className="dashboard-header">
                               <h1>My Resumes</h1>

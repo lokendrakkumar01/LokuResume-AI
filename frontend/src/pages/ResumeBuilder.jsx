@@ -474,6 +474,14 @@ function ResumeBuilder() {
                         </div>
 
                         <div className="header-actions">
+                              <button
+                                    type="button"
+                                    className="btn btn-secondary btn-sm"
+                                    onClick={() => window.dispatchEvent(new CustomEvent('trigger-loku-ai-guide', { detail: { name: formData?.personal_info?.name || '' } }))}
+                                    title="Get AI voice and step-by-step guidance"
+                              >
+                                    🎙️ AI Guide
+                              </button>
                               <button onClick={handleAutoFill} type="button" className="btn btn-secondary btn-sm" title="Fill all fields with sample profile">
                                     ⚡ Sample Data
                               </button>

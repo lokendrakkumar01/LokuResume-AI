@@ -9,11 +9,12 @@ const MESSAGES_BY_LANG = {
             placeholder: "माइक 🎙️ दबाकर बोलें या सवाल टाइप करें...",
             listening: "सुन रहा हूँ... अब बोलिए (हिंदी या इंग्लिश)",
             chips: [
+                  "🚀 शुरुआत कैसे करें? (गाइड)",
                   "🎯 ATS स्कोर 90%+ कैसे करें?",
                   "✍️ सॉफ्टवेयर इंजीनियर की समरी लिखो",
                   "💡 5 दमदार एक्शन वर्ब्स",
-                  "🛡️ साइबर सिक्योरिटी के लिए स्किल्स",
-                  "⭐ इंटरव्यू का STAR मेथड क्या है?"
+                  "🔍 ATS Job Matcher कैसे इस्तेमाल करें?",
+                  "🛡️ साइबर सिक्योरिटी के लिए स्किल्स"
             ],
             fallbackDefault: "ATS स्कोर 90%+ करने के लिए अपने हर प्रोजेक्ट में संख्या (Numbers) जोड़ें और जॉब पोस्टिंग से 10+ मुख्य स्किल्स शामिल करें!",
             fallbackVerbs: "पावरफुल वर्ब्स का उपयोग करें: Architected, Spearheaded, Automated, Engineered, Streamlined. 'Worked on' जैसे कमज़ोर शब्द न लिखें।",
@@ -24,15 +25,34 @@ const MESSAGES_BY_LANG = {
             placeholder: "Speak with mic 🎙️ or type your question...",
             listening: "Listening... Speak your question now",
             chips: [
+                  "🚀 How to get started? (Guide)",
                   "🎯 How to get 90%+ ATS Score?",
                   "✍️ Write summary for Full Stack Engineer",
                   "💡 5 high-impact action verbs",
-                  "🛡️ Skills for Cybersecurity Analyst",
-                  "⭐ What is the STAR interview method?"
+                  "🔍 How to use ATS Job Matcher?",
+                  "🛡️ Skills for Cybersecurity Analyst"
             ],
             fallbackDefault: "Quantify your achievements with numbers (e.g. 'reduced latency by 40%') and match 10+ core keywords from the job description for a 90%+ ATS score!",
             fallbackVerbs: "Use power verbs: Spearheaded, Architected, Automated, Streamlined, and Engineered. Avoid generic terms like 'worked on'.",
             fallbackSummary: "Summary Formula: [Years of Experience / Role] + [Key Technologies] + [Proven High-Impact Metric]. Keep it between 40-90 words."
+      }
+};
+
+const generateOnboardingGuide = (userName, targetLang) => {
+      const isHi = targetLang === 'hi';
+      const cleanName = userName ? userName.trim().split(' ')[0] : '';
+      const salutation = cleanName ? (isHi ? `नमस्ते ${cleanName}!` : `Welcome ${cleanName}!`) : (isHi ? 'नमस्ते!' : 'Welcome!');
+
+      if (isHi) {
+            return {
+                  text: `👋 **${salutation} LokuResume AI में आपका स्वागत है।** 🌟\n\nआइए मिलकर आपका रेज़्युमे **90%+ ATS स्कोर** वाला बनाएं! यहाँ आपके लिए 4 सबसे महत्वपूर्ण स्टेप्स हैं:\n\n1. 🚀 **शुरुआत (Start)**: Dashboard पर **'Create Resume'** दबाएं या तुरंत **'1-Click AI Sample'** लोड करें ताकि आपका समय बचे।\n2. 📝 **समरी और प्रोफाइल्स**: 40-70 शब्दों की असरदार समरी लिखें और LeetCode, GitHub या LinkedIn लिंक जोड़ें।\n3. 💼 **10-15 मुख्य स्किल्स**: अपने रोल से जुड़ी मुख्य स्किल्स जोड़ें। प्रोजेक्ट्स में आंकड़े (जैसे: '40% लेटेंसी कम की', '10,000+ यूज़र्स') जरूर लिखें।\n4. 🎯 **ATS Job Matcher**: जिस नौकरी में अप्लाई कर रहे हैं, उसकी जॉब डिस्क्रिप्शन पेस्ट करके चेक करें कि क्या मिसिंग है!\n\n🎙️ आप नीचे माइक दबाकर मुझसे कोई भी सवाल सीधे हिंदी में पूछ सकते हैं!`,
+                  speech: `${salutation} LokuResume AI में आपका स्वागत है। आइए मिलकर आपका रेज़्युमे 90%+ ATS स्कोर वाला बनाएं। सबसे पहले Dashboard पर Create Resume पर क्लिक करें या One Click Sample लोड करें। फिर 10 से 15 मुख्य स्किल्स जोड़ें और प्रोजेक्ट्स में आंकड़े लिखें। इसके बाद ATS Job Matcher से अपनी जॉब मैचिंग चेक करें। आप मुझसे कोई भी सवाल पूछ सकते हैं!`
+            };
+      } else {
+            return {
+                  text: `👋 **${salutation} Welcome to LokuResume AI!** 🌟\n\nLet's build a **90%+ ATS resume** that lands interviews! Here are your 4 essential steps:\n\n1. 🚀 **Get Started**: Click **'Create Resume'** or load the **'1-Click AI Sample'** on your dashboard.\n2. 📝 **Summary & Links**: Add a 40-70 word summary with numbers, plus your GitHub, LeetCode, or LinkedIn links.\n3. 💼 **10-15 Core Skills**: Include in-demand technical skills. In project bullet points, always quantify your impact (e.g. 'reduced latency by 40%').\n4. 🎯 **ATS Job Matcher**: Paste your target job post into the ATS Analyzer to verify matching keywords and score!\n\n🎙️ Ask me anything anytime using the mic button or chat!`,
+                  speech: `${salutation} Welcome to LokuResume AI! Let's build a 90%+ ATS resume that lands interviews. Start by clicking Create Resume or loading the One Click Sample. Add 10 to 15 core skills and quantify your project achievements with numbers. Then run ATS Job Matcher to check keyword alignment. Feel free to ask me anything with voice or chat!`
+            };
       }
 };
 
@@ -123,6 +143,67 @@ function AIChatAssistant() {
 
                   recognitionRef.current = recognition;
             }
+      }, [language]);
+
+      // Trigger Onboarding Voice & Chat Guide
+      const triggerVoiceGuide = (userName, targetLang) => {
+            const currentLang = targetLang || language;
+            const guide = generateOnboardingGuide(userName, currentLang);
+
+            setIsOpen(true);
+            const guideMsg = {
+                  sender: 'ai',
+                  text: guide.text,
+                  speech: guide.speech,
+                  isGuide: true,
+                  suggestions: currentLang === 'hi' ? [
+                        "🎯 ATS स्कोर 90%+ कैसे करें?",
+                        "✍️ 1-Click AI Sample कैसे इस्तेमाल करें?",
+                        "💡 Google XYZ फॉर्मूला क्या है?",
+                        "🔍 ATS Job Matcher कैसे इस्तेमाल करें?"
+                  ] : [
+                        "🎯 How to get 90%+ ATS Score?",
+                        "✍️ How to use 1-Click AI Sample?",
+                        "💡 What is Google XYZ formula?",
+                        "🔍 How to use ATS Job Matcher?"
+                  ],
+                  timestamp: new Date()
+            };
+
+            setMessages((prev) => [...prev, guideMsg]);
+
+            // Audio speech announcement with a slight delay for audio synthesis initialization
+            setTimeout(() => {
+                  speakText(guide.speech, currentLang);
+            }, 600);
+      };
+
+      // Listen for login/signup triggers or manual guide requests
+      useEffect(() => {
+            const handleGuideEvent = (e) => {
+                  const userName = e.detail?.name || '';
+                  triggerVoiceGuide(userName, language);
+            };
+
+            window.addEventListener('trigger-loku-ai-guide', handleGuideEvent);
+
+            // Check if user just logged in or registered
+            const pendingGuide = sessionStorage.getItem('loku_ai_guide_trigger');
+            if (pendingGuide) {
+                  try {
+                        const parsed = JSON.parse(pendingGuide);
+                        sessionStorage.removeItem('loku_ai_guide_trigger');
+                        setTimeout(() => {
+                              triggerVoiceGuide(parsed.name, language);
+                        }, 800);
+                  } catch (e) {
+                        sessionStorage.removeItem('loku_ai_guide_trigger');
+                  }
+            }
+
+            return () => {
+                  window.removeEventListener('trigger-loku-ai-guide', handleGuideEvent);
+            };
       }, [language]);
 
       // Text-to-Speech Audio Playback with voice selection
@@ -274,7 +355,7 @@ function AIChatAssistant() {
                                     </div>
 
                                     <div className="ai-header-controls">
-                                          {/* Language Selector Switcher */}
+                                           {/* Language Selector Switcher */}
                                           <div className="ai-lang-switcher" title="Select Voice & Chat Language">
                                                 <button
                                                       type="button"
@@ -291,6 +372,16 @@ function AIChatAssistant() {
                                                       🇺🇸 En
                                                 </button>
                                           </div>
+
+                                          {/* Step-by-Step Guide Trigger */}
+                                          <button
+                                                type="button"
+                                                className="ai-icon-btn guide-btn"
+                                                onClick={() => triggerVoiceGuide('', language)}
+                                                title={language === 'hi' ? 'स्टेप-बाय-स्टेप गाइड सुनें' : 'Restart Voice Guide'}
+                                          >
+                                                🎙️ {language === 'hi' ? 'गाइड' : 'Guide'}
+                                          </button>
 
                                           {isSpeaking && (
                                                 <button
@@ -327,9 +418,14 @@ function AIChatAssistant() {
                               {/* Message History */}
                               <div className="ai-chat-body">
                                     {messages.map((m, idx) => (
-                                          <div key={idx} className={`ai-message-row ${m.sender}`}>
+                                          <div key={idx} className={`ai-message-row ${m.sender} ${m.isGuide ? 'guide-message' : ''}`}>
                                                 {m.sender === 'ai' && <div className="ai-msg-avatar">🤖</div>}
                                                 <div className="ai-msg-bubble">
+                                                      {m.isGuide && (
+                                                            <div className="guide-indicator-badge">
+                                                                  <span>🌟 {language === 'hi' ? 'स्टेप-बाय-स्टेप 90%+ ATS गाइड' : 'Step-by-Step ATS Guide'}</span>
+                                                            </div>
+                                                      )}
                                                       <div className="ai-msg-text">
                                                             {m.text.split('\n').map((line, lIdx) => (
                                                                   <p key={lIdx} style={{ margin: line ? '4px 0' : '8px 0' }}>
@@ -340,11 +436,24 @@ function AIChatAssistant() {
                                                       {m.sender === 'ai' && (
                                                             <button
                                                                   className="read-aloud-btn"
-                                                                  onClick={() => speakText(m.text, language)}
+                                                                  onClick={() => speakText(m.speech || m.text, language)}
                                                                   title={language === 'hi' ? 'आवाज में सुनें' : 'Read answer aloud'}
                                                             >
-                                                                  🔊 {language === 'hi' ? 'सुनें' : 'Listen'}
+                                                                  🔊 {language === 'hi' ? 'आवाज़ सुनें' : 'Listen Voice'}
                                                             </button>
+                                                      )}
+                                                      {m.suggestions && m.suggestions.length > 0 && (
+                                                            <div className="msg-inline-chips">
+                                                                  {m.suggestions.map((sug, sIdx) => (
+                                                                        <button
+                                                                              key={sIdx}
+                                                                              className="msg-chip"
+                                                                              onClick={() => handleSend(sug)}
+                                                                        >
+                                                                              {sug}
+                                                                        </button>
+                                                                  ))}
+                                                            </div>
                                                       )}
                                                 </div>
                                           </div>
