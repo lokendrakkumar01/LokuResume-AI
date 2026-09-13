@@ -7,21 +7,42 @@ import config from '../config';
 import '../styles/AdminDashboard.css';
 
 function AdminDashboard() {
-  const [activeTab, setActiveTab] = useState('overview'); // 'overview' | 'users' | 'resumes' | 'broadcast' | 'settings'
+  const [activeTab, setActiveTab] = useState('overview'); // 'overview' | 'users' | 'resumes' | 'features' | 'templates' | 'broadcast' | 'maintenance' | 'audit' | 'settings'
   const [stats, setStats] = useState(null);
   const [users, setUsers] = useState([]);
   const [resumes, setResumes] = useState([]);
   const [broadcast, setBroadcast] = useState({ message: '', type: 'info', active: false });
+  const [features, setFeatures] = useState({});
+  const [templates, setTemplates] = useState([]);
+  const [themes, setThemes] = useState([]);
+  const [maintenance, setMaintenance] = useState({ enabled: false, message: 'System is undergoing scheduled maintenance.', allowed_roles: ['super_admin', 'admin'] });
+  const [auditLogs, setAuditLogs] = useState([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
 
-  // Search filters
+  // Search & filter states
   const [userSearch, setUserSearch] = useState('');
+  const [userRoleFilter, setUserRoleFilter] = useState('all');
   const [resumeSearch, setResumeSearch] = useState('');
+  const [auditActionFilter, setAuditActionFilter] = useState('all');
 
-  // Feature Flags state
-  const [features, setFeatures] = useState({});
+  // Feature Flags saving state
   const [featuresSaving, setFeaturesSaving] = useState(false);
+
+  // Template & Theme saving state
+  const [templatesSaving, setTemplatesSaving] = useState(false);
+  const [themesSaving, setThemesSaving] = useState(false);
+  const [newThemeName, setNewThemeName] = useState('');
+  const [newThemeHex, setNewThemeHex] = useState('#111827');
+  const [newThemeCategory, setNewThemeCategory] = useState('Custom');
+
+  // Maintenance saving state
+  const [maintenanceSaving, setMaintenanceSaving] = useState(false);
+
+  // User Feature Overrides Modal
+  const [selectedUserForOverrides, setSelectedUserForOverrides] = useState(null);
+  const [userOverridesSaving, setUserOverridesSaving] = useState(false);
+  const [userOverridesTemp, setUserOverridesTemp] = useState({});
 
   // Password change state
   const [currentPassword, setCurrentPassword] = useState('');
@@ -39,23 +60,43 @@ function AdminDashboard() {
       setRefreshing(true);
       const headers = getAuthHeader();
 
-      const [statsRes, usersRes, resumesRes, broadcastRes, featuresRes] = await Promise.all([
-        axios.get(`${config.API_BASE_URL}/admin/stats`, { headers }).catch(e => ({ data: null })),
-        axios.get(`${config.API_BASE_URL}/admin/users`, { headers }).catch(e => ({ data: { users: [] } })),
-        axios.get(`${config.API_BASE_URL}/admin/resumes`, { headers }).catch(e => ({ data: { resumes: [] } })),
-        axios.get(`${config.API_BASE_URL}/admin/broadcast`, { headers }).catch(e => ({ data: { broadcast: null } })),
-        axios.get(`${config.API_BASE_URL}/admin/features`, { headers }).catch(e => ({ data: { features: {} } }))
+      const [
+        statsRes,
+        usersRes,
+        resumesRes,
+        broadcastRes,
+        featuresRes,
+        templatesRes,
+        themesRes,
+        maintenanceRes,
+        auditRes
+      ] = await Promise.all([
+        axios.get(`${config.API_BASE_URL}/admin/stats`, { headers }).catch(() => ({ data: null })),
+        axios.get(`${config.API_BASE_URL}/admin/users`, { headers }).catch(() => ({ data: { users: [] } })),
+        axios.get(`${config.API_BASE_URL}/admin/resumes`, { headers }).catch(() => ({ data: { resumes: [] } })),
+        axios.get(`${config.API_BASE_URL}/admin/broadcast`, { headers }).catch(() => ({ data: { broadcast: null } })),
+        axios.get(`${config.API_BASE_URL}/admin/features`, { headers }).catch(() => ({ data: { features: {} } })),
+        axios.get(`${config.API_BASE_URL}/admin/templates`, { headers }).catch(() => ({ data: { templates: [] } })),
+        axios.get(`${config.API_BASE_URL}/admin/themes`, { headers }).catch(() => ({ data: { themes: [] } })),
+        axios.get(`${config.API_BASE_URL}/admin/maintenance`, { headers }).catch(() => ({ data: { enabled: false, message: '' } })),
+        axios.get(`${config.API_BASE_URL}/admin/audit-logs?limit=100`, { headers }).catch(() => ({ data: { logs: [] } }))
       ]);
 
       if (statsRes.data) setStats(statsRes.data);
       if (usersRes.data?.users) setUsers(usersRes.data.users);
       if (resumesRes.data?.resumes) setResumes(resumesRes.data.resumes);
-      if (broadcastRes.data?.broadcast) {
-        setBroadcast(broadcastRes.data.broadcast);
+      if (broadcastRes.data?.broadcast) setBroadcast(broadcastRes.data.broadcast);
+      if (featuresRes.data?.features) setFeatures(featuresRes.data.features);
+      if (templatesRes.data?.templates) setTemplates(templatesRes.data.templates);
+      if (themesRes.data?.themes) setThemes(themesRes.data.themes);
+      if (maintenanceRes.data) {
+        setMaintenance({
+          enabled: Boolean(maintenanceRes.data.enabled),
+          message: maintenanceRes.data.message || 'System is undergoing scheduled maintenance.',
+          allowed_roles: maintenanceRes.data.allowed_roles || ['super_admin', 'admin']
+        });
       }
-      if (featuresRes.data?.features) {
-        setFeatures(featuresRes.data.features);
-      }
+      if (auditRes.data?.logs) setAuditLogs(auditRes.data.logs);
     } catch (err) {
       console.error('Error fetching admin data:', err);
       showToast('Failed to refresh some admin metrics', 'error');
@@ -69,7 +110,73 @@ function AdminDashboard() {
     fetchDashboardData();
   }, [fetchDashboardData]);
 
-  // Handle user deletion
+  // --------------------------------------------------------------------------
+  // USER MANAGEMENT HANDLERS
+  // --------------------------------------------------------------------------
+
+  const handleRoleChange = async (userId, newRole, userName) => {
+    try {
+      const headers = getAuthHeader();
+      await axios.put(`${config.API_BASE_URL}/admin/users/${userId}/role`, { role: newRole }, { headers });
+      setUsers(prev => prev.map(u => (u.id === userId ? { ...u, role: newRole } : u)));
+      showToast(`Updated ${userName || 'user'} role to ${newRole}`, 'success');
+      // Refresh audit logs
+      fetchDashboardData();
+    } catch (err) {
+      const msg = err.response?.data?.detail || 'Failed to update user role';
+      showToast(msg, 'error');
+    }
+  };
+
+  const handleStatusToggle = async (userId, currentStatus, userName) => {
+    const newStatus = currentStatus === 'banned' ? 'active' : 'banned';
+    const actionLabel = newStatus === 'banned' ? 'Ban' : 'Reactivate';
+
+    if (!window.confirm(`Are you sure you want to ${actionLabel.toLowerCase()} user "${userName}"?`)) {
+      return;
+    }
+
+    try {
+      const headers = getAuthHeader();
+      await axios.put(`${config.API_BASE_URL}/admin/users/${userId}/status`, { status: newStatus }, { headers });
+      setUsers(prev => prev.map(u => (u.id === userId ? { ...u, status: newStatus } : u)));
+      showToast(`User ${userName} is now ${newStatus}.`, 'success');
+      fetchDashboardData();
+    } catch (err) {
+      const msg = err.response?.data?.detail || 'Failed to update user status';
+      showToast(msg, 'error');
+    }
+  };
+
+  const openOverridesModal = (u) => {
+    setSelectedUserForOverrides(u);
+    setUserOverridesTemp(u.feature_overrides || {});
+  };
+
+  const handleSaveUserOverrides = async () => {
+    if (!selectedUserForOverrides) return;
+    setUserOverridesSaving(true);
+    try {
+      const headers = getAuthHeader();
+      await axios.put(
+        `${config.API_BASE_URL}/admin/users/${selectedUserForOverrides.id}/features`,
+        { features: userOverridesTemp },
+        { headers }
+      );
+      setUsers(prev =>
+        prev.map(u => (u.id === selectedUserForOverrides.id ? { ...u, feature_overrides: userOverridesTemp } : u))
+      );
+      showToast(`Feature overrides saved for ${selectedUserForOverrides.name}`, 'success');
+      setSelectedUserForOverrides(null);
+      fetchDashboardData();
+    } catch (err) {
+      const msg = err.response?.data?.detail || 'Failed to save overrides';
+      showToast(msg, 'error');
+    } finally {
+      setUserOverridesSaving(false);
+    }
+  };
+
   const handleDeleteUser = async (userId, userName) => {
     if (!window.confirm(`⚠️ Permanently delete user "${userName}" and all their resumes? This action cannot be undone.`)) {
       return;
@@ -80,7 +187,6 @@ function AdminDashboard() {
       await axios.delete(`${config.API_BASE_URL}/admin/users/${userId}`, { headers });
       showToast(`User ${userName} deleted successfully.`, 'success');
       setUsers(prev => prev.filter(u => u.id !== userId));
-      // Refresh stats
       fetchDashboardData();
     } catch (err) {
       const msg = err.response?.data?.detail || 'Failed to delete user';
@@ -88,7 +194,10 @@ function AdminDashboard() {
     }
   };
 
-  // Handle resume deletion
+  // --------------------------------------------------------------------------
+  // RESUME MANAGEMENT HANDLERS
+  // --------------------------------------------------------------------------
+
   const handleDeleteResume = async (resumeId, candidateName) => {
     if (!window.confirm(`⚠️ Permanently remove resume for "${candidateName}" from the platform?`)) {
       return;
@@ -106,7 +215,157 @@ function AdminDashboard() {
     }
   };
 
-  // Handle saving broadcast banner
+  // --------------------------------------------------------------------------
+  // FEATURE FLAGS HANDLERS
+  // --------------------------------------------------------------------------
+
+  const handleFeatureStatusChange = (featureId, newStatus) => {
+    setFeatures(prev => ({
+      ...prev,
+      [featureId]: {
+        ...prev[featureId],
+        status: newStatus
+      }
+    }));
+  };
+
+  const handleMakeAllFeaturesPublic = () => {
+    setFeatures(prev => {
+      const updated = { ...prev };
+      Object.keys(updated).forEach(k => {
+        updated[k] = { ...updated[k], status: 'public' };
+      });
+      return updated;
+    });
+    showToast('All features set to Public (Free for All)! Click "Deploy Feature Flags" to save.', 'info');
+  };
+
+  const handleSaveFeatures = async () => {
+    setFeaturesSaving(true);
+    try {
+      const headers = getAuthHeader();
+      await axios.post(`${config.API_BASE_URL}/admin/features`, { features }, { headers });
+      showToast('Platform feature flags deployed live to all users!', 'success');
+      fetchDashboardData();
+    } catch (err) {
+      showToast('Failed to deploy feature flags', 'error');
+    } finally {
+      setFeaturesSaving(false);
+    }
+  };
+
+  // --------------------------------------------------------------------------
+  // TEMPLATES & COLOR THEMES HANDLERS
+  // --------------------------------------------------------------------------
+
+  const handleToggleTemplate = (templateId, field) => {
+    setTemplates(prev =>
+      prev.map(t => (t.id === templateId ? { ...t, [field]: !t[field] } : t))
+    );
+  };
+
+  const handleSaveTemplates = async () => {
+    setTemplatesSaving(true);
+    try {
+      const headers = getAuthHeader();
+      await axios.post(`${config.API_BASE_URL}/admin/templates`, templates, { headers });
+      showToast('Template configurations successfully saved!', 'success');
+      fetchDashboardData();
+    } catch (err) {
+      showToast('Failed to update templates', 'error');
+    } finally {
+      setTemplatesSaving(false);
+    }
+  };
+
+  const handleToggleTheme = (themeId) => {
+    setThemes(prev =>
+      prev.map(th => (th.id === themeId ? { ...th, active: !th.active } : th))
+    );
+  };
+
+  const handleAddTheme = (e) => {
+    e.preventDefault();
+    const hexRegex = /^#[0-9a-fA-F]{6}$/;
+    const cleanHex = newThemeHex.trim();
+    if (!hexRegex.test(cleanHex)) {
+      showToast('Invalid hex color format! Must be 6-digit hex like #111827 or #1e40af', 'error');
+      return;
+    }
+    if (!newThemeName.trim()) {
+      showToast('Theme name cannot be empty', 'error');
+      return;
+    }
+
+    const themeId = newThemeName.trim().toLowerCase().replace(/[^a-z0-9]/g, '_');
+    if (themes.some(th => th.id === themeId || th.hex_code.toLowerCase() === cleanHex.toLowerCase())) {
+      showToast('A theme with this name or hex color already exists!', 'error');
+      return;
+    }
+
+    const newThemeObj = {
+      id: themeId,
+      name: newThemeName.trim(),
+      hex_code: cleanHex.toLowerCase(),
+      category: newThemeCategory.trim() || 'Custom',
+      active: true
+    };
+
+    setThemes(prev => [...prev, newThemeObj]);
+    setNewThemeName('');
+    setNewThemeHex('#111827');
+    showToast(`Added "${newThemeObj.name}"! Click "Deploy Color Themes" to save to MongoDB.`, 'info');
+  };
+
+  const handleSaveThemes = async () => {
+    setThemesSaving(true);
+    try {
+      const headers = getAuthHeader();
+      await axios.post(`${config.API_BASE_URL}/admin/themes`, themes, { headers });
+      showToast('Color themes verified and deployed live!', 'success');
+      fetchDashboardData();
+    } catch (err) {
+      const msg = err.response?.data?.detail || 'Failed to save color themes';
+      showToast(msg, 'error');
+    } finally {
+      setThemesSaving(false);
+    }
+  };
+
+  // --------------------------------------------------------------------------
+  // MAINTENANCE MODE HANDLER
+  // --------------------------------------------------------------------------
+
+  const handleSaveMaintenance = async (e) => {
+    e.preventDefault();
+    setMaintenanceSaving(true);
+    try {
+      const headers = getAuthHeader();
+      await axios.post(`${config.API_BASE_URL}/admin/maintenance`, {
+        enabled: Boolean(maintenance.enabled),
+        message: maintenance.message.trim(),
+        allowed_roles: maintenance.allowed_roles || ['super_admin', 'admin']
+      }, { headers });
+
+      showToast(
+        maintenance.enabled
+          ? '⚠️ Platform Maintenance Mode is now LIVE! Non-admin users will receive 503.'
+          : '✅ Platform Maintenance Mode DEACTIVATED. System is fully open.',
+        maintenance.enabled ? 'warning' : 'success'
+      );
+      fetchDashboardData();
+    } catch (err) {
+      const msg = err.response?.data?.detail || 'Failed to update maintenance mode';
+      showToast(msg, 'error');
+    } finally {
+      setMaintenanceSaving(false);
+    }
+  };
+
+  // --------------------------------------------------------------------------
+  // BROADCAST HANDLERS
+  // --------------------------------------------------------------------------
+
   const handleSaveBroadcast = async (e) => {
     e.preventDefault();
     try {
@@ -124,7 +383,6 @@ function AdminDashboard() {
     }
   };
 
-  // Handle deactivating broadcast
   const handleClearBroadcast = async () => {
     try {
       const headers = getAuthHeader();
@@ -136,45 +394,10 @@ function AdminDashboard() {
     }
   };
 
-  // Handle feature status toggle
-  const handleFeatureStatusChange = (featureId, newStatus) => {
-    setFeatures(prev => ({
-      ...prev,
-      [featureId]: {
-        ...prev[featureId],
-        status: newStatus
-      }
-    }));
-  };
+  // --------------------------------------------------------------------------
+  // MASTER PASSWORD HANDLER
+  // --------------------------------------------------------------------------
 
-  // Handle setting all features to Public (Free for All)
-  const handleMakeAllFeaturesPublic = () => {
-    setFeatures(prev => {
-      const updated = { ...prev };
-      Object.keys(updated).forEach(k => {
-        updated[k] = { ...updated[k], status: 'public' };
-      });
-      return updated;
-    });
-    showToast('All features set to Public (Free for All)! Click "Deploy Feature Flags" to save.', 'info');
-  };
-
-  // Save feature flags to MongoDB
-  const handleSaveFeatures = async () => {
-    setFeaturesSaving(true);
-    try {
-      const headers = getAuthHeader();
-      await axios.post(`${config.API_BASE_URL}/admin/features`, { features }, { headers });
-      showToast('Platform feature flags deployed live to all users!', 'success');
-      fetchDashboardData();
-    } catch (err) {
-      showToast('Failed to deploy feature flags', 'error');
-    } finally {
-      setFeaturesSaving(false);
-    }
-  };
-
-  // Handle master password update
   const handleChangePassword = async (e) => {
     e.preventDefault();
     if (newPassword !== confirmPassword) {
@@ -213,9 +436,11 @@ function AdminDashboard() {
 
   // Filtered users
   const filteredUsers = users.filter(u => {
-    if (!userSearch.trim()) return true;
-    const q = userSearch.toLowerCase();
-    return (u.name && u.name.toLowerCase().includes(q)) || (u.email && u.email.toLowerCase().includes(q));
+    const matchesSearch = !userSearch.trim() ||
+      (u.name && u.name.toLowerCase().includes(userSearch.toLowerCase())) ||
+      (u.email && u.email.toLowerCase().includes(userSearch.toLowerCase()));
+    const matchesRole = userRoleFilter === 'all' || u.role === userRoleFilter;
+    return matchesSearch && matchesRole;
   });
 
   // Filtered resumes
@@ -227,6 +452,12 @@ function AdminDashboard() {
       (r.candidate_email && r.candidate_email.toLowerCase().includes(q)) ||
       (r.target_role && r.target_role.toLowerCase().includes(q))
     );
+  });
+
+  // Filtered audit logs
+  const filteredAuditLogs = auditLogs.filter(log => {
+    if (auditActionFilter === 'all') return true;
+    return log.action === auditActionFilter;
   });
 
   return (
@@ -241,11 +472,20 @@ function AdminDashboard() {
           </div>
           <span className="admin-nav-title">
             LokuResume Control Center
-            <span className="admin-role-badge">Superadmin</span>
+            <span className="admin-role-badge">
+              {user?.role === 'super_admin' ? 'Superadmin' : user?.role === 'admin' ? 'Administrator' : 'Moderator'}
+            </span>
           </span>
         </div>
 
         <div className="admin-nav-actions">
+          {maintenance.enabled && (
+            <div className="admin-maintenance-pill" title="Platform Maintenance is Active">
+              <span>⚠️</span>
+              <span>Maintenance Mode ON</span>
+            </div>
+          )}
+
           <div className="admin-user-pill">
             <span>🛡️</span>
             <span>{user?.email || 'admin@lokiresume.com'}</span>
@@ -284,7 +524,7 @@ function AdminDashboard() {
               <rect x="14" y="14" width="7" height="7" />
               <rect x="3" y="14" width="7" height="7" />
             </svg>
-            <span>System Overview</span>
+            <span>System Analytics</span>
           </button>
 
           <button
@@ -297,7 +537,7 @@ function AdminDashboard() {
               <path d="M23 21v-2a4 4 0 0 0-3-3.87" />
               <path d="M16 3.13a4 4 0 0 1 0 7.75" />
             </svg>
-            <span>Users ({users.length})</span>
+            <span>Users & RBAC ({users.length})</span>
           </button>
 
           <button
@@ -321,7 +561,18 @@ function AdminDashboard() {
             <svg viewBox="0 0 24 24" fill="none" strokeWidth="2">
               <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2" />
             </svg>
-            <span>Feature Controls ({Object.keys(features).length || 6})</span>
+            <span>Feature Switches ({Object.keys(features).length || 6})</span>
+          </button>
+
+          <button
+            className={`admin-nav-item ${activeTab === 'templates' ? 'active' : ''}`}
+            onClick={() => setActiveTab('templates')}
+          >
+            <svg viewBox="0 0 24 24" fill="none" strokeWidth="2">
+              <circle cx="12" cy="12" r="10" />
+              <path d="M12 2a7 7 0 0 0 7 7c0 1.5-.5 2-1 3-1 2-1 3-1 3H7s0-1-1-3c-.5-1-1-1.5-1-3a7 7 0 0 0 7-7z" />
+            </svg>
+            <span>Templates & Themes</span>
           </button>
 
           <button
@@ -333,6 +584,29 @@ function AdminDashboard() {
               <path d="M13.73 21a2 2 0 0 1-3.46 0" />
             </svg>
             <span>Platform Alert {broadcast?.active ? '🟢' : ''}</span>
+          </button>
+
+          <button
+            className={`admin-nav-item ${activeTab === 'maintenance' ? 'active' : ''}`}
+            onClick={() => setActiveTab('maintenance')}
+          >
+            <svg viewBox="0 0 24 24" fill="none" strokeWidth="2">
+              <path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z" />
+            </svg>
+            <span>Maintenance Mode {maintenance.enabled ? '⚠️' : ''}</span>
+          </button>
+
+          <button
+            className={`admin-nav-item ${activeTab === 'audit' ? 'active' : ''}`}
+            onClick={() => setActiveTab('audit')}
+          >
+            <svg viewBox="0 0 24 24" fill="none" strokeWidth="2">
+              <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
+              <line x1="16" y1="13" x2="8" y2="13" />
+              <line x1="16" y1="17" x2="8" y2="17" />
+              <line x1="10" y1="9" x2="8" y2="9" />
+            </svg>
+            <span>Audit Logs ({auditLogs.length})</span>
           </button>
 
           <button
@@ -349,13 +623,13 @@ function AdminDashboard() {
 
         {/* Main Content Area */}
         <main className="admin-main">
-          {/* TAB 1: OVERVIEW */}
+          {/* TAB 1: OVERVIEW & REAL AGGREGATIONS */}
           {activeTab === 'overview' && (
             <div>
               <div className="admin-header-row">
                 <div>
-                  <h2 className="admin-section-title">Platform Intelligence Overview</h2>
-                  <p className="admin-section-subtitle">Real-time telemetry and database operational metrics</p>
+                  <h2 className="admin-section-title">Platform Intelligence & Real Aggregations</h2>
+                  <p className="admin-section-subtitle">Real-time telemetry and database operational metrics from MongoDB Atlas</p>
                 </div>
                 <button
                   onClick={fetchDashboardData}
@@ -386,7 +660,9 @@ function AdminDashboard() {
                     <span className="admin-stat-label">Total Users</span>
                     <span className="admin-stat-value">{stats?.total_users ?? users.length}</span>
                     <span className="admin-stat-sub">
-                      {stats?.new_users_24h !== undefined ? `+${stats.new_users_24h} today • +${stats.new_users_7d} this wk` : `${stats?.admin_users ?? 1} Superadmin`}
+                      {stats?.new_users_24h !== undefined
+                        ? `+${stats.new_users_24h} today • +${stats.new_users_7d} this wk`
+                        : `${stats?.admin_users ?? 1} Superadmin`}
                     </span>
                   </div>
                   <div className="admin-stat-icon blue">
@@ -402,7 +678,9 @@ function AdminDashboard() {
                     <span className="admin-stat-label">Resumes Created</span>
                     <span className="admin-stat-value">{stats?.total_resumes ?? resumes.length}</span>
                     <span className="admin-stat-sub">
-                      {stats?.new_resumes_24h !== undefined ? `+${stats.new_resumes_24h} today • +${stats.new_resumes_7d} this wk` : 'Across All Templates'}
+                      {stats?.new_resumes_24h !== undefined
+                        ? `+${stats.new_resumes_24h} today • +${stats.new_resumes_7d} this wk`
+                        : 'Across All Templates'}
                     </span>
                   </div>
                   <div className="admin-stat-icon purple">
@@ -433,7 +711,9 @@ function AdminDashboard() {
                       {stats?.features_summary ? `${stats.features_summary.public} Public` : '6 Active'}
                     </span>
                     <span className="admin-stat-sub">
-                      {stats?.features_summary ? `${stats.features_summary.premium} Pro • ${stats.features_summary.disabled} Paused` : 'Admin Controlled'}
+                      {stats?.features_summary
+                        ? `${stats.features_summary.premium} Pro • ${stats.features_summary.disabled} Paused`
+                        : 'Admin Controlled'}
                     </span>
                   </div>
                   <div className="admin-stat-icon purple">
@@ -445,55 +725,190 @@ function AdminDashboard() {
 
                 <div className="admin-stat-card">
                   <div className="admin-stat-info">
-                    <span className="admin-stat-label">Global Alert</span>
-                    <span className="admin-stat-value" style={{ fontSize: '1.35rem' }}>
-                      {broadcast?.active ? 'Active' : 'Disabled'}
+                    <span className="admin-stat-label">Maintenance Mode</span>
+                    <span className="admin-stat-value" style={{ fontSize: '1.35rem', color: maintenance.enabled ? '#f87171' : '#34d399' }}>
+                      {maintenance.enabled ? 'Active' : 'Offline'}
                     </span>
-                    <span className="admin-stat-sub">{broadcast?.active ? 'Live across app' : 'No banner active'}</span>
+                    <span className="admin-stat-sub">{maintenance.enabled ? 'Non-admins receive 503' : 'Platform open'}</span>
                   </div>
-                  <div className="admin-stat-icon red">
+                  <div className={`admin-stat-icon ${maintenance.enabled ? 'red' : 'green'}`}>
                     <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                      <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9" />
-                      <path d="M13.73 21a2 2 0 0 1-3.46 0" />
+                      <path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z" />
                     </svg>
                   </div>
                 </div>
               </div>
 
+              {/* Aggregations Visuals Section */}
+              <div className="admin-analytics-grid">
+                {/* 1. ATS Distribution */}
+                <div className="admin-analytics-card">
+                  <div className="admin-analytics-header">
+                    <h4>📊 ATS Score Distribution</h4>
+                    <span className="admin-analytics-sub">Across {stats?.total_resumes || resumes.length} Resumes</span>
+                  </div>
+                  <div className="admin-distribution-bars">
+                    {(() => {
+                      const total = stats?.total_resumes || 1;
+                      const dist = stats?.distribution || { below_50: 0, '50_to_69': 0, '70_to_84': 0, '85_plus': 0 };
+                      const tiers = [
+                        { label: '< 50% (Needs Work)', count: dist.below_50, color: '#ef4444' },
+                        { label: '50 - 69% (Fair)', count: dist['50_to_69'], color: '#f59e0b' },
+                        { label: '70 - 84% (Competitive)', count: dist['70_to_84'], color: '#3b82f6' },
+                        { label: '85%+ (Elite / Ready)', count: dist['85_plus'], color: '#10b981' }
+                      ];
+                      return tiers.map((t, idx) => {
+                        const pct = Math.round((t.count / Math.max(total, 1)) * 100);
+                        return (
+                          <div key={idx} className="admin-dist-row">
+                            <div className="admin-dist-labels">
+                              <span>{t.label}</span>
+                              <strong>{t.count} ({pct}%)</strong>
+                            </div>
+                            <div className="admin-dist-bar-track">
+                              <div
+                                className="admin-dist-bar-fill"
+                                style={{ width: `${Math.max(pct, t.count > 0 ? 5 : 0)}%`, backgroundColor: t.color }}
+                              />
+                            </div>
+                          </div>
+                        );
+                      });
+                    })()}
+                  </div>
+                </div>
+
+                {/* 2. Template Style Usage */}
+                <div className="admin-analytics-card">
+                  <div className="admin-analytics-header">
+                    <h4>🎨 Template Layout Popularity</h4>
+                    <span className="admin-analytics-sub">Candidate Adoption</span>
+                  </div>
+                  <div className="admin-template-usage-list">
+                    {(() => {
+                      const usage = stats?.template_usage || { modern: 0, executive: 0, tech: 0, compact: 0 };
+                      const totalT = Object.values(usage).reduce((a, b) => a + b, 0) || 1;
+                      const templatesMeta = [
+                        { id: 'modern', name: 'Modern Minimalist', icon: '📄' },
+                        { id: 'executive', name: 'Executive Leadership', icon: '👔' },
+                        { id: 'tech', name: 'Tech Specialist', icon: '💻' },
+                        { id: 'compact', name: 'Compact One-Pager', icon: '📑' }
+                      ];
+
+                      return templatesMeta.map((tm) => {
+                        const count = usage[tm.id] || 0;
+                        const pct = Math.round((count / totalT) * 100);
+                        return (
+                          <div key={tm.id} className="admin-template-usage-item">
+                            <div className="admin-template-usage-meta">
+                              <span>{tm.icon} {tm.name}</span>
+                              <strong>{count} resumes ({pct}%)</strong>
+                            </div>
+                            <div className="admin-dist-bar-track">
+                              <div
+                                className="admin-dist-bar-fill"
+                                style={{ width: `${Math.max(pct, count > 0 ? 5 : 0)}%`, backgroundColor: '#8b5cf6' }}
+                              />
+                            </div>
+                          </div>
+                        );
+                      });
+                    })()}
+                  </div>
+                </div>
+
+                {/* 3. Color Theme Breakdown */}
+                <div className="admin-analytics-card">
+                  <div className="admin-analytics-header">
+                    <h4>🌈 Accent Color Palette Usage</h4>
+                    <span className="admin-analytics-sub">Selected By Jobseekers</span>
+                  </div>
+                  <div className="admin-color-usage-grid">
+                    {(() => {
+                      const colorUsage = stats?.color_usage || {};
+                      const defaultColors = [
+                        { hex: '#111827', name: 'Pure Black' },
+                        { hex: '#1e40af', name: 'Pro Blue' },
+                        { hex: '#059669', name: 'Emerald Green' },
+                        { hex: '#7c3aed', name: 'Royal Purple' },
+                        { hex: '#dc2626', name: 'Ruby Red' }
+                      ];
+
+                      return defaultColors.map((col) => {
+                        const count = colorUsage[col.hex.toLowerCase()] || 0;
+                        return (
+                          <div key={col.hex} className="admin-color-usage-badge">
+                            <div className="admin-color-usage-swatch" style={{ backgroundColor: col.hex }} />
+                            <div className="admin-color-usage-info">
+                              <span className="admin-color-usage-name">{col.name}</span>
+                              <span className="admin-color-usage-count">{count} resumes</span>
+                            </div>
+                          </div>
+                        );
+                      });
+                    })()}
+                  </div>
+                </div>
+
+                {/* 4. Registrations Trend */}
+                <div className="admin-analytics-card">
+                  <div className="admin-analytics-header">
+                    <h4>📈 7-Day User Registrations</h4>
+                    <span className="admin-analytics-sub">Growth Velocity</span>
+                  </div>
+                  <div className="admin-trend-list">
+                    {stats?.user_trend && stats.user_trend.length > 0 ? (
+                      stats.user_trend.map((day) => (
+                        <div key={day._id} className="admin-trend-day">
+                          <span className="admin-trend-date">{day._id}</span>
+                          <span className="admin-trend-count">+{day.count} users</span>
+                        </div>
+                      ))
+                    ) : (
+                      <div className="admin-trend-empty">
+                        <span>New accounts will populate daily velocity charts</span>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              </div>
+
               {/* System Health */}
-              <div className="admin-health-panel">
+              <div className="admin-health-panel" style={{ marginTop: '1.5rem' }}>
                 <div className="admin-health-item">
                   <div className="admin-pulse-dot"></div>
                   <div className="admin-health-text">
                     <h4>MongoDB Atlas Cloud Database</h4>
-                    <p>Primary Cluster: Connected & Synchronized</p>
+                    <p>Primary Cluster: Connected & Synchronized with Zero Data Loss</p>
                   </div>
                 </div>
                 <div className="admin-health-item">
                   <div className="admin-pulse-dot"></div>
                   <div className="admin-health-text">
                     <h4>FastAPI Python High-Speed Engine</h4>
-                    <p>CORS, JWT & ATS Scoring Operational</p>
+                    <p>CORS, Multi-Role RBAC & Vector PDF Generation Online</p>
                   </div>
                 </div>
                 <div className="admin-health-item">
                   <div className="admin-pulse-dot"></div>
                   <div className="admin-health-text">
                     <h4>Gemini AI Intelligence Layer</h4>
-                    <p>Multilingual Assistant & Auto-Review Online</p>
+                    <p>Multilingual Assistant, Voice Coach & ATS Audit Active</p>
                   </div>
                 </div>
               </div>
             </div>
           )}
 
-          {/* TAB 2: USERS MANAGEMENT */}
+          {/* TAB 2: USERS & RBAC MANAGEMENT */}
           {activeTab === 'users' && (
             <div>
               <div className="admin-header-row">
                 <div>
-                  <h2 className="admin-section-title">User Accounts Control</h2>
-                  <p className="admin-section-subtitle">Manage all registered accounts, view resumes, or remove users</p>
+                  <h2 className="admin-section-title">User Accounts & Multi-Role RBAC Control</h2>
+                  <p className="admin-section-subtitle">
+                    Manage roles (Superadmin, Admin, Moderator, User), active/banned status, and custom feature overrides
+                  </p>
                 </div>
                 <div className="admin-badge-count">Total: {users.length} Users</div>
               </div>
@@ -512,6 +927,22 @@ function AdminDashboard() {
                     onChange={(e) => setUserSearch(e.target.value)}
                   />
                 </div>
+
+                <div className="admin-filter-group">
+                  <label>Filter Role:</label>
+                  <select
+                    className="admin-select"
+                    value={userRoleFilter}
+                    onChange={(e) => setUserRoleFilter(e.target.value)}
+                    style={{ width: 'auto' }}
+                  >
+                    <option value="all">All Roles ({users.length})</option>
+                    <option value="super_admin">Superadmin</option>
+                    <option value="admin">Admin</option>
+                    <option value="moderator">Moderator</option>
+                    <option value="user">User</option>
+                  </select>
+                </div>
               </div>
 
               <div className="admin-table-card">
@@ -520,8 +951,10 @@ function AdminDashboard() {
                     <thead>
                       <tr>
                         <th>User Profile</th>
-                        <th>Role</th>
+                        <th>Role (RBAC)</th>
+                        <th>Status</th>
                         <th>Resumes</th>
+                        <th>Feature Overrides</th>
                         <th>Registered Date</th>
                         <th>Actions</th>
                       </tr>
@@ -529,40 +962,70 @@ function AdminDashboard() {
                     <tbody>
                       {filteredUsers.length === 0 ? (
                         <tr>
-                          <td colSpan="5" className="admin-empty-state">
+                          <td colSpan="7" className="admin-empty-state">
                             No users found matching your search.
                           </td>
                         </tr>
                       ) : (
                         filteredUsers.map((u) => {
-                          const isSuperAdmin = u.role === 'admin';
+                          const isSelf = u.email === user?.email;
                           const initial = (u.name || u.email || 'U')[0].toUpperCase();
                           const dateStr = u.created_at ? new Date(u.created_at).toLocaleDateString() : 'N/A';
+                          const overrideCount = Object.keys(u.feature_overrides || {}).length;
 
                           return (
                             <tr key={u.id}>
                               <td>
                                 <div className="admin-user-cell">
-                                  <div className={`admin-avatar ${isSuperAdmin ? 'admin-user' : ''}`}>
+                                  <div className={`admin-avatar ${u.role === 'super_admin' || u.role === 'admin' ? 'admin-user' : ''}`}>
                                     {initial}
                                   </div>
                                   <div>
-                                    <div className="admin-user-name">{u.name}</div>
+                                    <div className="admin-user-name">{u.name} {isSelf && <span className="admin-self-tag">(You)</span>}</div>
                                     <div className="admin-user-email">{u.email}</div>
                                   </div>
                                 </div>
                               </td>
                               <td>
-                                <span className={`admin-tag-role ${u.role || 'user'}`}>
-                                  {u.role || 'user'}
-                                </span>
+                                <select
+                                  className="admin-role-select"
+                                  value={u.role || 'user'}
+                                  disabled={isSelf}
+                                  onChange={(e) => handleRoleChange(u.id, e.target.value, u.name || u.email)}
+                                  title={isSelf ? 'Cannot change your own role' : 'Change user role'}
+                                >
+                                  <option value="user">User</option>
+                                  <option value="moderator">Moderator</option>
+                                  <option value="admin">Admin</option>
+                                  <option value="super_admin">Superadmin</option>
+                                </select>
+                              </td>
+                              <td>
+                                <button
+                                  type="button"
+                                  className={`admin-status-toggle-btn ${u.status === 'banned' ? 'banned' : 'active'}`}
+                                  disabled={isSelf}
+                                  onClick={() => handleStatusToggle(u.id, u.status || 'active', u.name || u.email)}
+                                  title={isSelf ? 'Cannot alter your own status' : u.status === 'banned' ? 'Click to Reactivate' : 'Click to Ban'}
+                                >
+                                  <span>{u.status === 'banned' ? '🚫 Banned' : '🟢 Active'}</span>
+                                </button>
                               </td>
                               <td>
                                 <strong style={{ color: '#ffffff' }}>{u.resume_count ?? 0}</strong>
                               </td>
+                              <td>
+                                <button
+                                  type="button"
+                                  className="admin-overrides-btn"
+                                  onClick={() => openOverridesModal(u)}
+                                >
+                                  <span>⚡ {overrideCount > 0 ? `${overrideCount} Active` : 'Default'}</span>
+                                </button>
+                              </td>
                               <td style={{ color: '#94a3b8' }}>{dateStr}</td>
                               <td>
-                                {!isSuperAdmin ? (
+                                {!isSelf ? (
                                   <button
                                     className="admin-action-btn delete"
                                     onClick={() => handleDeleteUser(u.id, u.name || u.email)}
@@ -575,7 +1038,7 @@ function AdminDashboard() {
                                     <span>Delete</span>
                                   </button>
                                 ) : (
-                                  <span style={{ fontSize: '0.75rem', color: '#64748b' }}>Protected (Admin)</span>
+                                  <span style={{ fontSize: '0.75rem', color: '#64748b' }}>Protected</span>
                                 )}
                               </td>
                             </tr>
@@ -586,6 +1049,99 @@ function AdminDashboard() {
                   </table>
                 </div>
               </div>
+
+              {/* User Feature Overrides Modal */}
+              {selectedUserForOverrides && (
+                <div className="admin-modal-overlay">
+                  <div className="admin-modal-box">
+                    <div className="admin-modal-header">
+                      <div>
+                        <h3>User Feature Flag Overrides</h3>
+                        <p style={{ margin: 0, fontSize: '0.85rem', color: '#94a3b8' }}>
+                          Target: <strong style={{ color: '#ffffff' }}>{selectedUserForOverrides.name}</strong> ({selectedUserForOverrides.email})
+                        </p>
+                      </div>
+                      <button
+                        className="admin-modal-close"
+                        onClick={() => setSelectedUserForOverrides(null)}
+                      >
+                        ✕
+                      </button>
+                    </div>
+
+                    <div className="admin-modal-body">
+                      <p style={{ fontSize: '0.85rem', color: '#cbd5e1', marginBottom: '1.25rem' }}>
+                        Set account-specific feature permissions overriding the global platform settings:
+                      </p>
+
+                      <div className="admin-overrides-list">
+                        {Object.entries(features).map(([fId, f]) => {
+                          const currentOverride = userOverridesTemp[fId];
+                          const stateVal = currentOverride === true ? 'enabled' : currentOverride === false ? 'disabled' : 'default';
+
+                          return (
+                            <div key={fId} className="admin-override-item">
+                              <div className="admin-override-meta">
+                                <span>{f.icon || '✨'}</span>
+                                <div>
+                                  <strong>{f.name}</strong>
+                                  <span style={{ display: 'block', fontSize: '0.75rem', color: '#94a3b8' }}>{f.category}</span>
+                                </div>
+                              </div>
+
+                              <div className="admin-override-toggles">
+                                <button
+                                  type="button"
+                                  className={`admin-override-btn ${stateVal === 'default' ? 'active default' : ''}`}
+                                  onClick={() => {
+                                    const next = { ...userOverridesTemp };
+                                    delete next[fId];
+                                    setUserOverridesTemp(next);
+                                  }}
+                                >
+                                  Default
+                                </button>
+                                <button
+                                  type="button"
+                                  className={`admin-override-btn ${stateVal === 'enabled' ? 'active enabled' : ''}`}
+                                  onClick={() => setUserOverridesTemp({ ...userOverridesTemp, [fId]: true })}
+                                >
+                                  Always Active
+                                </button>
+                                <button
+                                  type="button"
+                                  className={`admin-override-btn ${stateVal === 'disabled' ? 'active disabled' : ''}`}
+                                  onClick={() => setUserOverridesTemp({ ...userOverridesTemp, [fId]: false })}
+                                >
+                                  Revoked
+                                </button>
+                              </div>
+                            </div>
+                          );
+                        })}
+                      </div>
+                    </div>
+
+                    <div className="admin-modal-footer">
+                      <button
+                        type="button"
+                        className="admin-btn-secondary"
+                        onClick={() => setSelectedUserForOverrides(null)}
+                      >
+                        Cancel
+                      </button>
+                      <button
+                        type="button"
+                        className="admin-btn-primary"
+                        disabled={userOverridesSaving}
+                        onClick={handleSaveUserOverrides}
+                      >
+                        {userOverridesSaving ? 'Saving Overrides...' : 'Save User Overrides'}
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              )}
             </div>
           )}
 
@@ -624,7 +1180,8 @@ function AdminDashboard() {
                         <th>Candidate</th>
                         <th>Target Role</th>
                         <th>ATS Score</th>
-                        <th>Template</th>
+                        <th>Template Style</th>
+                        <th>Accent Color</th>
                         <th>Last Modified</th>
                         <th>Actions</th>
                       </tr>
@@ -632,7 +1189,7 @@ function AdminDashboard() {
                     <tbody>
                       {filteredResumes.length === 0 ? (
                         <tr>
-                          <td colSpan="6" className="admin-empty-state">
+                          <td colSpan="7" className="admin-empty-state">
                             No resumes found matching your filter.
                           </td>
                         </tr>
@@ -641,6 +1198,7 @@ function AdminDashboard() {
                           const score = r.score ?? 0;
                           const scoreClass = score >= 75 ? 'high' : score >= 50 ? 'mid' : 'low';
                           const updateStr = r.updated_at ? new Date(r.updated_at).toLocaleDateString() : 'Recent';
+                          const accentColor = r.accent_color || '#111827';
 
                           return (
                             <tr key={r.id}>
@@ -658,7 +1216,24 @@ function AdminDashboard() {
                                 </span>
                               </td>
                               <td style={{ color: '#94a3b8', textTransform: 'capitalize' }}>
-                                {r.template_id || 'Modern'}
+                                {r.template_style || 'Modern'}
+                              </td>
+                              <td>
+                                <div style={{ display: 'flex', alignItems: 'center', gap: '0.45rem' }}>
+                                  <span
+                                    style={{
+                                      width: 14,
+                                      height: 14,
+                                      borderRadius: '50%',
+                                      backgroundColor: accentColor,
+                                      border: '1px solid rgba(255,255,255,0.2)',
+                                      display: 'inline-block'
+                                    }}
+                                  />
+                                  <span style={{ fontSize: '0.8rem', color: '#94a3b8', fontFamily: 'monospace' }}>
+                                    {accentColor}
+                                  </span>
+                                </div>
                               </td>
                               <td style={{ color: '#64748b' }}>{updateStr}</td>
                               <td>
@@ -685,7 +1260,7 @@ function AdminDashboard() {
             </div>
           )}
 
-          {/* TAB: FEATURE CONTROLS */}
+          {/* TAB 4: FEATURE SWITCHES */}
           {activeTab === 'features' && (
             <div>
               <div className="admin-header-row">
@@ -812,7 +1387,171 @@ function AdminDashboard() {
             </div>
           )}
 
-          {/* TAB 4: BROADCAST ALERT */}
+          {/* TAB 5: TEMPLATES & COLOR THEMES */}
+          {activeTab === 'templates' && (
+            <div>
+              <div className="admin-header-row">
+                <div>
+                  <h2 className="admin-section-title">Templates & Color Theme Palettes</h2>
+                  <p className="admin-section-subtitle">
+                    Configure available PDF/web resume templates and manage the 5 standardized accent colors (plus custom hex palettes)
+                  </p>
+                </div>
+              </div>
+
+              {/* Template Configurations */}
+              <div className="admin-card-section">
+                <div className="admin-section-banner">
+                  <div>
+                    <h3>📐 Resume Layout Templates</h3>
+                    <p>Toggle template visibility and premium lock status</p>
+                  </div>
+                  <button
+                    type="button"
+                    className="admin-btn-primary"
+                    disabled={templatesSaving}
+                    onClick={handleSaveTemplates}
+                  >
+                    {templatesSaving ? 'Saving...' : 'Save Template Config'}
+                  </button>
+                </div>
+
+                <div className="admin-templates-grid">
+                  {templates.map((tpl) => (
+                    <div key={tpl.id} className="admin-tpl-card">
+                      <div className="admin-tpl-header">
+                        <h4>{tpl.name}</h4>
+                        <span className="admin-tpl-id">ID: {tpl.id}</span>
+                      </div>
+                      <p className="admin-tpl-desc">{tpl.description}</p>
+
+                      <div className="admin-tpl-controls">
+                        <label className="admin-toggle-label">
+                          <input
+                            type="checkbox"
+                            checked={Boolean(tpl.active)}
+                            onChange={() => handleToggleTemplate(tpl.id, 'active')}
+                          />
+                          <span>Active on Builder</span>
+                        </label>
+
+                        <label className="admin-toggle-label">
+                          <input
+                            type="checkbox"
+                            checked={Boolean(tpl.is_premium)}
+                            onChange={() => handleToggleTemplate(tpl.id, 'is_premium')}
+                          />
+                          <span>VIP Pro Only</span>
+                        </label>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+              {/* Color Themes Management */}
+              <div className="admin-card-section" style={{ marginTop: '2rem' }}>
+                <div className="admin-section-banner">
+                  <div>
+                    <h3>🎨 Accent Color Themes (Strict 6-Digit Hex)</h3>
+                    <p>Active colors available in the builder palette. Black (#111827) produces pure Black PDFs with zero red accents.</p>
+                  </div>
+                  <button
+                    type="button"
+                    className="admin-btn-primary"
+                    disabled={themesSaving}
+                    onClick={handleSaveThemes}
+                  >
+                    {themesSaving ? 'Saving...' : 'Deploy Color Themes'}
+                  </button>
+                </div>
+
+                {/* Themes List */}
+                <div className="admin-themes-grid">
+                  {themes.map((th) => (
+                    <div key={th.id} className="admin-theme-card">
+                      <div className="admin-theme-swatch-box" style={{ backgroundColor: th.hex_code }}>
+                        <span className="admin-theme-swatch-hex">{th.hex_code}</span>
+                      </div>
+                      <div className="admin-theme-details">
+                        <div className="admin-theme-title-row">
+                          <strong>{th.name}</strong>
+                          <span className="admin-theme-category-tag">{th.category || 'Classic'}</span>
+                        </div>
+                        <label className="admin-toggle-label" style={{ marginTop: '0.5rem' }}>
+                          <input
+                            type="checkbox"
+                            checked={Boolean(th.active)}
+                            onChange={() => handleToggleTheme(th.id)}
+                          />
+                          <span>Active Theme</span>
+                        </label>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+
+                {/* Add New Theme Form */}
+                <div className="admin-add-theme-box">
+                  <h4 style={{ margin: '0 0 0.75rem 0', color: '#ffffff' }}>➕ Add New Color Theme</h4>
+                  <form onSubmit={handleAddTheme} className="admin-add-theme-form">
+                    <div className="admin-form-group" style={{ flex: 2 }}>
+                      <label>Theme Name</label>
+                      <input
+                        type="text"
+                        className="admin-search-input"
+                        placeholder="e.g. Midnight Navy"
+                        value={newThemeName}
+                        onChange={(e) => setNewThemeName(e.target.value)}
+                        required
+                      />
+                    </div>
+
+                    <div className="admin-form-group" style={{ flex: 1.5 }}>
+                      <label>Hex Color (#RRGGBB)</label>
+                      <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center' }}>
+                        <input
+                          type="color"
+                          value={newThemeHex.startsWith('#') && newThemeHex.length === 7 ? newThemeHex : '#111827'}
+                          onChange={(e) => setNewThemeHex(e.target.value)}
+                          style={{ width: 40, height: 38, padding: 0, border: 'none', background: 'transparent', cursor: 'pointer' }}
+                        />
+                        <input
+                          type="text"
+                          className="admin-search-input"
+                          placeholder="#111827"
+                          value={newThemeHex}
+                          onChange={(e) => setNewThemeHex(e.target.value)}
+                          required
+                          pattern="^#[0-9a-fA-F]{6}$"
+                          title="Must be 6-digit hex format e.g. #111827"
+                        />
+                      </div>
+                    </div>
+
+                    <div className="admin-form-group" style={{ flex: 1.5 }}>
+                      <label>Category</label>
+                      <input
+                        type="text"
+                        className="admin-search-input"
+                        placeholder="e.g. Executive"
+                        value={newThemeCategory}
+                        onChange={(e) => setNewThemeCategory(e.target.value)}
+                      />
+                    </div>
+
+                    <div style={{ alignSelf: 'flex-end', paddingBottom: '0.25rem' }}>
+                      <button type="submit" className="admin-btn-secondary">
+                        Add Palette
+                      </button>
+                    </div>
+                  </form>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* TAB 6: BROADCAST ALERT */}
           {activeTab === 'broadcast' && (
             <div>
               <div className="admin-header-row">
@@ -901,7 +1640,189 @@ function AdminDashboard() {
             </div>
           )}
 
-          {/* TAB 5: MASTER SETTINGS */}
+          {/* TAB 7: MAINTENANCE MODE */}
+          {activeTab === 'maintenance' && (
+            <div>
+              <div className="admin-header-row">
+                <div>
+                  <h2 className="admin-section-title">System Maintenance Mode</h2>
+                  <p className="admin-section-subtitle">
+                    Safely pause non-administrative operations during major system upgrades. Returns HTTP 503 to non-admin users.
+                  </p>
+                </div>
+              </div>
+
+              <div className="admin-settings-card">
+                <form onSubmit={handleSaveMaintenance}>
+                  <div className="admin-maintenance-banner-box" style={{ background: maintenance.enabled ? 'rgba(239, 68, 68, 0.15)' : 'rgba(16, 185, 129, 0.1)' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
+                      <span style={{ fontSize: '2rem' }}>{maintenance.enabled ? '⚠️' : '✅'}</span>
+                      <div>
+                        <h4 style={{ margin: '0 0 0.25rem 0', color: '#ffffff' }}>
+                          Maintenance Mode is currently {maintenance.enabled ? 'ACTIVE' : 'DISABLED'}
+                        </h4>
+                        <p style={{ margin: 0, fontSize: '0.85rem', color: '#94a3b8' }}>
+                          {maintenance.enabled
+                            ? 'Non-admin users cannot access resume builder, download, or AI tools.'
+                            : 'All platform features are running normally and accessible to all users.'}
+                        </p>
+                      </div>
+                    </div>
+
+                    <label className="admin-toggle-switch" style={{ margin: 0 }}>
+                      <input
+                        type="checkbox"
+                        checked={Boolean(maintenance.enabled)}
+                        onChange={(e) => setMaintenance({ ...maintenance, enabled: e.target.checked })}
+                      />
+                      <span style={{ fontWeight: 700, color: '#ffffff' }}>
+                        {maintenance.enabled ? 'Enabled (Lockdown)' : 'Disabled (Open)'}
+                      </span>
+                    </label>
+                  </div>
+
+                  <div className="admin-form-group" style={{ marginTop: '1.5rem' }}>
+                    <label>Maintenance Announcement Message</label>
+                    <textarea
+                      className="admin-textarea"
+                      rows="3"
+                      value={maintenance.message}
+                      onChange={(e) => setMaintenance({ ...maintenance, message: e.target.value })}
+                      placeholder="e.g. System is undergoing scheduled maintenance for speed enhancements. Please check back shortly."
+                      required
+                    />
+                  </div>
+
+                  {/* 503 Screen Preview */}
+                  <div className="admin-form-group">
+                    <label>Live Preview (What non-admin users see when blocked):</label>
+                    <div className="admin-503-preview">
+                      <div className="admin-503-icon">🚧</div>
+                      <h3>Under Scheduled Maintenance</h3>
+                      <p>{maintenance.message || 'System is undergoing scheduled maintenance.'}</p>
+                      <span className="admin-503-badge">Status: HTTP 503 Service Unavailable</span>
+                    </div>
+                  </div>
+
+                  <button
+                    type="submit"
+                    className="admin-btn-primary"
+                    disabled={maintenanceSaving}
+                    style={{ marginTop: '1rem' }}
+                  >
+                    {maintenanceSaving ? 'Updating Maintenance Mode...' : 'Deploy Maintenance Settings'}
+                  </button>
+                </form>
+              </div>
+            </div>
+          )}
+
+          {/* TAB 8: AUDIT LOGS */}
+          {activeTab === 'audit' && (
+            <div>
+              <div className="admin-header-row">
+                <div>
+                  <h2 className="admin-section-title">Administrative Audit Trail</h2>
+                  <p className="admin-section-subtitle">
+                    Immutable chronological record of administrative actions, user changes, and system modifications
+                  </p>
+                </div>
+                <button
+                  type="button"
+                  className="admin-btn-secondary"
+                  onClick={fetchDashboardData}
+                >
+                  <span>🔄 Refresh Logs</span>
+                </button>
+              </div>
+
+              <div className="admin-table-controls">
+                <div className="admin-filter-group">
+                  <label>Filter by Action:</label>
+                  <select
+                    className="admin-select"
+                    value={auditActionFilter}
+                    onChange={(e) => setAuditActionFilter(e.target.value)}
+                    style={{ width: 'auto' }}
+                  >
+                    <option value="all">All Actions ({auditLogs.length})</option>
+                    <option value="UPDATE_USER_ROLE">UPDATE_USER_ROLE</option>
+                    <option value="UPDATE_USER_STATUS">UPDATE_USER_STATUS</option>
+                    <option value="SET_USER_FEATURE_OVERRIDES">SET_USER_FEATURE_OVERRIDES</option>
+                    <option value="UPDATE_FEATURE_FLAGS">UPDATE_FEATURE_FLAGS</option>
+                    <option value="TOGGLE_MAINTENANCE_MODE">TOGGLE_MAINTENANCE_MODE</option>
+                    <option value="UPDATE_TEMPLATES">UPDATE_TEMPLATES</option>
+                    <option value="UPDATE_THEMES">UPDATE_THEMES</option>
+                    <option value="DELETE_USER">DELETE_USER</option>
+                    <option value="DELETE_RESUME">DELETE_RESUME</option>
+                  </select>
+                </div>
+              </div>
+
+              <div className="admin-table-card">
+                <div className="admin-table-responsive">
+                  <table className="admin-table">
+                    <thead>
+                      <tr>
+                        <th>Timestamp</th>
+                        <th>Action</th>
+                        <th>Admin Actor</th>
+                        <th>Target</th>
+                        <th>Operation Details</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {filteredAuditLogs.length === 0 ? (
+                        <tr>
+                          <td colSpan="5" className="admin-empty-state">
+                            No audit logs found for this filter.
+                          </td>
+                        </tr>
+                      ) : (
+                        filteredAuditLogs.map((log) => {
+                          const dateStr = log.created_at ? new Date(log.created_at).toLocaleString() : 'N/A';
+                          return (
+                            <tr key={log.id}>
+                              <td style={{ color: '#94a3b8', whiteSpace: 'nowrap', fontSize: '0.8rem' }}>
+                                {dateStr}
+                              </td>
+                              <td>
+                                <span className={`admin-audit-action-badge ${log.action}`}>
+                                  {log.action}
+                                </span>
+                              </td>
+                              <td style={{ color: '#cbd5e1', fontSize: '0.85rem' }}>
+                                {log.admin_id}
+                              </td>
+                              <td>
+                                <span style={{ color: '#fda4af', fontSize: '0.8rem' }}>
+                                  {log.target_type}:
+                                </span>{' '}
+                                <span style={{ color: '#e2e8f0', fontSize: '0.8rem', fontFamily: 'monospace' }}>
+                                  {log.target_id}
+                                </span>
+                              </td>
+                              <td>
+                                <div className="admin-audit-details-chips">
+                                  {Object.entries(log.details || {}).map(([k, v]) => (
+                                    <span key={k} className="admin-audit-chip">
+                                      <em>{k}:</em> {typeof v === 'object' ? JSON.stringify(v) : String(v)}
+                                    </span>
+                                  ))}
+                                </div>
+                              </td>
+                            </tr>
+                          );
+                        })
+                      )}
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* TAB 9: MASTER SETTINGS */}
           {activeTab === 'settings' && (
             <div>
               <div className="admin-header-row">
@@ -978,7 +1899,9 @@ function AdminDashboard() {
                   </div>
                   <div>
                     <span style={{ color: '#94a3b8' }}>Role Level: </span>
-                    <strong style={{ color: '#fda4af' }}>Master Superadministrator (Full Access)</strong>
+                    <strong style={{ color: '#fda4af' }}>
+                      {user?.role === 'super_admin' ? 'Master Superadministrator (Tier 3 Full Access)' : `${user?.role || 'Administrator'} Access`}
+                    </strong>
                   </div>
                   <div>
                     <span style={{ color: '#94a3b8' }}>API Gateway: </span>

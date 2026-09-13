@@ -1,8 +1,10 @@
-from fastapi import APIRouter, HTTPException, Depends, status
+from fastapi import APIRouter, HTTPException, Depends, status, Header
 from pydantic import BaseModel
 from typing import List, Optional
 from services.ai_suggestions import ai_suggestions
 from services.resume_scorer import scorer
+from auth.jwt_handler import get_user_from_token
+from routes.admin import check_feature_access
 import re
 
 router = APIRouter(prefix="/ai", tags=["AI Tools"])
@@ -28,8 +30,13 @@ class JDAnalysisResponse(BaseModel):
     recommendations: List[str]
 
 @router.post("/enhance-bullet", response_model=BulletEnhanceResponse)
-async def enhance_bullet(request: BulletEnhanceRequest):
+async def enhance_bullet(request: BulletEnhanceRequest, authorization: Optional[str] = Header(None)):
     """Generate high-impact ATS optimized bullet variations for project or experience descriptions"""
+    user_id = None
+    if authorization:
+        token = authorization.replace("Bearer ", "").strip()
+        user_id = get_user_from_token(token)
+    await check_feature_access(user_id, "ai_bullet_generator")
     text = request.text.strip()
     if not text:
         raise HTTPException(status_code=400, detail="Text cannot be empty")
@@ -50,8 +57,13 @@ async def enhance_bullet(request: BulletEnhanceRequest):
     )
 
 @router.post("/analyze-jd", response_model=JDAnalysisResponse)
-async def analyze_job_description(request: JDAnalysisRequest):
+async def analyze_job_description(request: JDAnalysisRequest, authorization: Optional[str] = Header(None)):
     """Analyze resume skills and summary against a target Job Description to compute ATS match score"""
+    user_id = None
+    if authorization:
+        token = authorization.replace("Bearer ", "").strip()
+        user_id = get_user_from_token(token)
+    await check_feature_access(user_id, "ai_ats_deep_audit")
     jd_text = request.job_description.lower()
     if not jd_text.strip():
         raise HTTPException(status_code=400, detail="Job description text cannot be empty")
@@ -98,8 +110,13 @@ class AIChatResponse(BaseModel):
     suggestions: List[str] = []
 
 @router.post("/chat-assist", response_model=AIChatResponse)
-async def ai_chat_assist(request: AIChatRequest):
+async def ai_chat_assist(request: AIChatRequest, authorization: Optional[str] = Header(None)):
     """Interactive AI Career & ATS Coach chatbot answering questions via text or voice in selected language"""
+    user_id = None
+    if authorization:
+        token = authorization.replace("Bearer ", "").strip()
+        user_id = get_user_from_token(token)
+    await check_feature_access(user_id, "ai_voice_assistant")
     msg = request.message.strip().lower()
     if not msg:
         raise HTTPException(status_code=400, detail="Message cannot be empty")

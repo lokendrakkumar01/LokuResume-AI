@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect, useMemo, useRef } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { useToast } from '../context/ToastContext';
@@ -26,6 +26,8 @@ function ResumeBuilder() {
       const [score, setScore] = useState(null);
       const [showPreview, setShowPreview] = useState(false);
       const [showATSModal, setShowATSModal] = useState(false);
+      const [saveStatus, setSaveStatus] = useState('idle'); // 'idle' | 'saving' | 'saved' | 'error'
+      const isInitialMount = useRef(true);
 
       // Inline skill input state
       const [skillInput, setSkillInput] = useState('');
@@ -66,10 +68,13 @@ function ResumeBuilder() {
                   experience: [],
                   certifications: [],
                   achievements: [],
+                  languages: [],
+                  interests: [],
+                  custom_sections: [],
                   template_style: 'modern',
                   pdf_preferences: {
                         background_color: '#ffffff',
-                        accent_color: '#e11d48'
+                        accent_color: '#111827'
                   }
             };
       });
@@ -80,10 +85,40 @@ function ResumeBuilder() {
             }
       }, [id]);
 
+      // 1.5s Debounced Auto-save to MongoDB (or localStorage for drafts)
       useEffect(() => {
+            if (isInitialMount.current) {
+                  isInitialMount.current = false;
+                  return;
+            }
+
+            if (!formData.personal_info?.name || !formData.personal_info?.email) {
+                  if (!id) {
+                        localStorage.setItem('resume_draft', JSON.stringify(formData));
+                  }
+                  return;
+            }
+
             if (!id) {
                   localStorage.setItem('resume_draft', JSON.stringify(formData));
+                  return;
             }
+
+            setSaveStatus('saving');
+            const timer = setTimeout(async () => {
+                  try {
+                        const response = await axios.put(`${config.API_BASE_URL}/resumes/${id}`, formData, {
+                              headers: getAuthHeader()
+                        });
+                        setScore(response.data.score);
+                        setSaveStatus('saved');
+                  } catch (err) {
+                        console.error('Autosave error:', err);
+                        setSaveStatus('error');
+                  }
+            }, 1500);
+
+            return () => clearTimeout(timer);
       }, [formData, id]);
 
       // Auto-scroll active stepper pill into view horizontally on step change (mobile friendly)
@@ -155,17 +190,50 @@ function ResumeBuilder() {
                   if (!data.pdf_preferences) {
                         data.pdf_preferences = {
                               background_color: '#ffffff',
-                              accent_color: '#e11d48'
+                              accent_color: '#111827'
                         };
+                  }
+                  if (!data.pdf_preferences.accent_color) {
+                        data.pdf_preferences.accent_color = '#111827';
                   }
                   if (!data.template_style) {
                         data.template_style = 'modern';
                   }
+                  if (!data.languages) data.languages = [];
+                  if (!data.interests) data.interests = [];
+                  if (!data.custom_sections) data.custom_sections = [];
 
                   setFormData(data);
                   setScore(data.score);
             } catch (error) {
                   showToast('Failed to load resume details', 'error');
+            }
+      };
+
+      const handleUpdatePreferences = async (newPrefs) => {
+            const nextTemplate = newPrefs.template_style || formData.template_style || 'modern';
+            const nextColor = newPrefs.accent_color || formData.pdf_preferences?.accent_color || '#111827';
+
+            const updated = {
+                  ...formData,
+                  template_style: nextTemplate,
+                  pdf_preferences: {
+                        ...(formData.pdf_preferences || {}),
+                        background_color: '#ffffff',
+                        accent_color: nextColor
+                  }
+            };
+            setFormData(updated);
+
+            if (id) {
+                  try {
+                        await axios.put(`${config.API_BASE_URL}/resumes/${id}/preferences`, {
+                              template_style: nextTemplate,
+                              accent_color: nextColor
+                        }, { headers: getAuthHeader() });
+                  } catch (e) {
+                        console.warn('Sync preferences error:', e);
+                  }
             }
       };
 
@@ -177,12 +245,14 @@ function ResumeBuilder() {
             }
 
             setLoading(true);
+            setSaveStatus('saving');
             try {
                   if (id) {
                         const response = await axios.put(`${config.API_BASE_URL}/resumes/${id}`, formData, {
                               headers: getAuthHeader()
                         });
                         setScore(response.data.score);
+                        setSaveStatus('saved');
                         showToast('Resume updated successfully!', 'success');
                   } else {
                         const response = await axios.post(`${config.API_BASE_URL}/resumes`, formData, {
@@ -190,6 +260,7 @@ function ResumeBuilder() {
                         });
                         const newId = response.data.id;
                         setScore(response.data.score);
+                        setSaveStatus('saved');
                         showToast('Resume saved successfully!', 'success');
                         localStorage.removeItem('resume_draft');
 
@@ -199,19 +270,23 @@ function ResumeBuilder() {
                   }
             } catch (error) {
                   console.error('Save Resume Error:', error);
+                  setSaveStatus('error');
                   showToast(error.response?.data?.detail || 'Failed to save resume', 'error');
             } finally {
                   setLoading(false);
             }
       };
 
-      // Download PDF Handler with 50% Score Enforcement
-      const handleDownloadPDF = async () => {
+      // Download PDF Handler with 50% Score Enforcement & Real-time Color Sync
+      const handleDownloadPDF = async (overrides = {}) => {
             const currentScore = score !== null ? score : liveATSScore;
             if (currentScore < 50) {
                   showToast(`⚠️ Resume completeness is ${Math.round(currentScore)}%. Complete at least 50% to download PDF!`, 'warning');
                   return;
             }
+
+            const targetTemplate = overrides.template_style || formData.template_style || 'modern';
+            const targetColor = overrides.accent_color || formData.pdf_preferences?.accent_color || '#111827';
 
             let resumeId = id;
             if (!resumeId) {
@@ -222,7 +297,15 @@ function ResumeBuilder() {
                   }
                   showToast('Saving resume before downloading PDF...', 'info');
                   try {
-                        const saveRes = await axios.post(`${config.API_BASE_URL}/resumes`, formData, {
+                        const payload = {
+                              ...formData,
+                              template_style: targetTemplate,
+                              pdf_preferences: {
+                                    ...(formData.pdf_preferences || {}),
+                                    accent_color: targetColor
+                              }
+                        };
+                        const saveRes = await axios.post(`${config.API_BASE_URL}/resumes`, payload, {
                               headers: getAuthHeader()
                         });
                         resumeId = saveRes.data.id;
@@ -234,12 +317,20 @@ function ResumeBuilder() {
                         return;
                   }
             } else {
-                  // Save latest changes before downloading
+                  // Save latest preferences and changes before downloading
                   try {
-                        const updateRes = await axios.put(`${config.API_BASE_URL}/resumes/${resumeId}`, formData, {
+                        const updateRes = await axios.put(`${config.API_BASE_URL}/resumes/${resumeId}`, {
+                              ...formData,
+                              template_style: targetTemplate,
+                              pdf_preferences: {
+                                    ...(formData.pdf_preferences || {}),
+                                    accent_color: targetColor
+                              }
+                        }, {
                               headers: getAuthHeader()
                         });
                         setScore(updateRes.data.score);
+                        setSaveStatus('saved');
                   } catch (err) {
                         console.error('Auto-save before download warning:', err);
                   }
@@ -247,7 +338,12 @@ function ResumeBuilder() {
 
             try {
                   showToast('Generating official PDF...', 'info');
-                  const response = await axios.get(`${config.API_BASE_URL}/resumes/${resumeId}/download`, {
+                  const queryParams = new URLSearchParams({
+                        accent_color: targetColor,
+                        template_style: targetTemplate
+                  }).toString();
+
+                  const response = await axios.get(`${config.API_BASE_URL}/resumes/${resumeId}/download?${queryParams}`, {
                         headers: getAuthHeader(),
                         responseType: 'blob'
                   });
@@ -595,12 +691,11 @@ function ResumeBuilder() {
       ];
 
       const colorPresets = [
-            { name: 'Executive Red', color: '#e11d48' },
-            { name: 'Indigo', color: '#4f46e5' },
-            { name: 'Emerald', color: '#10b981' },
-            { name: 'Purple', color: '#8b5cf6' },
-            { name: 'Slate', color: '#334155' },
-            { name: 'Crimson', color: '#dc2626' }
+            { name: 'Black', color: '#111827' },
+            { name: 'Blue', color: '#1e40af' },
+            { name: 'Green', color: '#059669' },
+            { name: 'Purple', color: '#7c3aed' },
+            { name: 'Red', color: '#dc2626' }
       ];
 
       return (
@@ -613,6 +708,21 @@ function ResumeBuilder() {
                                     <span className="live-score-pill" title="Real-time estimated ATS score">
                                           🎯 ATS Ready: <strong>{liveATSScore}%</strong>
                                     </span>
+                                    {saveStatus === 'saving' && (
+                                          <span className="autosave-badge saving" title="Autosaving changes...">
+                                                ⏳ Saving...
+                                          </span>
+                                    )}
+                                    {saveStatus === 'saved' && (
+                                          <span className="autosave-badge saved" title="All changes saved to cloud">
+                                                ✓ Saved
+                                          </span>
+                                    )}
+                                    {saveStatus === 'error' && (
+                                          <span className="autosave-badge error" onClick={handleSave} style={{ cursor: 'pointer' }} title="Click to retry saving">
+                                                ⚠️ Save failed (Retry)
+                                          </span>
+                                    )}
                               </div>
                               <div className="live-score-bar-track">
                                     <div
@@ -1588,6 +1698,59 @@ function ResumeBuilder() {
                                                       : ' ⚠️ 50% score required to download PDF. Fill in key sections (summary, skills, projects, education).'}
                                           </p>
 
+                                          {/* Template & Color Customization */}
+                                          <div style={{ margin: '20px auto', maxWidth: '540px', textAlign: 'left', background: 'rgba(255, 255, 255, 0.04)', padding: '16px 20px', borderRadius: '12px', border: '1px solid rgba(255, 255, 255, 0.08)' }}>
+                                                <div style={{ marginBottom: '14px' }}>
+                                                      <label style={{ display: 'block', fontSize: '0.85rem', fontWeight: 600, color: 'var(--text-muted)', marginBottom: '8px' }}>
+                                                            📄 Layout Template:
+                                                      </label>
+                                                      <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
+                                                            {['modern', 'executive', 'tech', 'compact'].map((t) => (
+                                                                  <button
+                                                                        key={t}
+                                                                        type="button"
+                                                                        className={`btn btn-sm ${formData.template_style === t ? 'btn-primary' : 'btn-secondary'}`}
+                                                                        onClick={() => handleUpdatePreferences({ template_style: t })}
+                                                                  >
+                                                                        {t.charAt(0).toUpperCase() + t.slice(1)}
+                                                                  </button>
+                                                            ))}
+                                                      </div>
+                                                </div>
+                                                <div>
+                                                      <label style={{ display: 'block', fontSize: '0.85rem', fontWeight: 600, color: 'var(--text-muted)', marginBottom: '8px' }}>
+                                                            🎨 Resume Color Theme:
+                                                      </label>
+                                                      <div style={{ display: 'flex', gap: '10px', alignItems: 'center', flexWrap: 'wrap' }}>
+                                                            {colorPresets.map((c) => {
+                                                                  const currentAccent = (formData.pdf_preferences?.accent_color || '#111827').toLowerCase();
+                                                                  const isSelected = currentAccent === c.color.toLowerCase();
+                                                                  return (
+                                                                        <button
+                                                                              key={c.color}
+                                                                              type="button"
+                                                                              onClick={() => handleUpdatePreferences({ accent_color: c.color })}
+                                                                              style={{
+                                                                                    width: 32,
+                                                                                    height: 32,
+                                                                                    borderRadius: '50%',
+                                                                                    backgroundColor: c.color,
+                                                                                    border: isSelected ? '3px solid #ffffff' : '2px solid rgba(255,255,255,0.25)',
+                                                                                    boxShadow: isSelected ? `0 0 0 2px ${c.color}, 0 2px 8px rgba(0,0,0,0.3)` : 'none',
+                                                                                    cursor: 'pointer',
+                                                                                    transition: 'all 0.15s ease'
+                                                                              }}
+                                                                              title={`${c.name} (${c.color})`}
+                                                                        />
+                                                                  );
+                                                            })}
+                                                            <span style={{ fontSize: '0.84rem', color: 'var(--text-muted)', marginLeft: '6px' }}>
+                                                                  Selected: <strong style={{ color: '#ffffff' }}>{colorPresets.find(c => c.color.toLowerCase() === (formData.pdf_preferences?.accent_color || '#111827').toLowerCase())?.name || 'Custom'}</strong>
+                                                            </span>
+                                                      </div>
+                                                </div>
+                                          </div>
+
                                           <div style={{ marginTop: '24px', display: 'flex', justifyContent: 'center', gap: '14px', flexWrap: 'wrap' }}>
                                                 <button onClick={() => setShowPreview(true)} type="button" className="btn btn-primary">
                                                       👁️ Live Preview Resume
@@ -1680,6 +1843,7 @@ function ResumeBuilder() {
                               formData={formData}
                               score={liveATSScore}
                               onDownloadPDF={handleDownloadPDF}
+                              onUpdatePreferences={handleUpdatePreferences}
                               onClose={() => setShowPreview(false)}
                         />
                   )}

@@ -29,9 +29,23 @@ def get_token_payload(token: str) -> dict:
     """Extract full payload from token"""
     return verify_token(token)
 
-def get_admin_from_token(token: str) -> str:
-    """Extract and verify user ID has admin role from token"""
+def get_user_role_from_token(token: str) -> tuple:
+    """Extract (user_id, role) from token"""
     payload = verify_token(token)
-    if payload and payload.get("role") == "admin":
+    if payload:
+        return payload.get("sub"), payload.get("role", "user")
+    return None, None
+
+def get_admin_from_token(token: str) -> str:
+    """Extract and verify user ID has admin or super_admin role from token"""
+    payload = verify_token(token)
+    if payload and payload.get("role") in ["admin", "super_admin"]:
+        return payload.get("sub")
+    return None
+
+def verify_token_role(token: str, allowed_roles: list) -> str:
+    """Extract user ID if token has one of the allowed roles"""
+    payload = verify_token(token)
+    if payload and payload.get("role") in allowed_roles:
         return payload.get("sub")
     return None

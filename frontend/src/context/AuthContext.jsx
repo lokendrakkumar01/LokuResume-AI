@@ -186,7 +186,7 @@ export const AuthProvider = ({ children }) => {
             return token ? { Authorization: `Bearer ${token}` } : {};
       };
 
-      const isAdmin = Boolean(user && user.role === 'admin');
+      const isAdmin = Boolean(user && (user.role === 'admin' || user.role === 'super_admin' || user.role === 'moderator'));
 
       return (
             <AuthContext.Provider value={{ user, token, login, signup, logout, adminLogin, adminLogout, isAdmin, getAuthHeader, loading }}>
@@ -247,7 +247,8 @@ export const AdminRoute = ({ children }) => {
             return <Navigate to="/admin/login" replace />;
       }
 
-      if (!user || user.role !== 'admin') {
+      const isPrivileged = user && (user.role === 'admin' || user.role === 'super_admin' || user.role === 'moderator');
+      if (!isPrivileged) {
             return <Navigate to="/dashboard" replace />;
       }
 
@@ -265,7 +266,8 @@ export const AdminGuestRoute = ({ children }) => {
             );
       }
 
-      if (token && user && user.role === 'admin') {
+      const isPrivileged = token && user && (user.role === 'admin' || user.role === 'super_admin' || user.role === 'moderator');
+      if (isPrivileged) {
             return <Navigate to="/admin" replace />;
       }
 

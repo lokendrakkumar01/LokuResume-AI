@@ -28,44 +28,56 @@ class PDFGenerator:
     """Generate professional, ATS-optimized executive resume PDFs matching user reference layout"""
     
     def generate_resume_pdf(self, resume: dict, score: float = 0, pdf_preferences: dict = None) -> BytesIO:
-        """Generate an executive-grade PDF resume from resume data"""
+        """Generate an executive-grade PDF resume from resume data matching selected theme color and template"""
         if pdf_preferences is None:
             pdf_preferences = {}
         
-        accent_color = pdf_preferences.get('accent_color') or '#1e3a8a'
-        divider_color = '#0f172a'
+        # Safe Hex Color Extraction & Validation
+        raw_accent = str(pdf_preferences.get('accent_color') or '#111827').strip()
+        if not re.match(r'^#[0-9a-fA-F]{6}$', raw_accent):
+            raw_accent = '#111827'
+        accent_color = raw_accent
+        divider_color = accent_color
         link_color = accent_color
+        
+        template_style = str(resume.get('template_style') or 'modern').lower().strip()
+        
+        # Compact template uses slightly tighter page margins
+        margin = 0.35 * inch if template_style == 'compact' else 0.45 * inch
+        page_width = 8.5 * inch - (2 * margin)
         
         buffer = BytesIO()
         doc = SimpleDocTemplate(
             buffer, pagesize=letter,
-            rightMargin=0.45*inch, leftMargin=0.45*inch,
-            topMargin=0.35*inch, bottomMargin=0.35*inch
+            rightMargin=margin, leftMargin=margin,
+            topMargin=margin, bottomMargin=margin
         )
         
         elements = []
         styles = getSampleStyleSheet()
-        page_width = 7.6 * inch
         
         # Typography Styles
+        name_font_size = 17 if template_style == 'compact' else (21 if template_style == 'executive' else 19)
+        name_align = TA_CENTER if template_style == 'executive' else TA_LEFT
+        
         name_style = ParagraphStyle(
             'CandidateName',
             parent=styles['Heading1'],
-            fontSize=19,
+            fontSize=name_font_size,
             textColor=colors.HexColor('#0f172a'),
             spaceAfter=2,
-            alignment=TA_LEFT,
+            alignment=name_align,
             fontName='Helvetica-Bold',
-            leading=22
+            leading=name_font_size + 3
         )
         
         headline_style = ParagraphStyle(
             'CandidateHeadline',
             parent=styles['Normal'],
             fontSize=9.5,
-            textColor=colors.HexColor('#334155'),
+            textColor=colors.HexColor(accent_color) if template_style == 'tech' else colors.HexColor('#334155'),
             spaceAfter=3,
-            alignment=TA_LEFT,
+            alignment=name_align,
             fontName='Helvetica-Oblique',
             leading=12
         )
@@ -76,7 +88,7 @@ class PDFGenerator:
             fontSize=8,
             textColor=colors.HexColor('#1e293b'),
             spaceAfter=2,
-            alignment=TA_LEFT,
+            alignment=name_align,
             fontName='Helvetica',
             leading=11
         )
@@ -85,7 +97,7 @@ class PDFGenerator:
             'SectionTitle',
             parent=styles['Heading2'],
             fontSize=9.5,
-            textColor=colors.HexColor('#0f172a'),
+            textColor=colors.HexColor(accent_color),
             spaceAfter=2,
             spaceBefore=5,
             fontName='Helvetica-Bold',
@@ -167,6 +179,17 @@ class PDFGenerator:
             elements.append(Spacer(1, 0.03*inch))
 
         personal_info = resume.get('personal_info', {}) or {}
+        
+        # Executive Template: Top Accent Banner
+        if template_style == 'executive':
+            top_bar = Table([['']], colWidths=[page_width])
+            top_bar.setStyle(TableStyle([
+                ('LINEABOVE', (0, 0), (-1, 0), 4.0, colors.HexColor(accent_color)),
+                ('TOPPADDING', (0, 0), (-1, -1), 0),
+                ('BOTTOMPADDING', (0, 0), (-1, -1), 0),
+            ]))
+            elements.append(top_bar)
+            elements.append(Spacer(1, 0.06*inch))
         
         # 1. Candidate Name
         candidate_name = personal_info.get('name', '').strip() or "Your Name"
@@ -467,6 +490,32 @@ class PDFGenerator:
                 elements.append(Paragraph(f"• <b>{plat}:</b> {head}{link_str}", bullet_style))
             
             elements.append(Spacer(1, 0.03*inch))
+
+        # 13. Languages Section (Optional)
+        languages = resume.get('languages', []) or []
+        if languages:
+            add_section_header("Languages")
+            clean_langs = [escape_xml(str(l).strip()) for l in languages if str(l).strip()]
+            elements.append(Paragraph(f"• {', '.join(clean_langs)}", body_style))
+            elements.append(Spacer(1, 0.03*inch))
+
+        # 14. Interests Section (Optional)
+        interests = resume.get('interests', []) or []
+        if interests:
+            add_section_header("Interests")
+            clean_interests = [escape_xml(str(i).strip()) for i in interests if str(i).strip()]
+            elements.append(Paragraph(f"• {', '.join(clean_interests)}", body_style))
+            elements.append(Spacer(1, 0.03*inch))
+
+        # 15. Custom Sections (Optional)
+        custom_sections = resume.get('custom_sections', []) or []
+        for sec in custom_sections:
+            if isinstance(sec, dict) and sec.get('title'):
+                add_section_header(sec['title'])
+                content = sec.get('content') or sec.get('description') or ''
+                if content:
+                    elements.append(Paragraph(escape_xml(content), body_style))
+                    elements.append(Spacer(1, 0.03*inch))
 
         # Build document
         doc.build(elements)

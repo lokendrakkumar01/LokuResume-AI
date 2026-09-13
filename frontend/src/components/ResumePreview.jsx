@@ -76,9 +76,9 @@ const getDisplayLabel = (url, fallback) => {
       }
 };
 
-function ResumePreview({ formData, score, onDownloadPDF, onClose }) {
+function ResumePreview({ formData, score, onDownloadPDF, onUpdatePreferences, onClose }) {
       const [template, setTemplate] = useState(formData.template_style || 'modern');
-      const [accentColor, setAccentColor] = useState(formData.pdf_preferences?.accent_color || '#e11d48');
+      const [accentColor, setAccentColor] = useState(formData.pdf_preferences?.accent_color || '#111827');
       const [zoom, setZoom] = useState(1);
       const [fitScale, setFitScale] = useState(1);
       const containerRef = useRef(null);
@@ -93,37 +93,42 @@ function ResumePreview({ formData, score, onDownloadPDF, onClose }) {
             certifications = [],
             achievements = [],
             coding_profiles = [],
+            languages = [],
+            interests = [],
+            custom_sections = [],
             pdf_preferences = {}
       } = formData;
 
       const effectiveScore = score !== undefined ? score : (formData.score || 0);
       const isUnlocked = effectiveScore >= 50;
 
-      const colorPresets = ['#e11d48', '#4f46e5', '#059669', '#2563eb', '#7c3aed', '#0f766e', '#1e293b'];
+      // 5 Standard Platform Colors: Black (#111827), Blue (#1e40af), Green (#059669), Purple (#7c3aed), Red (#dc2626)
+      const colorPresets = [
+            { name: 'Black', hex: '#111827' },
+            { name: 'Blue', hex: '#1e40af' },
+            { name: 'Green', hex: '#059669' },
+            { name: 'Purple', hex: '#7c3aed' },
+            { name: 'Red', hex: '#dc2626' }
+      ];
 
+      // Keep state in sync if parent formData updates
       useEffect(() => {
-            const computeFitScale = () => {
-                  if (containerRef.current) {
-                        const availableWidth = containerRef.current.clientWidth - (window.innerWidth < 768 ? 16 : 40);
-                        const calculated = Math.min(1.1, Math.max(0.35, availableWidth / 760));
-                        setFitScale(calculated);
-                        if (window.innerWidth < 768) {
-                              setZoom(calculated);
-                        }
-                  }
-            };
+            if (formData.template_style) setTemplate(formData.template_style);
+            if (formData.pdf_preferences?.accent_color) setAccentColor(formData.pdf_preferences.accent_color);
+      }, [formData.template_style, formData.pdf_preferences?.accent_color]);
 
-            computeFitScale();
-            window.addEventListener('resize', computeFitScale);
-            return () => window.removeEventListener('resize', computeFitScale);
-      }, []);
-
-      const handlePrint = () => {
-            window.print();
+      const handleTemplateChange = (t) => {
+            setTemplate(t);
+            if (onUpdatePreferences) {
+                  onUpdatePreferences({ template_style: t, accent_color: accentColor });
+            }
       };
 
-      const handleFit = () => {
-            setZoom(fitScale);
+      const handleColorChange = (c) => {
+            setAccentColor(c);
+            if (onUpdatePreferences) {
+                  onUpdatePreferences({ template_style: template, accent_color: c });
+            }
       };
 
       const handleDownloadClick = () => {
@@ -132,7 +137,7 @@ function ResumePreview({ formData, score, onDownloadPDF, onClose }) {
                   return;
             }
             if (onDownloadPDF) {
-                  onDownloadPDF();
+                  onDownloadPDF({ template_style: template, accent_color: accentColor });
             } else {
                   window.print();
             }
@@ -218,7 +223,7 @@ function ResumePreview({ formData, score, onDownloadPDF, onClose }) {
                                                 <button
                                                       key={t}
                                                       className={`pill-btn ${template === t ? 'active' : ''}`}
-                                                      onClick={() => setTemplate(t)}
+                                                      onClick={() => handleTemplateChange(t)}
                                                 >
                                                       {t.charAt(0).toUpperCase() + t.slice(1)}
                                                 </button>
@@ -228,11 +233,11 @@ function ResumePreview({ formData, score, onDownloadPDF, onClose }) {
                                     <div className="preview-color-dots">
                                           {colorPresets.map((c) => (
                                                 <button
-                                                      key={c}
-                                                      className={`color-dot ${accentColor === c ? 'selected' : ''}`}
-                                                      style={{ backgroundColor: c }}
-                                                      onClick={() => setAccentColor(c)}
-                                                      title={c}
+                                                      key={c.hex}
+                                                      className={`color-dot ${accentColor.toLowerCase() === c.hex.toLowerCase() ? 'selected' : ''}`}
+                                                      style={{ backgroundColor: c.hex }}
+                                                      onClick={() => handleColorChange(c.hex)}
+                                                      title={`${c.name} (${c.hex})`}
                                                 />
                                           ))}
                                     </div>
@@ -628,14 +633,60 @@ function ResumePreview({ formData, score, onDownloadPDF, onClose }) {
                                                                                     rel="noopener noreferrer"
                                                                                     style={{ color: accentColor, fontWeight: 600, textDecoration: 'none', marginLeft: '6px', display: 'inline-flex', alignItems: 'center' }}
                                                                               >
-                                                                                    [View Proof <ExternalLinkIcon />]
-                                                                              </a>
-                                                                        )}
-                                                                  </div>
-                                                            );
-                                                      })}
-                                                </div>
-                                          )}
+                                                    [View Proof <ExternalLinkIcon />]
+                                              </a>
+                                        )}
+                                  </div>
+                            );
+                      })}
+                </div>
+          )}
+
+          {/* LANGUAGES */}
+          {languages && languages.length > 0 && (
+                <div className="resume-section">
+                      <h3 style={{ color: accentColor, borderBottom: '1px solid #cbd5e1', paddingBottom: '3px', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
+                            LANGUAGES
+                      </h3>
+                      <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px', marginTop: '6px' }}>
+                            {languages.map((lang, idx) => (
+                                  <span key={idx} style={{ background: '#f1f5f9', color: '#1e293b', padding: '3px 10px', borderRadius: '4px', fontSize: '0.84rem', fontWeight: 600 }}>
+                                        {typeof lang === 'string' ? lang : (lang?.name || lang?.language || '')}
+                                  </span>
+                            ))}
+                      </div>
+                </div>
+          )}
+
+          {/* INTERESTS */}
+          {interests && interests.length > 0 && (
+                <div className="resume-section">
+                      <h3 style={{ color: accentColor, borderBottom: '1px solid #cbd5e1', paddingBottom: '3px', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
+                            INTERESTS
+                      </h3>
+                      <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px', marginTop: '6px' }}>
+                            {interests.map((interest, idx) => (
+                                  <span key={idx} style={{ background: '#f8fafc', border: '1px solid #e2e8f0', color: '#334155', padding: '3px 10px', borderRadius: '4px', fontSize: '0.84rem' }}>
+                                        {typeof interest === 'string' ? interest : (interest?.name || '')}
+                                  </span>
+                            ))}
+                      </div>
+                </div>
+          )}
+
+          {/* CUSTOM SECTIONS */}
+          {custom_sections && custom_sections.length > 0 && (
+                custom_sections.map((sec, idx) => (
+                      <div key={idx} className="resume-section">
+                            <h3 style={{ color: accentColor, borderBottom: '1px solid #cbd5e1', paddingBottom: '3px', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
+                                  {sec.title || 'ADDITIONAL SECTION'}
+                            </h3>
+                            <div style={{ marginTop: '6px', fontSize: '0.88rem', lineHeight: 1.5, color: '#334155', whiteSpace: 'pre-wrap' }}>
+                                  {sec.content || ''}
+                            </div>
+                      </div>
+                ))
+          )}
                                     </div>
                               </div>
                         </div>

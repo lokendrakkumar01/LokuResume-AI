@@ -39,3 +39,32 @@ class BroadcastRequest(BaseModel):
 class FeatureFlagsUpdateRequest(BaseModel):
     features: dict
 
+class UserStatusUpdateRequest(BaseModel):
+    status: str  # "active" | "deactivated" | "banned"
+
+class UserRoleUpdateRequest(BaseModel):
+    role: str  # "super_admin" | "admin" | "moderator" | "user"
+
+class UserFeaturesUpdateRequest(BaseModel):
+    features: dict
+
+class ThemeItem(BaseModel):
+    id: str
+    name: str
+    hex_code: str
+    category: Optional[str] = "Standard"
+    active: Optional[bool] = True
+
+class TemplateConfigItem(BaseModel):
+    id: str
+    name: str
+    description: Optional[str] = ""
+    active: Optional[bool] = True
+    is_premium: Optional[bool] = False
+
+class MaintenanceModeRequest(BaseModel):
+    enabled: bool
+    message: Optional[str] = "System is undergoing scheduled maintenance. Please check back shortly."
+    allowed_roles: Optional[list] = ["super_admin", "admin"]
+
+

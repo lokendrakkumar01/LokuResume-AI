@@ -1,5 +1,6 @@
 from fastapi import APIRouter, HTTPException, Depends, status, Header
 from fastapi.responses import StreamingResponse
+from pydantic import BaseModel
 from models.resume import ResumeCreate, ResumeUpdate, ResumeResponse, PDFPreferences
 from auth.jwt_handler import get_user_from_token
 from database import get_database
@@ -9,11 +10,16 @@ from services.pdf_generator import pdf_generator
 from datetime import datetime, timezone
 from bson import ObjectId
 from bson.errors import InvalidId
-from typing import List
+from typing import List, Optional, Dict, Any
 
 router = APIRouter(prefix="/resumes", tags=["Resumes"])
 
-DEFAULT_PDF_PREFERENCES = {"background_color": "#ffffff", "accent_color": "#1a73e8"}
+DEFAULT_PDF_PREFERENCES = {"background_color": "#ffffff", "accent_color": "#111827"}
+
+class PreferencesUpdateRequest(BaseModel):
+    template_style: Optional[str] = None
+    accent_color: Optional[str] = None
+    background_color: Optional[str] = None
 
 async def get_current_user(authorization: str = Header(None)):
     """Dependency to extract and verify user from JWT token"""
@@ -57,6 +63,9 @@ async def create_resume(resume: ResumeCreate, user_id: str = Depends(get_current
         "certifications": resume_dict["certifications"],
         "achievements": resume_dict.get("achievements", []),
         "coding_profiles": resume_dict.get("coding_profiles", []),
+        "languages": resume_dict.get("languages", []),
+        "interests": resume_dict.get("interests", []),
+        "custom_sections": resume_dict.get("custom_sections", []),
         "template_style": resume_dict.get("template_style", "modern"),
         "pdf_preferences": pdf_prefs,
         "score": score,
@@ -83,6 +92,9 @@ async def create_resume(resume: ResumeCreate, user_id: str = Depends(get_current
         certifications=resume_doc["certifications"],
         achievements=resume_doc["achievements"],
         coding_profiles=resume_doc.get("coding_profiles", []),
+        languages=resume_doc.get("languages", []),
+        interests=resume_doc.get("interests", []),
+        custom_sections=resume_doc.get("custom_sections", []),
         template_style=resume_doc.get("template_style", "modern"),
         pdf_preferences=resume_doc["pdf_preferences"],
         score=resume_doc["score"],
@@ -113,6 +125,9 @@ async def get_all_resumes(user_id: str = Depends(get_current_user)):
             certifications=resume["certifications"],
             achievements=resume.get("achievements", []),
             coding_profiles=resume.get("coding_profiles", []),
+            languages=resume.get("languages", []),
+            interests=resume.get("interests", []),
+            custom_sections=resume.get("custom_sections", []),
             template_style=resume.get("template_style", "modern"),
             pdf_preferences=resume.get("pdf_preferences") or DEFAULT_PDF_PREFERENCES,
             score=resume["score"],
@@ -152,6 +167,9 @@ async def get_resume(resume_id: str, user_id: str = Depends(get_current_user)):
         certifications=resume["certifications"],
         achievements=resume.get("achievements", []),
         coding_profiles=resume.get("coding_profiles", []),
+        languages=resume.get("languages", []),
+        interests=resume.get("interests", []),
+        custom_sections=resume.get("custom_sections", []),
         template_style=resume.get("template_style", "modern"),
         pdf_preferences=resume.get("pdf_preferences") or DEFAULT_PDF_PREFERENCES,
         score=resume["score"],
@@ -208,6 +226,9 @@ async def update_resume(resume_id: str, resume_update: ResumeUpdate, user_id: st
         certifications=existing_resume["certifications"],
         achievements=existing_resume.get("achievements", []),
         coding_profiles=existing_resume.get("coding_profiles", []),
+        languages=existing_resume.get("languages", []),
+        interests=existing_resume.get("interests", []),
+        custom_sections=existing_resume.get("custom_sections", []),
         template_style=existing_resume.get("template_style", "modern"),
         pdf_preferences=existing_resume.get("pdf_preferences") or DEFAULT_PDF_PREFERENCES,
         score=existing_resume["score"],
@@ -245,6 +266,16 @@ async def duplicate_resume(resume_id: str, user_id: str = Depends(get_current_us
     except InvalidId:
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Invalid resume ID")
     
+    # Check feature flag for HD PDF Export
+    setting = await db.platform_settings.find_one({"key": "features"})
+    if setting and setting.get("features"):
+        pdf_feat = setting["features"].get("hd_pdf_export", {})
+        if pdf_feat.get("status") == "disabled":
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail="FEATURE_DISABLED: High-Definition PDF Export is currently disabled by administrator."
+            )
+
     resume = await db.resumes.find_one({"_id": obj_id, "user_id": user_id})
     if not resume:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Resume not found")
@@ -277,6 +308,9 @@ async def duplicate_resume(resume_id: str, user_id: str = Depends(get_current_us
         certifications=new_resume["certifications"],
         achievements=new_resume.get("achievements", []),
         coding_profiles=new_resume.get("coding_profiles", []),
+        languages=new_resume.get("languages", []),
+        interests=new_resume.get("interests", []),
+        custom_sections=new_resume.get("custom_sections", []),
         template_style=new_resume.get("template_style", "modern"),
         pdf_preferences=new_resume.get("pdf_preferences") or DEFAULT_PDF_PREFERENCES,
         score=new_resume["score"],
@@ -329,6 +363,9 @@ async def generate_ai_resume(resume_id: str, user_id: str = Depends(get_current_
         certifications=resume["certifications"],
         achievements=resume.get("achievements", []),
         coding_profiles=resume.get("coding_profiles", []),
+        languages=resume.get("languages", []),
+        interests=resume.get("interests", []),
+        custom_sections=resume.get("custom_sections", []),
         template_style=resume.get("template_style", "modern"),
         pdf_preferences=resume.get("pdf_preferences") or DEFAULT_PDF_PREFERENCES,
         score=resume["score"],
@@ -339,8 +376,43 @@ async def generate_ai_resume(resume_id: str, user_id: str = Depends(get_current_
         updated_at=resume["updated_at"]
     )
 
+@router.put("/{resume_id}/preferences")
+async def update_resume_preferences(
+    resume_id: str, 
+    prefs: PreferencesUpdateRequest, 
+    user_id: str = Depends(get_current_user)
+):
+    """Lightweight preferences update without uploading full resume"""
+    db = await get_database()
+    try:
+        obj_id = ObjectId(resume_id)
+    except InvalidId:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Invalid resume ID")
+        
+    update_fields = {"updated_at": datetime.now(timezone.utc)}
+    if prefs.template_style:
+        update_fields["template_style"] = prefs.template_style
+    if prefs.accent_color:
+        update_fields["pdf_preferences.accent_color"] = prefs.accent_color
+    if prefs.background_color:
+        update_fields["pdf_preferences.background_color"] = prefs.background_color
+        
+    result = await db.resumes.update_one(
+        {"_id": obj_id, "user_id": user_id},
+        {"$set": update_fields}
+    )
+    if result.matched_count == 0:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Resume not found")
+        
+    return {"status": "success", "preferences": prefs.model_dump(exclude_none=True)}
+
 @router.get("/{resume_id}/download")
-async def download_resume(resume_id: str, user_id: str = Depends(get_current_user)):
+async def download_resume(
+    resume_id: str, 
+    accent_color: Optional[str] = None, 
+    template_style: Optional[str] = None, 
+    user_id: str = Depends(get_current_user)
+):
     """Generate and download resume PDF (Requires minimum 50% score)"""
     db = await get_database()
     
@@ -363,10 +435,16 @@ async def download_resume(resume_id: str, user_id: str = Depends(get_current_use
     
     try:
         # Get PDF preferences with defaults
-        pdf_preferences = resume.get("pdf_preferences") or DEFAULT_PDF_PREFERENCES
+        pdf_preferences = (resume.get("pdf_preferences") or DEFAULT_PDF_PREFERENCES).copy()
+        if accent_color:
+            pdf_preferences["accent_color"] = accent_color
+            await db.resumes.update_one({"_id": obj_id}, {"$set": {"pdf_preferences.accent_color": accent_color}})
         
         # Sanitize certifications - remove large base64 file_data before PDF generation
         resume_for_pdf = resume.copy()
+        if template_style:
+            resume_for_pdf["template_style"] = template_style
+            await db.resumes.update_one({"_id": obj_id}, {"$set": {"template_style": template_style}})
         if resume_for_pdf.get("certifications"):
             sanitized_certs = []
             for cert in resume_for_pdf["certifications"]:
