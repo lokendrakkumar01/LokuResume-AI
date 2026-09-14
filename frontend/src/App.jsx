@@ -18,13 +18,18 @@ import config from './config';
 import './index.css';
 
 function App() {
-  // Pre-warm backend on initial load to ensure instant 1-second responses
+  // Pre-warm backend and maintain 4-minute keep-alive heartbeat while user is active
   useEffect(() => {
-    try {
-      axios.get(`${config.API_BASE_URL}/health`).catch(() => {});
-    } catch {
-      // safe ignore
-    }
+    const keepAlive = () => {
+      try {
+        axios.get(`${config.API_BASE_URL}/health`, { timeout: 8000 }).catch(() => {});
+      } catch {
+        // safe ignore
+      }
+    };
+    keepAlive();
+    const interval = setInterval(keepAlive, 4 * 60 * 1000); // 4 minutes
+    return () => clearInterval(interval);
   }, []);
 
   return (

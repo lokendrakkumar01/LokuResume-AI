@@ -10,17 +10,27 @@ import config from '../config';
 import '../styles/Dashboard.css';
 
 function Dashboard() {
-      const [resumes, setResumes] = useState(() => {
+      const { user, logout, getAuthHeader, isAdmin } = useAuth();
+      const { showToast } = useToast();
+      const navigate = useNavigate();
+
+      const userKey = (user?.id || user?._id || user?.email || '').toString().trim();
+      const specificCacheKey = userKey ? `cached_resumes_${userKey}` : 'cached_resumes';
+
+      const getCachedResumes = () => {
             try {
-                  const cached = localStorage.getItem('cached_resumes');
-                  return cached ? JSON.parse(cached) : [];
+                  const specific = userKey ? localStorage.getItem(`cached_resumes_${userKey}`) : null;
+                  if (specific) return JSON.parse(specific);
+                  const legacy = localStorage.getItem('cached_resumes');
+                  return legacy ? JSON.parse(legacy) : [];
             } catch (e) {
                   return [];
             }
-      });
-      const [loading, setLoading] = useState(() => {
-            return !localStorage.getItem('cached_resumes');
-      });
+      };
+
+      const [resumes, setResumes] = useState(getCachedResumes);
+      const [loading, setLoading] = useState(() => getCachedResumes().length === 0);
+      const [isSyncing, setIsSyncing] = useState(false);
       const [searchQuery, setSearchQuery] = useState('');
       const [filterScore, setFilterScore] = useState('all');
       const [selectedResumeForATS, setSelectedResumeForATS] = useState(null);
@@ -29,13 +39,20 @@ function Dashboard() {
       const [broadcast, setBroadcast] = useState(null);
       const [features, setFeatures] = useState({});
 
-      const { user, logout, getAuthHeader, isAdmin } = useAuth();
-      const { showToast } = useToast();
-      const navigate = useNavigate();
+      const saveResumesCache = (data) => {
+            try {
+                  if (userKey) {
+                        localStorage.setItem(`cached_resumes_${userKey}`, JSON.stringify(data));
+                  }
+                  localStorage.setItem('cached_resumes', JSON.stringify(data));
+            } catch (e) {
+                  // ignore localStorage quota errors
+            }
+      };
 
       const fetchBroadcast = async () => {
             try {
-                  const res = await axios.get(`${config.API_BASE_URL}/admin/public-broadcast`);
+                  const res = await axios.get(`${config.API_BASE_URL}/admin/public-broadcast`, { timeout: 8000 });
                   if (res.data?.broadcast?.active) {
                         setBroadcast(res.data.broadcast);
                   }
@@ -46,7 +63,7 @@ function Dashboard() {
 
       const fetchFeatures = async () => {
             try {
-                  const res = await axios.get(`${config.API_BASE_URL}/admin/public-features`);
+                  const res = await axios.get(`${config.API_BASE_URL}/admin/public-features`, { timeout: 8000 });
                   if (res.data?.features) {
                         setFeatures(res.data.features);
                   }
@@ -56,27 +73,39 @@ function Dashboard() {
       };
 
       const fetchResumes = async () => {
+            setIsSyncing(true);
             try {
                   const response = await axios.get(`${config.API_BASE_URL}/resumes`, {
-                        headers: getAuthHeader()
+                        headers: getAuthHeader(),
+                        timeout: 15000 // 15s timeout
                   });
                   setResumes(response.data);
-                  localStorage.setItem('cached_resumes', JSON.stringify(response.data));
-                  setLoading(false);
+                  saveResumesCache(response.data);
             } catch (error) {
                   console.error('Failed to fetch resumes:', error);
-                  if (!localStorage.getItem('cached_resumes')) {
-                        showToast('Failed to load resumes', 'error');
+                  if (resumes.length === 0) {
+                        showToast('Failed to load resumes from server', 'error');
                   }
+            } finally {
                   setLoading(false);
+                  setIsSyncing(false);
             }
       };
 
       useEffect(() => {
-            fetchResumes();
-            fetchBroadcast();
-            fetchFeatures();
-      }, []);
+            // Load from user cache immediately on user change
+            const cached = getCachedResumes();
+            if (cached.length > 0) {
+                  setResumes(cached);
+                  setLoading(false);
+            }
+            // Fetch fresh data in parallel
+            Promise.allSettled([
+                  fetchResumes(),
+                  fetchBroadcast(),
+                  fetchFeatures()
+            ]);
+      }, [userKey]);
 
       useEffect(() => {
             const handleKeyDown = (e) => {
@@ -108,7 +137,7 @@ function Dashboard() {
             // Optimistic Instant Removal from UI
             const updated = resumes.filter((r) => r.id !== targetId);
             setResumes(updated);
-            localStorage.setItem('cached_resumes', JSON.stringify(updated));
+            saveResumesCache(updated);
             setDeleteTarget(null);
             showToast(`Resume "${targetName}" deleted`, 'info');
 
@@ -119,7 +148,7 @@ function Dashboard() {
             } catch (error) {
                   // Rollback on failure
                   setResumes(previousResumes);
-                  localStorage.setItem('cached_resumes', JSON.stringify(previousResumes));
+                  saveResumesCache(previousResumes);
                   showToast('Failed to delete resume on server', 'error');
             }
       };
@@ -418,7 +447,15 @@ function Dashboard() {
 
                         {/* Controls Header */}
                         <div className="dashboard-header">
-                              <h1>My Resumes</h1>
+                              <div style={{ display: 'flex', alignItems: 'center', gap: '0.65rem' }}>
+                                    <h1 style={{ margin: 0 }}>My Resumes</h1>
+                                    {isSyncing && (
+                                          <span style={{ fontSize: '0.72rem', fontWeight: 600, padding: '0.18rem 0.55rem', background: 'rgba(59, 130, 246, 0.12)', color: '#60a5fa', borderRadius: '12px', border: '1px solid rgba(59, 130, 246, 0.25)', display: 'inline-flex', alignItems: 'center', gap: '0.35rem' }}>
+                                                <span style={{ width: 6, height: 6, borderRadius: '50%', background: '#3b82f6', display: 'inline-block' }} />
+                                                Syncing...
+                                          </span>
+                                    )}
+                              </div>
                               <div className="controls-bar">
                                     <div className="search-wrapper">
                                           <span className="search-icon">🔍</span>
@@ -451,7 +488,7 @@ function Dashboard() {
                         </div>
 
                         {/* Resume List Grid */}
-                        {loading ? (
+                        {loading && resumes.length === 0 ? (
                               <div className="resumes-grid">
                                     {[1, 2, 3].map((sk) => (
                                           <div key={sk} className="resume-card skeleton-card">

@@ -7,6 +7,15 @@
     <meta name="description" content="LokuResume AI - Build Smart. Score High. Get Hired. AI-powered resume builder with intelligent scoring." />
     <meta name="author" content="Lokenda Kumar" />
     <title>LokuResume AI - Build Smart. Score High. Get Hired.</title>
+    <!-- Preconnect to backend API to eliminate DNS and TLS connection delays -->
+    <link rel="preconnect" href="https://lokiresume-backend.onrender.com" crossorigin />
+    <link rel="dns-prefetch" href="https://lokiresume-backend.onrender.com" />
+    <script>
+      // Non-blocking early wake-up ping to backend to ensure immediate responsiveness
+      try {
+        fetch("https://lokiresume-backend.onrender.com/health", { mode: "cors", priority: "low" }).catch(function(){});
+      } catch(e){}
+    </script>
   </head>
   <body>
     <div id="root"></div>

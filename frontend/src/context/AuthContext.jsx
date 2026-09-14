@@ -18,8 +18,34 @@ const formatErrorMessage = (detail, fallback) => {
       return fallback;
 };
 
+// Helper to inspect if JWT token is expired on the client side
+const isTokenExpired = (tokenStr) => {
+      if (!tokenStr) return true;
+      try {
+            const parts = tokenStr.split('.');
+            if (parts.length !== 3) return false;
+            const payload = JSON.parse(atob(parts[1].replace(/-/g, '+').replace(/_/g, '/')));
+            if (payload && payload.exp) {
+                  // Expired if current time is past exp timestamp (with 60s buffer)
+                  return Date.now() >= (payload.exp * 1000) - 60000;
+            }
+            return false;
+      } catch (e) {
+            return false;
+      }
+};
+
 export const AuthProvider = ({ children }) => {
-      const [token, setToken] = useState(() => localStorage.getItem('token') || null);
+      const [token, setToken] = useState(() => {
+            const savedToken = localStorage.getItem('token');
+            if (savedToken && isTokenExpired(savedToken)) {
+                  localStorage.removeItem('token');
+                  localStorage.removeItem('user');
+                  return null;
+            }
+            return savedToken || null;
+      });
+
       const [user, setUser] = useState(() => {
             try {
                   const saved = localStorage.getItem('user');
@@ -28,29 +54,40 @@ export const AuthProvider = ({ children }) => {
                   return null;
             }
       });
-      const [loading, setLoading] = useState(true);
 
-      // Verify token on mount if present
+      // Never block rendering if user credentials are already present in localStorage!
+      const [loading, setLoading] = useState(false);
+
+      // Non-blocking silent token verification in the background (stale-while-revalidate)
       useEffect(() => {
             let isMounted = true;
 
             const verifySession = async () => {
                   const storedToken = localStorage.getItem('token');
-                  if (!storedToken) {
-                        if (isMounted) setLoading(false);
+                  if (!storedToken) return;
+
+                  if (isTokenExpired(storedToken)) {
+                        if (isMounted) {
+                              localStorage.removeItem('token');
+                              localStorage.removeItem('user');
+                              setToken(null);
+                              setUser(null);
+                        }
                         return;
                   }
 
                   try {
+                        // Fast 10-second timeout so backend cold-starts don't hang requests indefinitely
                         const response = await axios.get(`${config.API_BASE_URL}/auth/me`, {
-                              headers: { Authorization: `Bearer ${storedToken}` }
+                              headers: { Authorization: `Bearer ${storedToken}` },
+                              timeout: 10000
                         });
                         if (isMounted && response.data) {
                               setUser(response.data);
                               localStorage.setItem('user', JSON.stringify(response.data));
                         }
                   } catch (err) {
-                        // If token is invalid or expired (401), clear session
+                        // Only wipe local session if backend explicitly replied 401 Unauthorized
                         if (err.response && err.response.status === 401) {
                               if (isMounted) {
                                     localStorage.removeItem('token');
@@ -59,9 +96,8 @@ export const AuthProvider = ({ children }) => {
                                     setUser(null);
                               }
                         }
-                        // If network error (offline / cold start), keep saved local user
-                  } finally {
-                        if (isMounted) setLoading(false);
+                        // On cold start delay, network blip, or 500/timeout, DO NOT logout!
+                        // User continues seamlessly with their cached profile.
                   }
             };
 
@@ -198,7 +234,8 @@ export const AuthProvider = ({ children }) => {
 export const ProtectedRoute = ({ children }) => {
       const { token, loading } = useAuth();
 
-      if (loading) {
+      // Only show spinner if loading and no token exists
+      if (loading && !token) {
             return (
                   <div style={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
                         <div style={{ width: 36, height: 36, border: '3px solid rgba(255,255,255,0.15)', borderTopColor: '#3b82f6', borderRadius: '50%', animation: 'spin 1s linear infinite' }} />
@@ -216,7 +253,7 @@ export const ProtectedRoute = ({ children }) => {
 export const GuestRoute = ({ children }) => {
       const { token, loading } = useAuth();
 
-      if (loading) {
+      if (loading && !token) {
             return (
                   <div style={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
                         <div style={{ width: 36, height: 36, border: '3px solid rgba(255,255,255,0.15)', borderTopColor: '#3b82f6', borderRadius: '50%', animation: 'spin 1s linear infinite' }} />
@@ -235,7 +272,7 @@ export const GuestRoute = ({ children }) => {
 export const AdminRoute = ({ children }) => {
       const { token, user, loading } = useAuth();
 
-      if (loading) {
+      if (loading && !token) {
             return (
                   <div style={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
                         <div style={{ width: 36, height: 36, border: '3px solid rgba(255,255,255,0.15)', borderTopColor: '#f43f5e', borderRadius: '50%', animation: 'spin 1s linear infinite' }} />
@@ -258,7 +295,7 @@ export const AdminRoute = ({ children }) => {
 export const AdminGuestRoute = ({ children }) => {
       const { token, user, loading } = useAuth();
 
-      if (loading) {
+      if (loading && !token) {
             return (
                   <div style={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
                         <div style={{ width: 36, height: 36, border: '3px solid rgba(255,255,255,0.15)', borderTopColor: '#f43f5e', borderRadius: '50%', animation: 'spin 1s linear infinite' }} />

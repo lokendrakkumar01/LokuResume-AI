@@ -6,8 +6,9 @@ import config from '../config';
 import '../styles/Auth.css';
 
 function Login() {
-      const [email, setEmail] = useState('');
+      const [email, setEmail] = useState(() => localStorage.getItem('remembered_email') || '');
       const [password, setPassword] = useState('');
+      const [rememberMe, setRememberMe] = useState(() => localStorage.getItem('remember_me') === 'true');
       const [showPassword, setShowPassword] = useState(false);
       const [error, setError] = useState('');
       const [loading, setLoading] = useState(false);
@@ -32,6 +33,14 @@ function Login() {
             }
 
             setLoading(true);
+
+            if (rememberMe) {
+                  localStorage.setItem('remember_me', 'true');
+                  localStorage.setItem('remembered_email', cleanEmail);
+            } else {
+                  localStorage.removeItem('remember_me');
+                  localStorage.removeItem('remembered_email');
+            }
 
             const result = await login(cleanEmail, password);
 
@@ -100,6 +109,19 @@ function Login() {
                                                 {showPassword ? '🙈' : '👁️'}
                                           </button>
                                     </div>
+                              </div>
+
+                              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '1.25rem', fontSize: '0.85rem' }}>
+                                    <label style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', cursor: 'pointer', color: 'var(--text-secondary, #cbd5e1)', userSelect: 'none' }}>
+                                          <input
+                                                type="checkbox"
+                                                checked={rememberMe}
+                                                onChange={(e) => setRememberMe(e.target.checked)}
+                                                style={{ accentColor: '#e11d48', width: '16px', height: '16px', cursor: 'pointer' }}
+                                          />
+                                          Keep me signed in
+                                    </label>
+                                    <span style={{ color: 'var(--text-muted, #94a3b8)', fontSize: '0.8rem' }}>🔒 Instant Access</span>
                               </div>
 
                               <button type="submit" className="btn btn-primary btn-full" disabled={loading}>

@@ -108,38 +108,50 @@ async def create_resume(resume: ResumeCreate, user_id: str = Depends(get_current
 
 @router.get("", response_model=List[ResumeResponse])
 async def get_all_resumes(user_id: str = Depends(get_current_user)):
-    """Get all resumes for the current user"""
+    """Get all resumes for the current user (optimized for lightning-fast dashboard loading)"""
     db = await get_database()
     
-    resumes = await db.resumes.find({"user_id": user_id}).to_list(length=100)
+    resumes = await db.resumes.find({"user_id": user_id}).sort("updated_at", -1).to_list(length=100)
     
-    return [
-        ResumeResponse(
-            id=str(resume["_id"]),
-            user_id=resume["user_id"],
-            personal_info=resume["personal_info"],
-            summary=resume["summary"],
-            education=resume["education"],
-            skills=resume["skills"],
-            projects=resume["projects"],
-            experience=resume["experience"],
-            certifications=resume["certifications"],
-            achievements=resume.get("achievements", []),
-            coding_profiles=resume.get("coding_profiles", []),
-            languages=resume.get("languages", []),
-            interests=resume.get("interests", []),
-            custom_sections=resume.get("custom_sections", []),
-            template_style=resume.get("template_style", "modern"),
-            pdf_preferences=resume.get("pdf_preferences") or DEFAULT_PDF_PREFERENCES,
-            score=resume["score"],
-            score_breakdown=resume["score_breakdown"],
-            suggestions=resume["suggestions"],
-            missing_keywords=resume["missing_keywords"],
-            created_at=resume["created_at"],
-            updated_at=resume["updated_at"]
+    result_list = []
+    for resume in resumes:
+        # Strip heavy base64 certificate data for list view to keep payload tiny (<20KB instead of 10MB+)
+        raw_certs = resume.get("certifications", [])
+        clean_certs = []
+        for c in raw_certs:
+            c_copy = dict(c) if isinstance(c, dict) else c.model_dump() if hasattr(c, "model_dump") else {}
+            if "file_data" in c_copy:
+                c_copy["file_data"] = ""
+            clean_certs.append(c_copy)
+
+        result_list.append(
+            ResumeResponse(
+                id=str(resume["_id"]),
+                user_id=resume["user_id"],
+                personal_info=resume["personal_info"],
+                summary=resume["summary"],
+                education=resume["education"],
+                skills=resume["skills"],
+                projects=resume["projects"],
+                experience=resume["experience"],
+                certifications=clean_certs,
+                achievements=resume.get("achievements", []),
+                coding_profiles=resume.get("coding_profiles", []),
+                languages=resume.get("languages", []),
+                interests=resume.get("interests", []),
+                custom_sections=resume.get("custom_sections", []),
+                template_style=resume.get("template_style", "modern"),
+                pdf_preferences=resume.get("pdf_preferences") or DEFAULT_PDF_PREFERENCES,
+                score=resume["score"],
+                score_breakdown=resume["score_breakdown"],
+                suggestions=resume["suggestions"],
+                missing_keywords=resume["missing_keywords"],
+                created_at=resume["created_at"],
+                updated_at=resume["updated_at"]
+            )
         )
-        for resume in resumes
-    ]
+    
+    return result_list
 
 @router.get("/{resume_id}", response_model=ResumeResponse)
 async def get_resume(resume_id: str, user_id: str = Depends(get_current_user)):

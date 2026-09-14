@@ -3,7 +3,7 @@ from contextlib import asynccontextmanager
 from fastapi import FastAPI, Request
 from fastapi.responses import JSONResponse
 from fastapi.middleware.cors import CORSMiddleware
-from database import connect_to_mongo, close_mongo_connection, get_database
+from database import connect_to_mongo, close_mongo_connection, get_database, ensure_indexes
 from routes import auth, resume, ai_tools, admin
 from routes.auth import seed_admin_account
 from auth.jwt_handler import get_user_role_from_token
@@ -13,8 +13,9 @@ from config import settings
 async def lifespan(app: FastAPI):
     """Lifespan context manager for startup and shutdown events"""
     await connect_to_mongo()
+    await ensure_indexes()
     await seed_admin_account()
-    print("[INFO] LokuResume AI Backend Started (Admin Seeded)")
+    print("[INFO] LokuResume AI Backend Started (Admin & Indexes Ready)")
     yield
     await close_mongo_connection()
     print("[INFO] LokuResume AI Backend Stopped")
