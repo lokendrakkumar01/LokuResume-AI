@@ -25,13 +25,20 @@ def process_profile_photo(photo_str: str, target_size=(200, 200), circular: bool
         if not photo_str:
             return None
         
-        # Handle data uri prefix
-        if "," in photo_str:
-            photo_data = photo_str.split(",", 1)[1]
+        # Check if photo is a remote URL (e.g. Cloudinary CDN)
+        if photo_str.startswith("http://") or photo_str.startswith("https://"):
+            import urllib.request
+            req = urllib.request.Request(photo_str, headers={"User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64)"})
+            with urllib.request.urlopen(req, timeout=5) as resp:
+                raw_bytes = resp.read()
         else:
-            photo_data = photo_str
-            
-        raw_bytes = base64.b64decode(photo_data)
+            # Handle data uri prefix
+            if "," in photo_str:
+                photo_data = photo_str.split(",", 1)[1]
+            else:
+                photo_data = photo_str
+            raw_bytes = base64.b64decode(photo_data)
+
         img = PILImage.open(BytesIO(raw_bytes)).convert("RGBA")
         
         # Fit / crop to square
@@ -571,7 +578,7 @@ class PDFGenerator:
             for ach in achievements:
                 a_title = escape_xml(ach.get('title', 'Achievement'))
                 a_desc = escape_xml(ach.get('description', ''))
-                a_link = (ach.get('link') or '').strip()
+                a_link = (ach.get('link') or ach.get('file_url') or '').strip()
                 
                 proof_link_str = ""
                 if a_link:

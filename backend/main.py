@@ -4,7 +4,7 @@ from fastapi import FastAPI, Request
 from fastapi.responses import JSONResponse
 from fastapi.middleware.cors import CORSMiddleware
 from database import connect_to_mongo, close_mongo_connection, get_database, ensure_indexes
-from routes import auth, resume, ai_tools, admin
+from routes import auth, resume, ai_tools, admin, upload
 from routes.auth import seed_admin_account
 from auth.jwt_handler import get_user_role_from_token
 from config import settings
@@ -73,6 +73,7 @@ async def maintenance_mode_middleware(request: Request, call_next):
         path in ["/", "/health", "/openapi.json"]
         or path.startswith("/admin")
         or path.startswith("/auth")
+        or path.startswith("/upload")
         or path.startswith("/docs")
         or path.startswith("/redoc")
     ):
@@ -117,6 +118,7 @@ app.include_router(auth.router)
 app.include_router(resume.router)
 app.include_router(ai_tools.router)
 app.include_router(admin.router)
+app.include_router(upload.router, prefix="/upload", tags=["Upload"])
 
 @app.get("/")
 async def root():

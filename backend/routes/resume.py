@@ -523,6 +523,10 @@ async def get_public_certificate(resume_id: str, cert_index: int):
         
     personal_info = resume.get("personal_info") or {}
     
+    file_url = cert.get("file_url") or ""
+    file_data = cert.get("file_data") or ""
+    has_file = bool(file_data or (file_url and (file_url.startswith("http://") or file_url.startswith("https://"))))
+    
     return {
         "verified": True,
         "resume_id": str(resume["_id"]),
@@ -534,14 +538,14 @@ async def get_public_certificate(resume_id: str, cert_index: int):
         "date": cert.get("date") or "",
         "skills_learned": cert.get("skills_learned") or "",
         "link": cert.get("link") or "",
-        "file_url": cert.get("file_url") or "",
-        "file_data": cert.get("file_data") or "",
-        "has_file": bool(cert.get("file_data"))
+        "file_url": file_url,
+        "file_data": file_data,
+        "has_file": has_file
     }
 
 @router.get("/{resume_id}/certificates/{cert_index}/file")
 async def get_public_certificate_file(resume_id: str, cert_index: int):
-    """Public endpoint to stream the raw uploaded certificate file (image or PDF)"""
+    """Public endpoint to stream the raw uploaded certificate file (image or PDF) or redirect to Cloudinary CDN"""
     db = await get_database()
     try:
         obj_id = ObjectId(resume_id)
@@ -557,6 +561,12 @@ async def get_public_certificate_file(resume_id: str, cert_index: int):
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Certificate not found")
         
     cert = certs[cert_index]
+    file_url = (cert.get("file_url") if isinstance(cert, dict) else None) or ""
+    
+    # If file is stored on Cloudinary or external CDN, redirect directly (307 Temporary Redirect)
+    if file_url and (file_url.startswith("http://") or file_url.startswith("https://")):
+        return RedirectResponse(file_url, status_code=status.HTTP_307_TEMPORARY_REDIRECT)
+
     file_data = cert.get("file_data") if isinstance(cert, dict) else None
     
     if not file_data:
@@ -611,10 +621,11 @@ async def view_public_certificate_page(resume_id: str, cert_index: int):
     skills_str = cert.get("skills_learned") or ""
     ext_link = cert.get("link") or ""
     file_data = cert.get("file_data") or ""
-    has_file = bool(file_data)
+    file_url = cert.get("file_url") or ""
+    has_file = bool(file_data or (file_url and (file_url.startswith("http://") or file_url.startswith("https://"))))
     
-    file_src = f"/resumes/{resume_id}/certificates/{cert_index}/file" if has_file else ""
-    is_pdf = ("application/pdf" in file_data) or (cert.get("file_url", "").lower().endswith(".pdf"))
+    file_src = file_url if (file_url and (file_url.startswith("http://") or file_url.startswith("https://"))) else (f"/resumes/{resume_id}/certificates/{cert_index}/file" if has_file else "")
+    is_pdf = ("application/pdf" in file_data) or file_url.lower().endswith(".pdf") or (".pdf" in file_url.lower())
     
     page_html = f"""<!DOCTYPE html>
 <html lang="en">

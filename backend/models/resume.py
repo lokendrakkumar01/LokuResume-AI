@@ -43,7 +43,8 @@ class Certification(BaseModel):
     model_config = ConfigDict(extra='allow')
     name: Optional[str] = ""
     file_data: Optional[str] = ""  # Base64 encoded certificate
-    file_url: Optional[str] = ""  # URL for certificate file (optional)
+    file_url: Optional[str] = ""  # Cloudinary or public URL for certificate file
+    cloudinary_id: Optional[str] = ""
     issued_by: Optional[str] = ""
     date: Optional[str] = ""
     link: Optional[str] = ""  # Proof link / Certificate verification URL
@@ -55,6 +56,8 @@ class Achievement(BaseModel):
     description: Optional[str] = ""
     date: Optional[str] = ""
     link: Optional[str] = ""  # URL for achievement proof/details / certificate link
+    file_url: Optional[str] = ""  # Cloudinary or public URL for achievement proof document
+    cloudinary_id: Optional[str] = ""
 
 class CodingProfile(BaseModel):
     model_config = ConfigDict(extra='allow')

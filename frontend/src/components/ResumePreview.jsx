@@ -159,6 +159,10 @@ function ResumePreview({ formData = {}, score, onDownloadPDF, onUpdatePreference
                   window.open(`/verify-certificate/${resumeId}/${certIndex}`, '_blank');
                   return;
             }
+            if (certItem?.file_url && (certItem.file_url.startsWith('http://') || certItem.file_url.startsWith('https://'))) {
+                  window.open(certItem.file_url, '_blank');
+                  return;
+            }
             if (certItem?.file_data && certItem.file_data.startsWith('data:')) {
                   try {
                         const parts = certItem.file_data.split(',');
@@ -704,7 +708,7 @@ function ResumePreview({ formData = {}, score, onDownloadPDF, onUpdatePreference
                                                             const title = typeof ach === 'string' ? ach : (ach?.title || 'Achievement');
                                                             const date = typeof ach === 'object' ? ach?.date : '';
                                                             const desc = typeof ach === 'object' ? ach?.description : '';
-                                                            const link = typeof ach === 'object' ? ach?.link : '';
+                                                            const link = typeof ach === 'object' ? (ach?.link || ach?.file_url) : '';
 
                                                             return (
                                                                   <div key={index} style={{ marginBottom: '8px', fontSize: '0.88rem', lineHeight: 1.45, color: '#1e293b' }}>

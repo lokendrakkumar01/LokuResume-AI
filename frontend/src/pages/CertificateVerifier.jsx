@@ -45,12 +45,18 @@ function CertificateVerifier() {
             };
       }, [resumeId, certIndex]);
 
-      const isPdf = Boolean(
-            (certData?.file_data && certData.file_data.includes('application/pdf')) ||
-            (certData?.file_url && certData.file_url.toLowerCase().endsWith('.pdf'))
+      const isCloudinary = Boolean(
+            certData?.file_url && (certData.file_url.startsWith('http://') || certData.file_url.startsWith('https://'))
       );
 
-      const fileSrc = `${config.API_BASE_URL}/resumes/${resumeId}/certificates/${certIndex}/file`;
+      const isPdf = Boolean(
+            (certData?.file_data && certData.file_data.includes('application/pdf')) ||
+            (certData?.file_url && (certData.file_url.toLowerCase().endsWith('.pdf') || certData.file_url.toLowerCase().includes('.pdf')))
+      );
+
+      const fileSrc = isCloudinary
+            ? certData.file_url
+            : `${config.API_BASE_URL}/resumes/${resumeId}/certificates/${certIndex}/file`;
 
       return (
             <div style={{ minHeight: '100vh', background: 'radial-gradient(circle at top, rgba(225, 29, 72, 0.08) 0%, #0f172a 100%)', color: '#f8fafc', padding: '2rem 1rem', display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
@@ -84,11 +90,18 @@ function CertificateVerifier() {
                         ) : (
                               <div>
                                     {/* Verification Stamp Badge */}
-                                    <div style={{ display: 'inline-flex', alignItems: 'center', gap: '0.5rem', padding: '0.4rem 1rem', background: 'rgba(16, 185, 129, 0.15)', color: '#34d399', border: '1px solid rgba(16, 185, 129, 0.35)', borderRadius: '9999px', fontSize: '0.82rem', fontWeight: 800, marginBottom: '1.25rem', letterSpacing: '0.02em' }}>
-                                          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
-                                                <polyline points="20 6 9 17 4 12" />
-                                          </svg>
-                                          Official Authenticated Credential
+                                    <div style={{ display: 'flex', gap: '0.6rem', flexWrap: 'wrap', alignItems: 'center', marginBottom: '1.25rem' }}>
+                                          <div style={{ display: 'inline-flex', alignItems: 'center', gap: '0.5rem', padding: '0.4rem 1rem', background: 'rgba(16, 185, 129, 0.15)', color: '#34d399', border: '1px solid rgba(16, 185, 129, 0.35)', borderRadius: '9999px', fontSize: '0.82rem', fontWeight: 800, letterSpacing: '0.02em' }}>
+                                                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
+                                                      <polyline points="20 6 9 17 4 12" />
+                                                </svg>
+                                                Official Authenticated Credential
+                                          </div>
+                                          {isCloudinary && (
+                                                <div style={{ display: 'inline-flex', alignItems: 'center', gap: '0.4rem', padding: '0.35rem 0.85rem', background: 'rgba(56, 189, 248, 0.12)', color: '#38bdf8', border: '1px solid rgba(56, 189, 248, 0.3)', borderRadius: '9999px', fontSize: '0.78rem', fontWeight: 700 }}>
+                                                      ⚡ Cloud CDN Authenticated
+                                                </div>
+                                          )}
                                     </div>
 
                                     {/* Title & Issuer */}
@@ -134,20 +147,20 @@ function CertificateVerifier() {
                                     </div>
 
                                     {/* Embedded Certificate Viewer */}
-                                    {certData.has_file ? (
+                                    {(certData.has_file || isCloudinary) ? (
                                           <div style={{ borderRadius: '12px', overflow: 'hidden', border: '1px solid rgba(255,255,255,0.12)', background: '#0b0f19', textAlign: 'center', marginBottom: '1.75rem', position: 'relative' }}>
                                                 {isPdf ? (
                                                       <iframe
                                                             src={`${fileSrc}#toolbar=0`}
                                                             title="Certificate Document"
-                                                            style={{ width: '100%', height: '580px', border: 'none' }}
+                                                            style={{ width: '100%', height: '620px', border: 'none' }}
                                                       />
                                                 ) : (
                                                       <div style={{ padding: '1rem', display: 'flex', justifyContent: 'center', alignItems: 'center' }}>
                                                             <img
-                                                                  src={certData.file_data || fileSrc}
+                                                                  src={fileSrc}
                                                                   alt={certData.name}
-                                                                  style={{ maxWidth: '100%', maxHeight: '640px', objectFit: 'contain', borderRadius: '8px', boxShadow: '0 10px 25px rgba(0,0,0,0.4)' }}
+                                                                  style={{ maxWidth: '100%', maxHeight: '680px', objectFit: 'contain', borderRadius: '8px', boxShadow: '0 10px 25px rgba(0,0,0,0.4)' }}
                                                             />
                                                       </div>
                                                 )}

@@ -28,6 +28,9 @@ function ResumeBuilder() {
       const [showPreview, setShowPreview] = useState(false);
       const [showATSModal, setShowATSModal] = useState(false);
       const [saveStatus, setSaveStatus] = useState('idle'); // 'idle' | 'saving' | 'saved' | 'error'
+      const [uploadingPhoto, setUploadingPhoto] = useState(false);
+      const [uploadingCertIndex, setUploadingCertIndex] = useState(null);
+      const [uploadingAchIndex, setUploadingAchIndex] = useState(null);
       const isInitialMount = useRef(true);
 
       // Inline skill input state
@@ -529,13 +532,47 @@ function ResumeBuilder() {
             setAiVariations([]);
       };
 
-      const handlePhotoUpload = (e) => {
+      const handlePhotoUpload = async (e) => {
             const file = e.target.files[0];
-            if (file && file.type.startsWith('image/')) {
-                  if (file.size > 2 * 1024 * 1024) {
-                        showToast('Photo size should be less than 2MB', 'warning');
-                        return;
+            if (!file) return;
+            if (!file.type.startsWith('image/')) {
+                  showToast('Please select a valid image file (PNG, JPG, WEBP)', 'warning');
+                  return;
+            }
+            if (file.size > 5 * 1024 * 1024) {
+                  showToast('Photo size should be less than 5MB', 'warning');
+                  return;
+            }
+
+            try {
+                  setUploadingPhoto(true);
+                  showToast('Uploading photo to Cloud CDN...', 'info');
+                  const uploadData = new FormData();
+                  uploadData.append('file', file);
+                  const res = await axios.post(`${config.API_BASE_URL}/upload/?folder_type=photos`, uploadData, {
+                        headers: {
+                              'Content-Type': 'multipart/form-data',
+                              ...getAuthHeader()
+                        }
+                  });
+                  if (res.data && res.data.url) {
+                        const photoUrl = res.data.url;
+                        const updated = {
+                              ...formData,
+                              personal_info: { ...formData.personal_info, profile_photo: photoUrl },
+                              pdf_preferences: {
+                                    ...(formData.pdf_preferences || {}),
+                                    include_photo: true
+                              }
+                        };
+                        setFormData(updated);
+                        showToast('Profile photo saved to Cloud CDN and enabled!', 'success');
+                  } else {
+                        throw new Error('No image URL returned from cloud');
                   }
+            } catch (err) {
+                  console.error('Photo upload error:', err);
+                  // Local fallback if offline or network glitch
                   const reader = new FileReader();
                   reader.onloadend = () => {
                         const updated = {
@@ -547,11 +584,11 @@ function ResumeBuilder() {
                               }
                         };
                         setFormData(updated);
-                        showToast('Profile photo uploaded and enabled!', 'success');
+                        showToast('Photo saved locally (fallback)', 'warning');
                   };
                   reader.readAsDataURL(file);
-            } else if (file) {
-                  showToast('Please select a valid image file', 'warning');
+            } finally {
+                  setUploadingPhoto(false);
             }
       };
 
@@ -653,20 +690,45 @@ function ResumeBuilder() {
                   setFormData({ ...formData, certifications: newCerts });
             }
       };
-      const handleCertificateUpload = (index, e) => {
+      const handleCertificateUpload = async (index, e) => {
             const file = e.target.files[0];
             if (!file) return;
-            if (file.size > 2 * 1024 * 1024) {
-                  showToast('Certificate file should be under 2MB', 'warning');
+            if (file.size > 10 * 1024 * 1024) {
+                  showToast('Certificate file should be under 10MB', 'warning');
                   return;
             }
-            const reader = new FileReader();
-            reader.onloadend = () => {
-                  updateCertification(index, 'file_data', reader.result);
-                  updateCertification(index, 'file_url', file.name);
-                  showToast(`Attached ${file.name}`, 'success');
-            };
-            reader.readAsDataURL(file);
+
+            try {
+                  setUploadingCertIndex(index);
+                  showToast(`Uploading ${file.name} to Cloud CDN...`, 'info');
+                  const uploadData = new FormData();
+                  uploadData.append('file', file);
+                  const res = await axios.post(`${config.API_BASE_URL}/upload/?folder_type=certificates`, uploadData, {
+                        headers: {
+                              'Content-Type': 'multipart/form-data',
+                              ...getAuthHeader()
+                        }
+                  });
+                  if (res.data && res.data.url) {
+                        updateCertification(index, 'file_url', res.data.url);
+                        updateCertification(index, 'file_name', file.name);
+                        showToast(`Uploaded ${file.name} to Cloud CDN!`, 'success');
+                  } else {
+                        throw new Error('No secure URL returned from cloud');
+                  }
+            } catch (err) {
+                  console.error('Certificate cloud upload error:', err);
+                  // Local fallback
+                  const reader = new FileReader();
+                  reader.onloadend = () => {
+                        updateCertification(index, 'file_data', reader.result);
+                        updateCertification(index, 'file_url', file.name);
+                        showToast(`Attached ${file.name} (local fallback)`, 'warning');
+                  };
+                  reader.readAsDataURL(file);
+            } finally {
+                  setUploadingCertIndex(null);
+            }
       };
       const removeCertification = (index) => {
             setFormData({ ...formData, certifications: (formData.certifications || []).filter((_, i) => i !== index) });
@@ -676,7 +738,7 @@ function ResumeBuilder() {
       const addAchievement = () => {
             setFormData({
                   ...formData,
-                  achievements: [...(formData.achievements || []), { title: '', description: '', date: '', link: '' }]
+                  achievements: [...(formData.achievements || []), { title: '', description: '', date: '', link: '', file_url: '', file_name: '' }]
             });
       };
       const updateAchievement = (index, field, value) => {
@@ -684,6 +746,45 @@ function ResumeBuilder() {
             if (newAchievements[index]) {
                   newAchievements[index] = { ...newAchievements[index], [field]: value };
                   setFormData({ ...formData, achievements: newAchievements });
+            }
+      };
+      const handleAchievementProofUpload = async (index, e) => {
+            const file = e.target.files[0];
+            if (!file) return;
+            if (file.size > 10 * 1024 * 1024) {
+                  showToast('Proof file should be under 10MB', 'warning');
+                  return;
+            }
+
+            try {
+                  setUploadingAchIndex(index);
+                  showToast(`Uploading ${file.name} to Cloud CDN...`, 'info');
+                  const uploadData = new FormData();
+                  uploadData.append('file', file);
+                  const res = await axios.post(`${config.API_BASE_URL}/upload/?folder_type=achievements`, uploadData, {
+                        headers: {
+                              'Content-Type': 'multipart/form-data',
+                              ...getAuthHeader()
+                        }
+                  });
+                  if (res.data && res.data.url) {
+                        const newAchievements = [...(formData.achievements || [])];
+                        newAchievements[index] = {
+                              ...newAchievements[index],
+                              file_url: res.data.url,
+                              file_name: file.name,
+                              link: newAchievements[index].link || res.data.url
+                        };
+                        setFormData({ ...formData, achievements: newAchievements });
+                        showToast(`Proof uploaded & attached to achievement!`, 'success');
+                  } else {
+                        throw new Error('No secure URL returned from cloud');
+                  }
+            } catch (err) {
+                  console.error('Achievement upload error:', err);
+                  showToast('Cloud upload failed. Please try again or paste a link.', 'warning');
+            } finally {
+                  setUploadingAchIndex(null);
             }
       };
       const removeAchievement = (index) => {
@@ -933,12 +1034,13 @@ function ResumeBuilder() {
                                                             </div>
                                                       </div>
                                                       <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
-                                                            <label className="btn btn-sm btn-secondary" style={{ cursor: 'pointer', margin: 0 }}>
-                                                                  🔄 Change
-                                                                  <input type="file" accept="image/*" onChange={handlePhotoUpload} style={{ display: 'none' }} />
+                                                            <label className="btn btn-sm btn-secondary" style={{ cursor: uploadingPhoto ? 'not-allowed' : 'pointer', margin: 0, opacity: uploadingPhoto ? 0.7 : 1 }}>
+                                                                  {uploadingPhoto ? '⏳ Uploading...' : '🔄 Change'}
+                                                                  <input type="file" accept="image/*" disabled={uploadingPhoto} onChange={handlePhotoUpload} style={{ display: 'none' }} />
                                                             </label>
                                                             <button
                                                                   type="button"
+                                                                  disabled={uploadingPhoto}
                                                                   className="btn btn-sm btn-outline-danger"
                                                                   onClick={handleRemovePhoto}
                                                                   title="Delete photo permanently from resume"
@@ -961,12 +1063,12 @@ function ResumeBuilder() {
                                                       background: 'rgba(255, 255, 255, 0.01)'
                                                 }}>
                                                       <div style={{ fontSize: '1.8rem', marginBottom: '6px' }}>🖼️</div>
-                                                      <label className="btn btn-sm btn-primary" style={{ cursor: 'pointer', margin: '6px 0', background: 'var(--primary-color, #e11d48)', borderColor: 'var(--primary-color, #e11d48)' }}>
-                                                            Choose Profile Photo
-                                                            <input type="file" accept="image/*" onChange={handlePhotoUpload} style={{ display: 'none' }} />
+                                                      <label className="btn btn-sm btn-primary" style={{ cursor: uploadingPhoto ? 'not-allowed' : 'pointer', margin: '6px 0', background: 'var(--primary-color, #e11d48)', borderColor: 'var(--primary-color, #e11d48)', opacity: uploadingPhoto ? 0.7 : 1 }}>
+                                                            {uploadingPhoto ? '⏳ Uploading to Cloud CDN...' : 'Choose Profile Photo'}
+                                                            <input type="file" accept="image/*" disabled={uploadingPhoto} onChange={handlePhotoUpload} style={{ display: 'none' }} />
                                                       </label>
                                                       <span style={{ fontSize: '0.78rem', color: '#94a3b8', marginTop: '4px' }}>
-                                                            Supports JPG, PNG (Max 2MB). You can easily toggle it on or off anytime.
+                                                            Supports JPG, PNG, WEBP (Max 5MB). Uploads directly to Cloud CDN.
                                                       </span>
                                                 </div>
                                           )}
@@ -1609,13 +1711,20 @@ function ResumeBuilder() {
                                                                   onChange={(e) => handleCertificateUpload(index, e)}
                                                                   className="file-input-compact"
                                                             />
+                                                            {uploadingCertIndex === index && (
+                                                                  <div style={{ marginTop: '6px', fontSize: '0.85rem', color: '#38bdf8' }}>
+                                                                        ⏳ Uploading certificate to Cloud CDN...
+                                                                  </div>
+                                                            )}
                                                             {cert.file_url && (
                                                                   <div style={{ marginTop: '6px', display: 'flex', alignItems: 'center', gap: '8px', fontSize: '0.85rem', color: '#10b981', flexWrap: 'wrap' }}>
-                                                                        <span>📎 Attached: <strong>{cert.file_url}</strong></span>
-                                                                        {cert.file_data && (
-                                                                              <button
-                                                                                    type="button"
-                                                                                    onClick={() => {
+                                                                        <span>☁️ Attached: <strong>{cert.file_name || (cert.file_url.startsWith('http') ? 'Cloud CDN Document' : cert.file_url)}</strong></span>
+                                                                        <button
+                                                                              type="button"
+                                                                              onClick={() => {
+                                                                                    if (cert.file_url && (cert.file_url.startsWith('http://') || cert.file_url.startsWith('https://'))) {
+                                                                                          window.open(cert.file_url, '_blank');
+                                                                                    } else if (cert.file_data) {
                                                                                           try {
                                                                                                 const parts = cert.file_data.split(',');
                                                                                                 const mime = parts[0].match(/:(.*?);/)?.[1] || 'image/png';
@@ -1628,18 +1737,19 @@ function ResumeBuilder() {
                                                                                           } catch (err) {
                                                                                                 console.error('Error previewing certificate:', err);
                                                                                           }
-                                                                                    }}
-                                                                                    style={{ background: 'rgba(16, 185, 129, 0.15)', border: '1px solid rgba(16, 185, 129, 0.3)', color: '#34d399', cursor: 'pointer', fontSize: '0.78rem', padding: '2px 8px', borderRadius: '4px', fontWeight: 600 }}
-                                                                                    title="Preview uploaded certificate"
-                                                                              >
-                                                                                    Preview ↗
-                                                                              </button>
-                                                                        )}
+                                                                                    }
+                                                                              }}
+                                                                              style={{ background: 'rgba(16, 185, 129, 0.15)', border: '1px solid rgba(16, 185, 129, 0.3)', color: '#34d399', cursor: 'pointer', fontSize: '0.78rem', padding: '2px 8px', borderRadius: '4px', fontWeight: 600 }}
+                                                                              title="Preview uploaded certificate"
+                                                                        >
+                                                                              Preview ↗
+                                                                        </button>
                                                                         <button
                                                                               type="button"
                                                                               onClick={() => {
                                                                                     updateCertification(index, 'file_data', '');
                                                                                     updateCertification(index, 'file_url', '');
+                                                                                    updateCertification(index, 'file_name', '');
                                                                               }}
                                                                               style={{ background: 'none', border: 'none', color: '#ef4444', cursor: 'pointer', fontSize: '0.9rem' }}
                                                                               title="Remove attached file"
@@ -1722,6 +1832,49 @@ function ResumeBuilder() {
                                                                   onChange={(e) => updateAchievement(index, 'link', e.target.value)}
                                                                   placeholder="https://linkedin.com/posts/... or proof link"
                                                             />
+                                                      </div>
+                                                      <div className="form-group">
+                                                            <label>Attach Proof Document (Photo / PDF)</label>
+                                                            <input
+                                                                  type="file"
+                                                                  accept=".pdf,image/*"
+                                                                  onChange={(e) => handleAchievementProofUpload(index, e)}
+                                                                  className="file-input-compact"
+                                                            />
+                                                            {uploadingAchIndex === index && (
+                                                                  <div style={{ marginTop: '6px', fontSize: '0.85rem', color: '#38bdf8' }}>
+                                                                        ⏳ Uploading proof to Cloud CDN...
+                                                                  </div>
+                                                            )}
+                                                            {ach.file_url && (
+                                                                  <div style={{ marginTop: '6px', display: 'flex', alignItems: 'center', gap: '8px', fontSize: '0.85rem', color: '#10b981', flexWrap: 'wrap' }}>
+                                                                        <span>☁️ Attached: <strong>{ach.file_name || 'Cloud Proof Document'}</strong></span>
+                                                                        <a
+                                                                              href={ach.file_url}
+                                                                              target="_blank"
+                                                                              rel="noreferrer"
+                                                                              style={{ background: 'rgba(16, 185, 129, 0.15)', border: '1px solid rgba(16, 185, 129, 0.3)', color: '#34d399', textDecoration: 'none', fontSize: '0.78rem', padding: '2px 8px', borderRadius: '4px', fontWeight: 600 }}
+                                                                        >
+                                                                              View Proof ↗
+                                                                        </a>
+                                                                        <button
+                                                                              type="button"
+                                                                              onClick={() => {
+                                                                                    const newAchievements = [...(formData.achievements || [])];
+                                                                                    newAchievements[index] = {
+                                                                                          ...newAchievements[index],
+                                                                                          file_url: '',
+                                                                                          file_name: ''
+                                                                                    };
+                                                                                    setFormData({ ...formData, achievements: newAchievements });
+                                                                              }}
+                                                                              style={{ background: 'none', border: 'none', color: '#ef4444', cursor: 'pointer', fontSize: '0.9rem' }}
+                                                                              title="Remove attached proof"
+                                                                        >
+                                                                              ✕
+                                                                        </button>
+                                                                  </div>
+                                                            )}
                                                       </div>
                                                 </div>
                                                 <div className="form-group">
