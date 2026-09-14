@@ -152,6 +152,36 @@ function ResumePreview({ formData = {}, score, onDownloadPDF, onUpdatePreference
             window.print();
       };
 
+      const handleViewCertProof = (e, certItem, certIndex) => {
+            e.preventDefault();
+            const resumeId = safeFormData.id || safeFormData._id;
+            if (resumeId) {
+                  window.open(`/verify-certificate/${resumeId}/${certIndex}`, '_blank');
+                  return;
+            }
+            if (certItem?.file_data && certItem.file_data.startsWith('data:')) {
+                  try {
+                        const parts = certItem.file_data.split(',');
+                        const mime = parts[0].match(/:(.*?);/)?.[1] || 'image/png';
+                        const byteCharacters = atob(parts[1]);
+                        const byteNumbers = new Array(byteCharacters.length);
+                        for (let i = 0; i < byteCharacters.length; i++) {
+                              byteNumbers[i] = byteCharacters.charCodeAt(i);
+                        }
+                        const byteArray = new Uint8Array(byteNumbers);
+                        const blob = new Blob([byteArray], { type: mime });
+                        const blobUrl = URL.createObjectURL(blob);
+                        window.open(blobUrl, '_blank');
+                        return;
+                  } catch (err) {
+                        console.error('Error opening blob file:', err);
+                  }
+            }
+            if (certItem?.link && /^https?:\/\//i.test(certItem.link)) {
+                  window.open(formatUrl(certItem.link), '_blank');
+            }
+      };
+
       const handleTogglePhoto = (val) => {
             setIncludePhoto(val);
             if (onUpdatePreferences) {
@@ -602,8 +632,9 @@ function ResumePreview({ formData = {}, score, onDownloadPDF, onUpdatePreference
                                                             const issuer = typeof cert === 'object' ? cert?.issued_by : '';
                                                             const date = typeof cert === 'object' ? cert?.date : '';
                                                             const link = typeof cert === 'object' ? cert?.link : '';
-                                                            const fileUrl = typeof cert === 'object' ? (cert?.file_data || cert?.file_url) : '';
+                                                            const hasFile = typeof cert === 'object' && Boolean(cert?.file_data || cert?.file_url);
                                                             const skillsLearned = typeof cert === 'object' ? cert?.skills_learned : '';
+                                                            const resId = safeFormData.id || safeFormData._id;
 
                                                             return (
                                                                   <div key={index} className="section-item" style={{ marginBottom: '10px' }}>
@@ -635,14 +666,16 @@ function ResumePreview({ formData = {}, score, onDownloadPDF, onUpdatePreference
                                                                                                 Verify Credential <ExternalLinkIcon />
                                                                                           </a>
                                                                                     )}
-                                                                                    {fileUrl && (
+                                                                                    {hasFile && (
                                                                                           <a
-                                                                                                href={fileUrl}
+                                                                                                href={resId ? `/verify-certificate/${resId}/${index}` : '#'}
+                                                                                                onClick={(e) => handleViewCertProof(e, cert, index)}
                                                                                                 target="_blank"
                                                                                                 rel="noopener noreferrer"
                                                                                                 style={{ color: '#059669', fontSize: '0.82rem', fontWeight: 600, textDecoration: 'none', display: 'inline-flex', alignItems: 'center' }}
+                                                                                                title="View verified certificate proof"
                                                                                           >
-                                                                                                View File 📎
+                                                                                                Verify Proof 📎
                                                                                           </a>
                                                                                     )}
                                                                               </div>

@@ -1,5 +1,5 @@
 from fastapi import APIRouter, HTTPException, Depends, status, Header
-from fastapi.responses import StreamingResponse
+from fastapi.responses import StreamingResponse, Response, HTMLResponse, RedirectResponse
 from pydantic import BaseModel
 from models.resume import ResumeCreate, ResumeUpdate, ResumeResponse, PDFPreferences
 from auth.jwt_handler import get_user_from_token
@@ -461,6 +461,7 @@ async def download_resume(
         
         # Sanitize certifications - remove large base64 file_data before PDF generation
         resume_for_pdf = resume.copy()
+        resume_for_pdf["id"] = str(resume["_id"])
         if template_style:
             resume_for_pdf["template_style"] = template_style
             await db.resumes.update_one({"_id": obj_id}, {"$set": {"template_style": template_style}})
@@ -469,6 +470,7 @@ async def download_resume(
             for cert in resume_for_pdf["certifications"]:
                 if isinstance(cert, dict):
                     cert_copy = {k: v for k, v in cert.items() if k != 'file_data'}
+                    cert_copy["has_uploaded_file"] = bool(cert.get("file_data") or cert.get("file_url"))
                     sanitized_certs.append(cert_copy)
                 else:
                     sanitized_certs.append(cert)
@@ -497,3 +499,189 @@ async def download_resume(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"Failed to generate PDF: {str(e)}"
         )
+
+@router.get("/{resume_id}/certificates/{cert_index}/public")
+async def get_public_certificate(resume_id: str, cert_index: int):
+    """Public endpoint to view a verified certificate details (No login required)"""
+    db = await get_database()
+    try:
+        obj_id = ObjectId(resume_id)
+    except InvalidId:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Invalid resume ID")
+    
+    resume = await db.resumes.find_one({"_id": obj_id})
+    if not resume:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Resume not found")
+        
+    certs = resume.get("certifications", []) or []
+    if cert_index < 0 or cert_index >= len(certs):
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Certificate not found")
+        
+    cert = certs[cert_index]
+    if isinstance(cert, str):
+        cert = {"name": cert}
+        
+    personal_info = resume.get("personal_info") or {}
+    
+    return {
+        "verified": True,
+        "resume_id": str(resume["_id"]),
+        "candidate_name": personal_info.get("name") or "Candidate",
+        "candidate_headline": personal_info.get("headline") or personal_info.get("email") or "",
+        "cert_index": cert_index,
+        "name": cert.get("name") or "Certificate",
+        "issued_by": cert.get("issued_by") or "",
+        "date": cert.get("date") or "",
+        "skills_learned": cert.get("skills_learned") or "",
+        "link": cert.get("link") or "",
+        "file_url": cert.get("file_url") or "",
+        "file_data": cert.get("file_data") or "",
+        "has_file": bool(cert.get("file_data"))
+    }
+
+@router.get("/{resume_id}/certificates/{cert_index}/file")
+async def get_public_certificate_file(resume_id: str, cert_index: int):
+    """Public endpoint to stream the raw uploaded certificate file (image or PDF)"""
+    db = await get_database()
+    try:
+        obj_id = ObjectId(resume_id)
+    except InvalidId:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Invalid resume ID")
+    
+    resume = await db.resumes.find_one({"_id": obj_id})
+    if not resume:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Resume not found")
+        
+    certs = resume.get("certifications", []) or []
+    if cert_index < 0 or cert_index >= len(certs):
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Certificate not found")
+        
+    cert = certs[cert_index]
+    file_data = cert.get("file_data") if isinstance(cert, dict) else None
+    
+    if not file_data:
+        external_link = cert.get("link") if isinstance(cert, dict) else None
+        if external_link and (external_link.startswith("http://") or external_link.startswith("https://")):
+            return RedirectResponse(external_link)
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="No certificate file found")
+        
+    import base64
+    try:
+        if "," in file_data:
+            header, b64_str = file_data.split(",", 1)
+            media_type = header.split(";")[0].replace("data:", "").strip()
+        else:
+            b64_str = file_data
+            media_type = "image/png"
+            
+        raw_bytes = base64.b64decode(b64_str)
+        filename = (cert.get("file_url") if isinstance(cert, dict) else None) or f"certificate_{cert_index + 1}.png"
+        return Response(
+            content=raw_bytes,
+            media_type=media_type,
+            headers={"Content-Disposition": f"inline; filename=\"{filename}\""}
+        )
+    except Exception as e:
+        raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=f"Failed to decode certificate: {str(e)}")
+
+@router.get("/{resume_id}/certificates/{cert_index}/view")
+async def view_public_certificate_page(resume_id: str, cert_index: int):
+    """Direct standalone HTML viewer for verified certificates (Instant fallback)"""
+    import html
+    db = await get_database()
+    try:
+        obj_id = ObjectId(resume_id)
+    except InvalidId:
+        return HTMLResponse("<h2>Invalid Certificate Link</h2>", status_code=400)
+        
+    resume = await db.resumes.find_one({"_id": obj_id})
+    if not resume:
+        return HTMLResponse("<h2>Resume not found</h2>", status_code=404)
+        
+    certs = resume.get("certifications", []) or []
+    if cert_index < 0 or cert_index >= len(certs):
+        return HTMLResponse("<h2>Certificate not found</h2>", status_code=404)
+        
+    cert = certs[cert_index] if isinstance(certs[cert_index], dict) else {"name": str(certs[cert_index])}
+    personal_info = resume.get("personal_info") or {}
+    cand_name = personal_info.get("name") or "Candidate"
+    cert_name = cert.get("name") or "Professional Certification"
+    issuer = cert.get("issued_by") or "Accredited Organization"
+    date_str = cert.get("date") or ""
+    skills_str = cert.get("skills_learned") or ""
+    ext_link = cert.get("link") or ""
+    file_data = cert.get("file_data") or ""
+    has_file = bool(file_data)
+    
+    file_src = f"/resumes/{resume_id}/certificates/{cert_index}/file" if has_file else ""
+    is_pdf = ("application/pdf" in file_data) or (cert.get("file_url", "").lower().endswith(".pdf"))
+    
+    page_html = f"""<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Verified Credential - {html.escape(cert_name)} | LokuResume AI</title>
+  <style>
+    :root {{ --primary: #e11d48; --bg: #0f172a; --card: #1e293b; --text: #f8fafc; --muted: #94a3b8; }}
+    * {{ box-sizing: border-box; margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; }}
+    body {{ background: var(--bg); color: var(--text); min-height: 100vh; display: flex; flex-direction: column; align-items: center; justify-content: flex-start; padding: 2rem 1rem; }}
+    .container {{ width: 100%; max-width: 840px; background: var(--card); border: 1px solid rgba(225, 29, 72, 0.25); border-radius: 16px; padding: 2rem; box-shadow: 0 20px 40px rgba(0,0,0,0.5); }}
+    .badge {{ display: inline-flex; align-items: center; gap: 6px; padding: 6px 14px; background: rgba(16, 185, 129, 0.15); color: #34d399; border: 1px solid rgba(16, 185, 129, 0.3); border-radius: 9999px; font-weight: 700; font-size: 0.85rem; margin-bottom: 1rem; }}
+    h1 {{ font-size: 1.75rem; color: #fff; margin-bottom: 0.5rem; }}
+    .issuer {{ font-size: 1.1rem; color: #cbd5e1; margin-bottom: 1.5rem; }}
+    .meta-grid {{ display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 1rem; margin-bottom: 1.5rem; background: rgba(15, 23, 42, 0.6); padding: 1.25rem; border-radius: 10px; border: 1px solid rgba(255,255,255,0.06); }}
+    .meta-item label {{ font-size: 0.75rem; text-transform: uppercase; color: var(--muted); font-weight: 700; display: block; margin-bottom: 4px; }}
+    .meta-item div {{ font-size: 0.95rem; font-weight: 600; color: #fff; }}
+    .doc-viewer {{ margin-top: 1.5rem; border-radius: 12px; overflow: hidden; border: 1px solid rgba(255,255,255,0.1); background: #000; text-align: center; }}
+    .doc-viewer img {{ max-width: 100%; height: auto; max-height: 700px; display: block; margin: 0 auto; object-fit: contain; }}
+    .doc-viewer iframe {{ width: 100%; height: 600px; border: none; }}
+    .actions {{ display: flex; gap: 1rem; margin-top: 1.5rem; flex-wrap: wrap; }}
+    .btn {{ display: inline-flex; align-items: center; gap: 8px; padding: 10px 20px; border-radius: 8px; font-weight: 600; text-decoration: none; font-size: 0.9rem; transition: all 0.2s; }}
+    .btn-primary {{ background: linear-gradient(135deg, #e11d48, #be123c); color: #fff; border: none; }}
+    .btn-primary:hover {{ opacity: 0.9; transform: translateY(-1px); }}
+    .btn-secondary {{ background: rgba(255,255,255,0.08); color: #fff; border: 1px solid rgba(255,255,255,0.15); }}
+    .btn-secondary:hover {{ background: rgba(255,255,255,0.15); }}
+    .footer {{ margin-top: 2rem; text-align: center; color: var(--muted); font-size: 0.8rem; }}
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="badge">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
+      LokuResume AI • Official Verified Credential Proof
+    </div>
+    <h1>{html.escape(cert_name)}</h1>
+    <div class="issuer">Issued by <strong>{html.escape(issuer)}</strong></div>
+
+    <div class="meta-grid">
+      <div class="meta-item">
+        <label>Recipient Candidate</label>
+        <div>{html.escape(cand_name)}</div>
+      </div>
+      <div class="meta-item">
+        <label>Date / Year</label>
+        <div>{html.escape(date_str) if date_str else "Verified Active"}</div>
+      </div>
+      {f'''<div class="meta-item">
+        <label>Skills Validated</label>
+        <div>{html.escape(skills_str)}</div>
+      </div>''' if skills_str else ""}
+    </div>
+
+    {f'''<div class="doc-viewer">
+      {"<iframe src='" + file_src + "#toolbar=0'></iframe>" if is_pdf else "<img src='" + file_src + "' alt='Certificate Photo' />"}
+    </div>''' if has_file else '<div style="padding: 2rem; text-align: center; color: var(--muted); background: rgba(0,0,0,0.2); border-radius: 8px;">No image/PDF file was uploaded for this certificate.</div>'}
+
+    <div class="actions">
+      {f'<a href="{file_src}" download class="btn btn-primary">📥 Download Certificate File</a>' if has_file else ""}
+      {f'<a href="{file_src}" target="_blank" class="btn btn-secondary">↗️ Open Fullscreen</a>' if has_file else ""}
+      {f'<a href="{ext_link}" target="_blank" class="btn btn-secondary">🌐 Official Issuer Link</a>' if ext_link and (ext_link.startswith("http://") or ext_link.startswith("https://")) else ""}
+    </div>
+  </div>
+  <div class="footer">
+    Certified &amp; Authenticated via <strong style="color: #e11d48;">LokuResume AI</strong> Career Platform
+  </div>
+</body>
+</html>"""
+    return HTMLResponse(content=page_html, status_code=200)

@@ -1610,8 +1610,31 @@ function ResumeBuilder() {
                                                                   className="file-input-compact"
                                                             />
                                                             {cert.file_url && (
-                                                                  <div style={{ marginTop: '6px', display: 'flex', alignItems: 'center', gap: '8px', fontSize: '0.85rem', color: '#10b981' }}>
+                                                                  <div style={{ marginTop: '6px', display: 'flex', alignItems: 'center', gap: '8px', fontSize: '0.85rem', color: '#10b981', flexWrap: 'wrap' }}>
                                                                         <span>📎 Attached: <strong>{cert.file_url}</strong></span>
+                                                                        {cert.file_data && (
+                                                                              <button
+                                                                                    type="button"
+                                                                                    onClick={() => {
+                                                                                          try {
+                                                                                                const parts = cert.file_data.split(',');
+                                                                                                const mime = parts[0].match(/:(.*?);/)?.[1] || 'image/png';
+                                                                                                const bstr = atob(parts[1]);
+                                                                                                let n = bstr.length;
+                                                                                                const u8arr = new Uint8Array(n);
+                                                                                                while (n--) u8arr[n] = bstr.charCodeAt(n);
+                                                                                                const blob = new Blob([u8arr], { type: mime });
+                                                                                                window.open(URL.createObjectURL(blob), '_blank');
+                                                                                          } catch (err) {
+                                                                                                console.error('Error previewing certificate:', err);
+                                                                                          }
+                                                                                    }}
+                                                                                    style={{ background: 'rgba(16, 185, 129, 0.15)', border: '1px solid rgba(16, 185, 129, 0.3)', color: '#34d399', cursor: 'pointer', fontSize: '0.78rem', padding: '2px 8px', borderRadius: '4px', fontWeight: 600 }}
+                                                                                    title="Preview uploaded certificate"
+                                                                              >
+                                                                                    Preview ↗
+                                                                              </button>
+                                                                        )}
                                                                         <button
                                                                               type="button"
                                                                               onClick={() => {

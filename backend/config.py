@@ -7,6 +7,8 @@ class Settings(BaseSettings):
     jwt_algorithm: str = "HS256"
     access_token_expire_minutes: int = 5256000  # 10 years (persists login session indefinitely)
     frontend_url: str = "http://localhost:5173"
+    public_frontend_url: str = "https://lokuresume-ai-008k.onrender.com"
+    public_backend_url: str = "https://lokiresume-backend.onrender.com"
     port: int = 8000
     admin_email: str = "admin@lokiresume.com"
     admin_password: str = "AdminLoku@2026!#Secret"

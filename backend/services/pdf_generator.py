@@ -8,6 +8,7 @@ from io import BytesIO
 from datetime import datetime
 import base64
 import re
+from config import settings
 
 try:
     from PIL import Image as PILImage, ImageDraw, ImageOps
@@ -56,12 +57,19 @@ def process_profile_photo(photo_str: str, target_size=(200, 200), circular: bool
         return None
 
 def clean_url(url: str) -> str:
-    """Ensure url has a valid protocol for clickable links"""
+    """Ensure url has a valid protocol for clickable links, filtering out bare filenames or invalid data URIs"""
     if not url:
         return ""
     url = url.strip()
+    if url.startswith("data:") or url.startswith("blob:") or url.startswith("file:"):
+        return ""
+    # Filter out bare filenames like cert.png or proof.pdf
+    if re.search(r"^[a-zA-Z0-9_\-\s]+\.(png|jpe?g|webp|pdf|gif|svg|docx?)$", url, re.I):
+        return ""
     if not url.startswith("http://") and not url.startswith("https://"):
-        return f"https://{url}"
+        if "." in url and not url.endswith((".", "/")):
+            return f"https://{url}"
+        return ""
     return url
 
 def escape_xml(text: str) -> str:
@@ -480,21 +488,26 @@ class PDFGenerator:
 
         # 10. Certifications Section
         certifications = resume.get('certifications', []) or []
+        resume_id = str(resume.get("id") or resume.get("_id") or "").strip()
+        public_base_url = getattr(settings, "public_frontend_url", "https://lokuresume-ai-008k.onrender.com").rstrip("/")
+        
         if certifications:
             add_section_header("Certifications")
-            for cert in certifications:
+            for cert_idx, cert in enumerate(certifications):
                 if isinstance(cert, str):
                     c_name = cert.strip()
                     c_org = ""
                     c_date = ""
                     c_link = ""
                     c_skills = ""
+                    has_file = False
                 else:
                     c_name = (cert.get('name') or '').strip()
                     c_org = (cert.get('issued_by') or '').strip()
                     c_date = (cert.get('date') or '').strip()
-                    c_link = (cert.get('link') or cert.get('file_url') or '').strip()
+                    c_link = (cert.get('link') or '').strip()
                     c_skills = (cert.get('skills_learned') or '').strip()
+                    has_file = bool(cert.get('file_data') or cert.get('file_url') or cert.get('has_uploaded_file'))
                 
                 if not c_name:
                     continue
@@ -515,9 +528,21 @@ class PDFGenerator:
                 # Row 2: Issuer (Left) + Verify link (Right)
                 row2_left = Paragraph(escape_xml(c_org), body_style) if c_org else Paragraph("", body_style)
                 row2_right_str = ""
-                if c_link:
-                    clean_cert_link = clean_url(c_link)
+                
+                # Generate verified platform link if candidate attached a certificate photo/PDF file
+                platform_proof_url = ""
+                if has_file and resume_id:
+                    platform_proof_url = f"{public_base_url}/verify-certificate/{resume_id}/{cert_idx}"
+                
+                clean_cert_link = clean_url(c_link) if c_link else ""
+                
+                if platform_proof_url and clean_cert_link:
+                    row2_right_str = f"<a href='{clean_cert_link}' color='{link_color}'><u>[Verify ↗]</u></a> &nbsp;<a href='{platform_proof_url}' color='#059669'><u>[Verify Proof 📎]</u></a>"
+                elif platform_proof_url:
+                    row2_right_str = f"<a href='{platform_proof_url}' color='{link_color}'><u>[Verify Proof ↗]</u></a>"
+                elif clean_cert_link:
                     row2_right_str = f"<a href='{clean_cert_link}' color='{link_color}'><u>[Verify Credential ↗]</u></a>"
+                
                 row2_right = Paragraph(row2_right_str, item_right_style) if row2_right_str else Paragraph("", item_right_style)
                 
                 if c_org or row2_right_str:

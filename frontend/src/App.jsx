@@ -13,6 +13,7 @@ import ResumeBuilder from './pages/ResumeBuilder';
 import Landing from './pages/Landing';
 import AdminLogin from './pages/AdminLogin';
 import AdminDashboard from './pages/AdminDashboard';
+import CertificateVerifier from './pages/CertificateVerifier';
 import axios from 'axios';
 import config from './config';
 import './index.css';
@@ -107,6 +108,8 @@ function App() {
                   </AdminRoute>
                 }
               />
+              {/* Public Certificate Verification Route */}
+              <Route path="/verify-certificate/:resumeId/:certIndex" element={<CertificateVerifier />} />
               <Route path="*" element={<Navigate to="/" replace />} />
             </Routes>
           </Router>
