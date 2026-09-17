@@ -13,6 +13,7 @@ function Dashboard() {
       const { user, logout, getAuthHeader, isAdmin, studentTrack, setStudentTrack } = useAuth();
       const { showToast } = useToast();
       const navigate = useNavigate();
+      const isBiz = (user?.track || studentTrack) === 'business';
 
       const userKey = (user?.id || user?._id || user?.email || '').toString().trim();
       const specificCacheKey = userKey ? `cached_resumes_${userKey}` : 'cached_resumes';
@@ -167,7 +168,6 @@ function Dashboard() {
 
       const createSampleResume = async () => {
             try {
-                  const isBiz = (user?.track || studentTrack) === 'business';
                   showToast(`Creating 90%+ ATS ${isBiz ? 'Business Executive' : 'Tech Developer'} sample...`, 'info');
 
                   const sampleData = isBiz ? {
