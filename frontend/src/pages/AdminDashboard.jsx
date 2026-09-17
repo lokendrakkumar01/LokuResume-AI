@@ -471,7 +471,7 @@ function AdminDashboard() {
             </svg>
           </div>
           <span className="admin-nav-title">
-            LokuResume Control Center
+            CVNex Control Center
             <span className="admin-role-badge">
               {user?.role === 'super_admin' ? 'Superadmin' : user?.role === 'admin' ? 'Administrator' : 'Moderator'}
             </span>
@@ -1570,7 +1570,7 @@ function AdminDashboard() {
                     <textarea
                       id="broadcast-msg"
                       className="admin-textarea"
-                      placeholder="e.g. 🚀 Welcome to LokuResume AI! New ATS templates and Gemini AI voice support are now live."
+                      placeholder="e.g. 🚀 Welcome to CVNex! New ATS templates and Gemini AI voice support are now live."
                       value={broadcast.message || ''}
                       onChange={(e) => setBroadcast({ ...broadcast, message: e.target.value })}
                       required

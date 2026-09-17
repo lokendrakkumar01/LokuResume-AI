@@ -24,6 +24,182 @@ const POPULAR_BUSINESS_SKILLS = [
       'Public Speaking & Pitching', 'Cross-Functional Collaboration'
 ];
 
+export const auditResumeDraft = (data) => {
+      const isBiz = data?.track === 'business';
+      const mistakes = [];
+      const p = data?.personal_info || {};
+
+      // 1. Contact / Personal info
+      if (!p.name || p.name.trim().length < 2) {
+            mistakes.push({
+                  id: 'missing-name',
+                  severity: 'critical',
+                  step: 1,
+                  titleEn: 'Missing Full Name',
+                  titleHi: 'पूरा नाम नहीं भरा है',
+                  descEn: 'A resume without your full name will be rejected immediately by ATS and HR screening.',
+                  descHi: 'बिना पूरे नाम के रिज्यूमे को कोई भी कंपनी या एटीएस स्वीकार नहीं करेगा।',
+                  speechHi: 'आपके रिज्यूमे में पूरा नाम गायब है। स्टेप 1 में जाकर अपना पूरा नाम दर्ज करें।',
+                  speechEn: 'Your full name is missing. Please add your full name in Step 1.'
+            });
+      }
+      if (!p.email || !p.email.includes('@')) {
+            mistakes.push({
+                  id: 'missing-email',
+                  severity: 'critical',
+                  step: 1,
+                  titleEn: 'Missing Valid Email Address',
+                  titleHi: 'ईमेल आईडी गायब या अमान्य है',
+                  descEn: 'Recruiters cannot invite you for an interview without a verified email address.',
+                  descHi: 'बिना वैध ईमेल आईडी के रिक्रूटर आपसे इंटरव्यू के लिए संपर्क नहीं कर पाएंगे।',
+                  speechHi: 'आपकी ईमेल आईडी नहीं मिली। स्टेप 1 में सही ईमेल पता भरें।',
+                  speechEn: 'A valid email address is missing. Please update it in Step 1.'
+            });
+      }
+      if (!p.phone || p.phone.trim().length < 8) {
+            mistakes.push({
+                  id: 'missing-phone',
+                  severity: 'critical',
+                  step: 1,
+                  titleEn: 'Missing Phone Number',
+                  titleHi: 'मोबाइल नंबर दर्ज नहीं है',
+                  descEn: 'Phone number is mandatory for recruiter screening calls and verification.',
+                  descHi: 'एचआर टेलीफोनिक राउंड और इंटरव्यू कॉल के लिए फोन नंबर जरूरी है।',
+                  speechHi: 'आपका फोन नंबर गायब है। स्टेप 1 में मोबाइल नंबर अवश्य जोड़ें।',
+                  speechEn: 'Phone number is missing. Please add your contact number in Step 1.'
+            });
+      }
+      if (!p.linkedin) {
+            mistakes.push({
+                  id: 'missing-linkedin',
+                  severity: 'warning',
+                  step: 1,
+                  titleEn: 'Missing LinkedIn Profile URL',
+                  titleHi: 'लिंक्डइन प्रोफाइल लिंक नहीं है',
+                  descEn: 'Over 85% of recruiters verify candidates on LinkedIn before scheduling interviews.',
+                  descHi: '85% से ज्यादा रिक्रूटर्स इंटरव्यू से पहले आपकी लिंक्डइन प्रोफाइल जांचते हैं।',
+                  speechHi: 'लिंक्डइन प्रोफाइल लिंक गायब है। स्टेप 1 में अपना लिंक्डइन यूआरएल जोड़ें।',
+                  speechEn: 'Your LinkedIn profile is missing. Adding it in Step 1 boosts credibility.'
+            });
+      }
+      if (!isBiz && !p.github) {
+            mistakes.push({
+                  id: 'missing-github',
+                  severity: 'warning',
+                  step: 1,
+                  titleEn: 'Tech Resume Missing GitHub Link',
+                  titleHi: 'टेक रिज्यूमे में गिटहब लिंक नहीं है',
+                  descEn: 'Software engineering recruiters expect to inspect code repositories on GitHub.',
+                  descHi: 'सॉफ्टवेयर डेवलपर के लिए गिटहब पर कोड रिपोजिटरी दिखाना बहुत जरूरी है।',
+                  speechHi: 'टेक रिज्यूमे में गिटहब लिंक नहीं मिला। स्टेप 1 में अपना गिटहब प्रोफाइल लिंक जोड़ें।',
+                  speechEn: 'For technical resumes, a GitHub link is strongly expected in Step 1.'
+            });
+      }
+
+      // 2. Summary
+      const summaryWords = (data?.summary || '').trim().split(/\s+/).filter(Boolean).length;
+      if (summaryWords < 20) {
+            mistakes.push({
+                  id: 'short-summary',
+                  severity: 'critical',
+                  step: 2,
+                  titleEn: summaryWords === 0 ? 'Missing Professional Summary' : `Summary Too Short (${summaryWords} words, min 25 needed)`,
+                  titleHi: summaryWords === 0 ? 'प्रोफेशनल समरी नहीं लिखी है' : `समरी बहुत छोटी है (${summaryWords} शब्द, कम से कम 25 चाहिए)`,
+                  descEn: 'Recruiters spend 6 seconds scanning. A 40-80 word summary conveys your core value immediately.',
+                  descHi: 'समरी के बिना रिज्यूमे अधूरा लगता है। स्टेप 2 में कम से कम 40 से 80 शब्दों की मजबूत समरी लिखें।',
+                  speechHi: 'आपकी प्रोफेशनल समरी बहुत छोटी या खाली है। स्टेप 2 में 40 से 80 शब्दों की मजबूत समरी लिखें।',
+                  speechEn: 'Your professional summary is too brief. Please write a 40 to 80 word summary in Step 2.'
+            });
+      }
+
+      // 3. Education
+      if (!data?.education || data.education.length === 0 || !data.education[0]?.degree) {
+            mistakes.push({
+                  id: 'missing-education',
+                  severity: 'critical',
+                  step: 3,
+                  titleEn: 'No Education History Added',
+                  titleHi: 'एजुकेशन डिटेल्स नहीं जोड़ी हैं',
+                  descEn: 'Degrees and graduation credentials are required by enterprise ATS filters.',
+                  descHi: 'अपनी डिग्री और कॉलेज की जानकारी स्टेप 3 में अवश्य जोड़ें।',
+                  speechHi: 'स्टेप 3 में अपनी डिग्री और कॉलेज की जानकारी अवश्य जोड़ें।',
+                  speechEn: 'Please add your degree and university details in Step 3.'
+            });
+      }
+
+      // 4. Skills
+      const skillCount = (data?.skills || []).length;
+      if (skillCount < 5) {
+            mistakes.push({
+                  id: 'few-skills',
+                  severity: 'critical',
+                  step: 4,
+                  titleEn: `Only ${skillCount} Skills Added (Minimum 5 required)`,
+                  titleHi: `केवल ${skillCount} स्किल्स हैं (कम से कम 5 आवश्यक हैं)`,
+                  descEn: 'ATS systems match job descriptions against your skills. Aim for 8-15 relevant skills.',
+                  descHi: 'एटीएस सिस्टम जॉब डिस्क्रिप्शन से स्किल्स मैच करता है। कम से कम 8 से 12 स्किल्स जोड़ें।',
+                  speechHi: `आपके रिज्यूमे में सिर्फ ${skillCount} स्किल्स हैं। स्टेप 4 में कम से कम 5 या 10 स्किल्स जोड़ें।`,
+                  speechEn: `You have only ${skillCount} skills. Please add at least 5 to 10 relevant skills in Step 4.`
+            });
+      }
+
+      // 5. Business References vs Tech Projects
+      if (isBiz) {
+            if (!data?.references || data.references.length === 0 || !data.references[0]?.name) {
+                  mistakes.push({
+                        id: 'missing-references',
+                        severity: 'warning',
+                        step: 5,
+                        titleEn: 'No Professional References Added',
+                        titleHi: 'कोई प्रोफेशनल रेफरेंस नहीं जोड़ा',
+                        descEn: 'Executive and MBA resumes stand out when backed by corporate or academic references.',
+                        descHi: 'बिजनेस और एग्जीक्यूटिव रिज्यूमे में रेफरेंस होने से विश्वसनीयता दोगुनी हो जाती है।',
+                        speechHi: 'बिजनेस रिज्यूमे के लिए स्टेप 5 में कम से कम एक प्रोफेशनल रेफरेंस अवश्य जोड़ें।',
+                        speechEn: 'For executive and business resumes, please add at least one professional reference in Step 5.'
+                  });
+            }
+      } else {
+            if (!data?.projects || data.projects.length === 0 || !data.projects[0]?.title) {
+                  mistakes.push({
+                        id: 'missing-projects',
+                        severity: 'critical',
+                        step: 5,
+                        titleEn: 'No Software Projects Added',
+                        titleHi: 'कोई प्रोजेक्ट नहीं जोड़ा है',
+                        descEn: 'Technical hiring managers evaluate engineering capability through real projects.',
+                        descHi: 'सॉफ्टवेयर डेवलपर्स के लिए कम से कम 2 लाइव प्रोजेक्ट्स दिखाना अत्यंत जरूरी है।',
+                        speechHi: 'सॉफ्टवेयर डेवलपर के लिए प्रोजेक्ट्स सबसे अहम हैं। स्टेप 5 में अपने प्रोजेक्ट्स जोड़ें।',
+                        speechEn: 'Technical resumes require at least one or two software projects. Add them in Step 5.'
+                  });
+            }
+      }
+
+      // 6. Experience & Metrics
+      if (data?.experience && data.experience.length > 0) {
+            let hasNumbers = false;
+            data.experience.forEach(exp => {
+                  if (/\d+|%|\$|₹|\+/.test(exp?.description || '')) {
+                        hasNumbers = true;
+                  }
+            });
+            if (!hasNumbers) {
+                  mistakes.push({
+                        id: 'no-metrics-experience',
+                        severity: 'critical',
+                        step: 6,
+                        titleEn: 'Missing Quantifiable Numbers / % Metrics in Experience',
+                        titleHi: 'एक्सपीरियंस में नंबर्स, रेवेन्यू या % आंकड़े नहीं हैं',
+                        descEn: 'Fatal mistake! Recruiters reject generic duties. Use numbers (e.g., "Increased revenue by 35%", "Led team of 8", "Handled $2M P&L").',
+                        descHi: 'सबसे बड़ी गलती! साधारण काम लिखने की जगह आंकड़े लिखें जैसे "35% ग्रोथ", "1000+ यूजर्स"।',
+                        speechHi: 'वर्क एक्सपीरियंस में कोई आंकड़े या परसेंटेज नहीं हैं। बिना नंबर्स के रिक्रूटर रिज्यूमे रिजेक्ट कर देते हैं। स्टेप 6 में अपने परिणाम प्रतिशत में लिखें।',
+                        speechEn: 'Your work experience lacks measurable numbers or percentages. Recruiters look for metrics like increased revenue or reduced latency. Add them in Step 6.'
+                  });
+            }
+      }
+
+      return mistakes;
+};
+
 function ResumeBuilder() {
       const { id } = useParams();
       const { getAuthHeader, studentTrack, setStudentTrack } = useAuth();
@@ -35,6 +211,8 @@ function ResumeBuilder() {
       const [score, setScore] = useState(null);
       const [showPreview, setShowPreview] = useState(false);
       const [showATSModal, setShowATSModal] = useState(false);
+      const [showMistakesModal, setShowMistakesModal] = useState(false);
+      const [isAuditingVoice, setIsAuditingVoice] = useState(false);
       const [saveStatus, setSaveStatus] = useState('idle'); // 'idle' | 'saving' | 'saved' | 'error'
       const [uploadingPhoto, setUploadingPhoto] = useState(false);
       const [uploadingCertIndex, setUploadingCertIndex] = useState(null);
@@ -171,6 +349,87 @@ function ResumeBuilder() {
             }
             return Math.min(100, pts);
       }, [formData]);
+
+      // Real-time resume mistakes detection
+      const detectedMistakes = useMemo(() => {
+            return auditResumeDraft(formData);
+      }, [formData]);
+
+      const speakAuditReport = (lang = 'hi') => {
+            if (!('speechSynthesis' in window)) {
+                  showToast('Voice playback is not supported on this browser.', 'warning');
+                  return;
+            }
+            window.speechSynthesis.cancel();
+            const mistakes = detectedMistakes;
+
+            let textToSpeak = '';
+            if (mistakes.length === 0) {
+                  textToSpeak = lang === 'hi'
+                        ? 'शानदार! आपके रिज्यूमे में कोई गंभीर गलती नहीं मिली। आपका रिज्यूमे पूरी तरह एटीएस रेडी है!'
+                        : 'Great job! No critical mistakes found in your resume. It is fully ATS ready!';
+            } else {
+                  if (lang === 'hi') {
+                        textToSpeak = `नमस्ते! हमने आपके रिज्यूमे की जाँच की। आपके रिज्यूमे में ${mistakes.length} गलतियाँ मिली हैं। `;
+                        mistakes.slice(0, 3).forEach((m, idx) => {
+                              textToSpeak += `गलती नंबर ${idx + 1}: ${m.speechHi} `;
+                        });
+                        if (mistakes.length > 3) {
+                              textToSpeak += `बाकी गलतियाँ स्क्रीन पर दी गई हैं, उन्हें भी स्टेप बाय स्टेप ठीक करें।`;
+                        }
+                  } else {
+                        textToSpeak = `Hello! We audited your resume and found ${mistakes.length} issues to correct. `;
+                        mistakes.slice(0, 3).forEach((m, idx) => {
+                              textToSpeak += `Mistake number ${idx + 1}: ${m.speechEn} `;
+                        });
+                        if (mistakes.length > 3) {
+                              textToSpeak += `Please review the remaining issues on your screen.`;
+                        }
+                  }
+            }
+
+            const utterance = new SpeechSynthesisUtterance(textToSpeak);
+            utterance.lang = lang === 'hi' ? 'hi-IN' : 'en-US';
+            utterance.rate = 0.95;
+            utterance.pitch = 1.0;
+
+            const voices = window.speechSynthesis.getVoices();
+            if (lang === 'hi') {
+                  const hiVoice = voices.find(v => v.lang.includes('hi') || v.name.toLowerCase().includes('hindi') || v.name.toLowerCase().includes('india'));
+                  if (hiVoice) utterance.voice = hiVoice;
+            } else {
+                  const enVoice = voices.find(v => (v.lang === 'en-US' || v.lang === 'en-GB') && (v.name.includes('Google') || v.name.includes('Natural')));
+                  if (enVoice) utterance.voice = enVoice;
+            }
+
+            setIsAuditingVoice(true);
+            utterance.onend = () => setIsAuditingVoice(false);
+            utterance.onerror = () => setIsAuditingVoice(false);
+            window.speechSynthesis.speak(utterance);
+      };
+
+      const stopAuditVoice = () => {
+            if ('speechSynthesis' in window) {
+                  window.speechSynthesis.cancel();
+            }
+            setIsAuditingVoice(false);
+      };
+
+      const handleAuditResume = () => {
+            setShowMistakesModal(true);
+            speakAuditReport('hi');
+      };
+
+      useEffect(() => {
+            const handleResumeAuditTrigger = () => {
+                  setShowMistakesModal(true);
+                  speakAuditReport('hi');
+            };
+            window.addEventListener('trigger-resume-audit', handleResumeAuditTrigger);
+            return () => {
+                  window.removeEventListener('trigger-resume-audit', handleResumeAuditTrigger);
+            };
+      }, [detectedMistakes]);
 
       const fetchResume = async () => {
             try {
@@ -1081,6 +1340,14 @@ function ResumeBuilder() {
                                     <span className="live-score-pill" title="Real-time estimated ATS score">
                                           🎯 ATS Ready: <strong>{liveATSScore}%</strong>
                                     </span>
+                                    <span
+                                          className={`mistakes-pill-indicator ${detectedMistakes.length > 0 ? 'has-mistakes' : 'all-clean'}`}
+                                          onClick={handleAuditResume}
+                                          title="Click to audit resume mistakes with AI voice"
+                                          style={{ cursor: 'pointer' }}
+                                    >
+                                          {detectedMistakes.length > 0 ? `⚠️ ${detectedMistakes.length} Mistakes` : '✅ 0 Mistakes'}
+                                    </span>
                                     {saveStatus === 'saving' && (
                                           <span className="autosave-badge saving" title="Autosaving changes...">
                                                 ⏳ Saving...
@@ -1106,6 +1373,14 @@ function ResumeBuilder() {
                         </div>
 
                         <div className="header-actions">
+                              <button
+                                    type="button"
+                                    className="btn btn-warning btn-sm btn-audit-mistakes"
+                                    onClick={handleAuditResume}
+                                    title="Check common fatal resume mistakes with voice assistant (गलतियाँ चेक करें)"
+                              >
+                                    🔍 Mistakes {detectedMistakes.length > 0 ? `(${detectedMistakes.length})` : '✓'}
+                              </button>
                               <button
                                     type="button"
                                     className="btn btn-secondary btn-sm"
@@ -1326,7 +1601,7 @@ function ResumeBuilder() {
                                                       ...formData,
                                                       personal_info: { ...formData.personal_info, headline: e.target.value }
                                                 })}
-                                                placeholder="e.g. Senior Full-Stack Software Engineer | React & Python"
+                                                placeholder={isBusiness ? "e.g. Regional Sales Director | P&L Management & B2B Revenue Growth" : "e.g. Senior Full-Stack Software Engineer | React & Python"}
                                           />
                                     </div>
 
@@ -1340,7 +1615,7 @@ function ResumeBuilder() {
                                                             ...formData,
                                                             personal_info: { ...formData.personal_info, name: e.target.value }
                                                       })}
-                                                      placeholder="e.g. Alex Morgan"
+                                                      placeholder={isBusiness ? "e.g. Michael Scott" : "e.g. Alex Morgan"}
                                                       required
                                                 />
                                           </div>
@@ -1382,64 +1657,109 @@ function ResumeBuilder() {
                                                             ...formData,
                                                             personal_info: { ...formData.personal_info, location: e.target.value }
                                                       })}
-                                                      placeholder="e.g. Etah, Uttar Pradesh"
+                                                      placeholder={isBusiness ? "e.g. Scranton, Pennsylvania / Mumbai, MH" : "e.g. Bangalore, Karnataka / San Francisco, CA"}
                                                 />
                                           </div>
                                     </div>
 
-                                    <div className="form-row">
-                                          <div className="form-group">
-                                                <label>GitHub Profile URL</label>
-                                                <input
-                                                      type="url"
-                                                      value={formData.personal_info?.github || ''}
-                                                      onChange={(e) => setFormData({
-                                                            ...formData,
-                                                            personal_info: { ...formData.personal_info, github: e.target.value }
-                                                      })}
-                                                      placeholder="https://github.com/username"
-                                                />
-                                          </div>
-                                          <div className="form-group">
-                                                <label>LinkedIn Profile URL</label>
-                                                <input
-                                                      type="url"
-                                                      value={formData.personal_info?.linkedin || ''}
-                                                      onChange={(e) => setFormData({
-                                                            ...formData,
-                                                            personal_info: { ...formData.personal_info, linkedin: e.target.value }
-                                                      })}
-                                                      placeholder="https://linkedin.com/in/username"
-                                                />
-                                          </div>
-                                    </div>
-
-                                    <div className="form-row">
-                                          <div className="form-group">
-                                                <label>Problem Solving URL (LeetCode / GFG)</label>
-                                                <input
-                                                      type="url"
-                                                      value={formData.personal_info?.problem_solving || formData.personal_info?.leetcode || ''}
-                                                      onChange={(e) => setFormData({
-                                                            ...formData,
-                                                            personal_info: { ...formData.personal_info, problem_solving: e.target.value, leetcode: e.target.value }
-                                                      })}
-                                                      placeholder="https://leetcode.com/username"
-                                                />
-                                          </div>
-                                          <div className="form-group">
-                                                <label>Portfolio / Website URL</label>
-                                                <input
-                                                      type="url"
-                                                      value={formData.personal_info?.portfolio || ''}
-                                                      onChange={(e) => setFormData({
-                                                            ...formData,
-                                                            personal_info: { ...formData.personal_info, portfolio: e.target.value }
-                                                      })}
-                                                      placeholder="https://yourportfolio.com"
-                                                />
-                                          </div>
-                                    </div>
+                                    {/* Stream-Tailored Professional Links */}
+                                    {isBusiness ? (
+                                          <>
+                                                <div className="form-row">
+                                                      <div className="form-group">
+                                                            <label>LinkedIn Profile URL *</label>
+                                                            <input
+                                                                  type="url"
+                                                                  value={formData.personal_info?.linkedin || ''}
+                                                                  onChange={(e) => setFormData({
+                                                                        ...formData,
+                                                                        personal_info: { ...formData.personal_info, linkedin: e.target.value }
+                                                                  })}
+                                                                  placeholder="https://linkedin.com/in/username"
+                                                            />
+                                                      </div>
+                                                      <div className="form-group">
+                                                            <label>Executive Portfolio / Personal Website</label>
+                                                            <input
+                                                                  type="url"
+                                                                  value={formData.personal_info?.portfolio || ''}
+                                                                  onChange={(e) => setFormData({
+                                                                        ...formData,
+                                                                        personal_info: { ...formData.personal_info, portfolio: e.target.value }
+                                                                  })}
+                                                                  placeholder="https://yourname.com"
+                                                            />
+                                                      </div>
+                                                </div>
+                                                <div className="form-group">
+                                                      <label>Case Studies Deck / Corporate Profile Link (URL)</label>
+                                                      <input
+                                                            type="url"
+                                                            value={formData.personal_info?.problem_solving || ''}
+                                                            onChange={(e) => setFormData({
+                                                                  ...formData,
+                                                                  personal_info: { ...formData.personal_info, problem_solving: e.target.value }
+                                                            })}
+                                                            placeholder="https://drive.google.com/presentation/... or executive deck"
+                                                      />
+                                                </div>
+                                          </>
+                                    ) : (
+                                          <>
+                                                <div className="form-row">
+                                                      <div className="form-group">
+                                                            <label>GitHub Profile URL</label>
+                                                            <input
+                                                                  type="url"
+                                                                  value={formData.personal_info?.github || ''}
+                                                                  onChange={(e) => setFormData({
+                                                                        ...formData,
+                                                                        personal_info: { ...formData.personal_info, github: e.target.value }
+                                                                  })}
+                                                                  placeholder="https://github.com/username"
+                                                            />
+                                                      </div>
+                                                      <div className="form-group">
+                                                            <label>LinkedIn Profile URL</label>
+                                                            <input
+                                                                  type="url"
+                                                                  value={formData.personal_info?.linkedin || ''}
+                                                                  onChange={(e) => setFormData({
+                                                                        ...formData,
+                                                                        personal_info: { ...formData.personal_info, linkedin: e.target.value }
+                                                                  })}
+                                                                  placeholder="https://linkedin.com/in/username"
+                                                            />
+                                                      </div>
+                                                </div>
+                                                <div className="form-row">
+                                                      <div className="form-group">
+                                                            <label>Problem Solving URL (LeetCode / GFG)</label>
+                                                            <input
+                                                                  type="url"
+                                                                  value={formData.personal_info?.problem_solving || formData.personal_info?.leetcode || ''}
+                                                                  onChange={(e) => setFormData({
+                                                                        ...formData,
+                                                                        personal_info: { ...formData.personal_info, problem_solving: e.target.value, leetcode: e.target.value }
+                                                                  })}
+                                                                  placeholder="https://leetcode.com/username"
+                                                            />
+                                                      </div>
+                                                      <div className="form-group">
+                                                            <label>Portfolio / Website URL</label>
+                                                            <input
+                                                                  type="url"
+                                                                  value={formData.personal_info?.portfolio || ''}
+                                                                  onChange={(e) => setFormData({
+                                                                        ...formData,
+                                                                        personal_info: { ...formData.personal_info, portfolio: e.target.value }
+                                                                  })}
+                                                                  placeholder="https://yourportfolio.com"
+                                                            />
+                                                      </div>
+                                                </div>
+                                          </>
+                                    )}
                               </div>
                         )}
 
@@ -1447,13 +1767,67 @@ function ResumeBuilder() {
                         {currentStep === 2 && (
                               <div className="form-step fade-in">
                                     <h2>📝 Step 2: Professional Summary</h2>
-                                    <p className="step-description">Write a compelling summary highlighting your key achievements (50-150 words)</p>
+                                    <p className="step-description">
+                                          {isBusiness
+                                                ? 'Write a compelling executive summary highlighting revenue impact, team leadership, and strategic results'
+                                                : 'Write a compelling software engineer summary highlighting your core tech stack, architecture, and achievements'}
+                                    </p>
+
+                                    {/* Quick 1-Click Summary Templates */}
+                                    <div className="quick-summary-templates" style={{ marginBottom: '14px', background: 'rgba(255, 255, 255, 0.02)', padding: '12px 14px', borderRadius: '10px', border: '1px solid rgba(255, 255, 255, 0.06)' }}>
+                                          <span style={{ fontSize: '0.82rem', color: 'var(--text-muted)', display: 'block', marginBottom: '8px' }}>
+                                                💡 1-Click {isBusiness ? 'Business & Executive' : 'Tech Developer'} Templates (Click to fill):
+                                          </span>
+                                          <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
+                                                {(isBusiness ? [
+                                                      {
+                                                            label: '👔 Executive Sales & P&L',
+                                                            text: 'Results-driven Business Executive with extensive experience leading cross-functional teams, optimizing P&L operations, and generating multimillion-dollar B2B revenue growth across competitive markets.'
+                                                      },
+                                                      {
+                                                            label: '📊 Operations & Strategy',
+                                                            text: 'Strategic Operations Leader recognized for streamlining corporate workflows, cutting overhead costs by 22%, managing key stakeholder relationships, and scaling enterprise delivery.'
+                                                      },
+                                                      {
+                                                            label: '🤝 Client Retention & CRM',
+                                                            text: 'Client Relationship Specialist with a proven track record in enterprise account retention, high-stakes contract negotiations, and sustained market expansion.'
+                                                      }
+                                                ] : [
+                                                      {
+                                                            label: '💻 Full-Stack Engineer',
+                                                            text: 'Dynamic Full-Stack Software Engineer with strong expertise in React, Node.js, and cloud architectures, building scalable, high-concurrency web applications with sub-50ms latency.'
+                                                      },
+                                                      {
+                                                            label: '⚡ Backend & Systems',
+                                                            text: 'Backend Systems Engineer focused on distributed microservices, database query optimization, and secure RESTful APIs engineered for high-throughput enterprise scale.'
+                                                      },
+                                                      {
+                                                            label: '🎨 Frontend & UI/UX',
+                                                            text: 'Detail-oriented Frontend Developer dedicated to crafting accessible, pixel-perfect, and ultra-performant digital interfaces with modern React, TypeScript, and responsive design systems.'
+                                                      }
+                                                ]).map((tpl, tIdx) => (
+                                                      <button
+                                                            key={tIdx}
+                                                            type="button"
+                                                            className="btn btn-sm btn-secondary"
+                                                            onClick={() => setFormData({ ...formData, summary: tpl.text })}
+                                                            style={{ fontSize: '0.78rem', padding: '4px 10px' }}
+                                                      >
+                                                            {tpl.label}
+                                                      </button>
+                                                ))}
+                                          </div>
+                                    </div>
+
                                     <div className="form-group">
                                           <textarea
                                                 value={formData.summary || ''}
                                                 onChange={(e) => setFormData({ ...formData, summary: e.target.value })}
                                                 rows={6}
-                                                placeholder="Passionate Software Engineer with 5+ years of experience architecting distributed cloud applications..."
+                                                placeholder={isBusiness
+                                                      ? "Dynamic, result-oriented Regional Manager with 10+ years of leadership across branch operations, client acquisitions, and corporate sales strategy. Proven track record boosting branch profitability by 140% and managing $4M+ P&L..."
+                                                      : "Passionate Software Engineer with 4+ years of experience architecting scalable distributed cloud applications, microservices, and modern web architectures..."
+                                                }
                                           />
                                           <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: '6px' }}>
                                                 <small>{formData.summary ? formData.summary.split(/\s+/).filter(Boolean).length : 0} words</small>
@@ -1508,7 +1882,7 @@ function ResumeBuilder() {
                                                             type="text"
                                                             value={edu.degree}
                                                             onChange={(e) => updateEducation(index, 'degree', e.target.value)}
-                                                            placeholder="B.Tech in Computer Science"
+                                                            placeholder={isBusiness ? "e.g. MBA in Marketing & Finance / BBA" : "e.g. B.Tech in Computer Science & Engineering"}
                                                       />
                                                 </div>
                                                 <div className="form-group">
@@ -1517,7 +1891,7 @@ function ResumeBuilder() {
                                                             type="text"
                                                             value={edu.college}
                                                             onChange={(e) => updateEducation(index, 'college', e.target.value)}
-                                                            placeholder="XYZ Institute of Technology"
+                                                            placeholder={isBusiness ? "e.g. Symbiosis Institute / IIM / Delhi University" : "e.g. XYZ Institute of Technology"}
                                                       />
                                                 </div>
                                                 <div className="form-row">
@@ -1899,7 +2273,7 @@ function ResumeBuilder() {
                                                             type="text"
                                                             value={exp.company}
                                                             onChange={(e) => updateExperience(index, 'company', e.target.value)}
-                                                            placeholder="Apex Tech Systems"
+                                                            placeholder={isBusiness ? "e.g. Dunder Mifflin Paper Co. / HDFC Bank" : "e.g. Apex Tech Systems / Google"}
                                                       />
                                                 </div>
                                                 <div className="form-row">
@@ -1909,7 +2283,7 @@ function ResumeBuilder() {
                                                                   type="text"
                                                                   value={exp.role}
                                                                   onChange={(e) => updateExperience(index, 'role', e.target.value)}
-                                                                  placeholder="Senior Software Engineer"
+                                                                  placeholder={isBusiness ? "e.g. Regional Sales Director / Operations Lead" : "e.g. Senior Software Engineer"}
                                                             />
                                                       </div>
                                                       <div className="form-group">
@@ -1923,12 +2297,15 @@ function ResumeBuilder() {
                                                       </div>
                                                 </div>
                                                 <div className="form-group">
-                                                      <label>Key Responsibilities &amp; Impact</label>
+                                                      <label>Key Responsibilities &amp; Impact (Include % and numbers for ATS)</label>
                                                       <textarea
                                                             value={exp.description}
                                                             onChange={(e) => updateExperience(index, 'description', e.target.value)}
                                                             rows={3}
-                                                            placeholder="Architected distributed microservices reducing latency by 45%..."
+                                                            placeholder={isBusiness
+                                                                  ? "Spearheaded regional sales operations generating $4.2M ARR, boosted client retention by 38%, and led an 11-person account executive team."
+                                                                  : "Architected distributed microservices handling 100K+ RPM, reducing latency by 45% and optimizing cloud infrastructure costs."
+                                                            }
                                                       />
                                                       <button
                                                             type="button"
@@ -2650,6 +3027,146 @@ function ResumeBuilder() {
                   </div>
 
                   {/* Modals */}
+                  {/* Real-time Voice Resume Mistake Inspector Modal */}
+                  {showMistakesModal && (
+                        <div className="modal-backdrop-blur" onClick={() => { stopAuditVoice(); setShowMistakesModal(false); }}>
+                              <div className="modal-dialog-content mistakes-audit-modal" onClick={(e) => e.stopPropagation()}>
+                                    <div className="modal-header-row">
+                                          <div>
+                                                <h3 style={{ margin: 0, display: 'flex', alignItems: 'center', gap: '8px' }}>
+                                                      <span>🔍 Resume Mistake Audit</span>
+                                                      <span className="mistake-count-badge" style={{
+                                                            background: detectedMistakes.length > 0 ? '#ef4444' : '#10b981',
+                                                            color: '#fff',
+                                                            fontSize: '0.75rem',
+                                                            padding: '2px 8px',
+                                                            borderRadius: '12px'
+                                                      }}>
+                                                            {detectedMistakes.length} {detectedMistakes.length === 1 ? 'Issue' : 'Issues'}
+                                                      </span>
+                                                </h3>
+                                                <span style={{ fontSize: '0.82rem', color: 'var(--text-muted)' }}>
+                                                      AI Voice Assistant proactively checking common fatal resume mistakes
+                                                </span>
+                                          </div>
+                                          <button
+                                                type="button"
+                                                className="modal-close-btn"
+                                                onClick={() => {
+                                                      stopAuditVoice();
+                                                      setShowMistakesModal(false);
+                                                }}
+                                          >
+                                                ✕
+                                          </button>
+                                    </div>
+
+                                    {/* Voice Controls Bar */}
+                                    <div className="voice-controls-strip">
+                                          <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                                                <span style={{ fontSize: '1.4rem' }}>{isAuditingVoice ? '🔊' : '🎙️'}</span>
+                                                <div>
+                                                      <strong style={{ fontSize: '0.88rem', display: 'block' }}>Voice Assistant:</strong>
+                                                      <span style={{ fontSize: '0.78rem', color: isAuditingVoice ? '#38bdf8' : 'var(--text-muted)' }}>
+                                                            {isAuditingVoice ? 'Speaking mistakes aloud...' : 'Click below to hear your mistakes spoken aloud'}
+                                                      </span>
+                                                </div>
+                                          </div>
+                                          <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
+                                                <button
+                                                      type="button"
+                                                      className="btn btn-sm btn-primary"
+                                                      onClick={() => speakAuditReport('hi')}
+                                                      style={{ fontSize: '0.8rem' }}
+                                                >
+                                                      🗣️ हिंदी में सुनें
+                                                </button>
+                                                <button
+                                                      type="button"
+                                                      className="btn btn-sm btn-secondary"
+                                                      onClick={() => speakAuditReport('en')}
+                                                      style={{ fontSize: '0.8rem' }}
+                                                >
+                                                      🗣️ Listen (English)
+                                                </button>
+                                                {isAuditingVoice && (
+                                                      <button
+                                                            type="button"
+                                                            className="btn btn-sm btn-outline-danger"
+                                                            onClick={stopAuditVoice}
+                                                            style={{ fontSize: '0.8rem' }}
+                                                      >
+                                                            ⏹️ Stop
+                                                      </button>
+                                                )}
+                                          </div>
+                                    </div>
+
+                                    {/* Mistakes List */}
+                                    <div className="mistakes-list-container">
+                                          {detectedMistakes.length === 0 ? (
+                                                <div className="no-mistakes-card">
+                                                      <div style={{ fontSize: '2.5rem', marginBottom: '10px' }}>🎉</div>
+                                                      <h4>No Critical Mistakes Found!</h4>
+                                                      <p style={{ color: 'var(--text-muted)', fontSize: '0.9rem' }}>
+                                                            Your resume is complete and formatted for recruiter screening and ATS parsing. You are ready to download your PDF!
+                                                      </p>
+                                                </div>
+                                          ) : (
+                                                detectedMistakes.map((m) => (
+                                                      <div key={m.id} className={`mistake-item-card severity-${m.severity}`}>
+                                                            <div className="mistake-header">
+                                                                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                                                                        <span className={`severity-tag ${m.severity}`}>
+                                                                              {m.severity === 'critical' ? '🔴 FATAL MISTAKE' : '🟠 WARNING'}
+                                                                        </span>
+                                                                        <span style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>
+                                                                              Step {m.step}
+                                                                        </span>
+                                                                  </div>
+                                                                  <button
+                                                                        type="button"
+                                                                        className="btn btn-sm btn-outline-primary fix-step-btn"
+                                                                        onClick={() => {
+                                                                              stopAuditVoice();
+                                                                              setShowMistakesModal(false);
+                                                                              setCurrentStep(m.step);
+                                                                              showToast(`Navigated to Step ${m.step}. Let's fix this!`, 'info');
+                                                                        }}
+                                                                  >
+                                                                        👉 Fix in Step {m.step} →
+                                                                  </button>
+                                                            </div>
+                                                            <div className="mistake-body">
+                                                                  <h4 className="mistake-title-en">{m.titleEn}</h4>
+                                                                  <p className="mistake-title-hi">⚠️ <em>{m.titleHi}</em></p>
+                                                                  <p className="mistake-desc-en">{m.descEn}</p>
+                                                                  <p className="mistake-desc-hi">{m.descHi}</p>
+                                                            </div>
+                                                      </div>
+                                                ))
+                                          )}
+                                    </div>
+
+                                    <div className="modal-footer-row" style={{ marginTop: '16px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '10px' }}>
+                                          <span style={{ fontSize: '0.82rem', color: 'var(--text-muted)' }}>
+                                                💡 Resolving these issues significantly boosts your ATS score and shortlist probability.
+                                          </span>
+                                          <button
+                                                type="button"
+                                                className="btn btn-secondary btn-sm"
+                                                onClick={() => {
+                                                      stopAuditVoice();
+                                                      setShowMistakesModal(false);
+                                                }}
+                                          >
+                                                Close Inspector
+                                          </button>
+                                    </div>
+                              </div>
+                        </div>
+                  )}
+
                   {showPreview && (
                         <ErrorBoundary onReset={() => setShowPreview(false)}>
                               <ResumePreview

@@ -15,14 +15,14 @@ async def lifespan(app: FastAPI):
     await connect_to_mongo()
     await ensure_indexes()
     await seed_admin_account()
-    print("[INFO] LokuResume AI Backend Started (Admin & Indexes Ready)")
+    print("[INFO] CVNex Backend Started (Admin & Indexes Ready)")
     yield
     await close_mongo_connection()
-    print("[INFO] LokuResume AI Backend Stopped")
+    print("[INFO] CVNex Backend Stopped")
 
 app = FastAPI(
-    title="LokuResume AI",
-    description="AI-Powered Resume Builder by Lokenda Kumar",
+    title="CVNex",
+    description="AI-Powered Career & Resume Platform by Lokendra Kumar",
     version="1.0.0",
     lifespan=lifespan
 )
@@ -124,9 +124,9 @@ app.include_router(upload.router, prefix="/upload", tags=["Upload"])
 async def root():
     """Health check endpoint"""
     return {
-        "message": "LokuResume AI API",
+        "message": "CVNex API",
         "tagline": "Build Smart. Score High. Get Hired.",
-        "founder": "Lokenda Kumar",
+        "founder": "Lokendra Kumar",
         "status": "running"
     }
 

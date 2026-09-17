@@ -632,7 +632,7 @@ async def view_public_certificate_page(resume_id: str, cert_index: int):
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Verified Credential - {html.escape(cert_name)} | LokuResume AI</title>
+  <title>Verified Credential - {html.escape(cert_name)} | CVNex</title>
   <style>
     :root {{ --primary: #e11d48; --bg: #0f172a; --card: #1e293b; --text: #f8fafc; --muted: #94a3b8; }}
     * {{ box-sizing: border-box; margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; }}
@@ -660,7 +660,7 @@ async def view_public_certificate_page(resume_id: str, cert_index: int):
   <div class="container">
     <div class="badge">
       <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
-      LokuResume AI • Official Verified Credential Proof
+      CVNex • Official Verified Credential Proof
     </div>
     <h1>{html.escape(cert_name)}</h1>
     <div class="issuer">Issued by <strong>{html.escape(issuer)}</strong></div>
@@ -691,7 +691,7 @@ async def view_public_certificate_page(resume_id: str, cert_index: int):
     </div>
   </div>
   <div class="footer">
-    Certified &amp; Authenticated via <strong style="color: #e11d48;">LokuResume AI</strong> Career Platform
+    Certified &amp; Authenticated via <strong style="color: #e11d48;">CVNex</strong> Career Platform
   </div>
 </body>
 </html>"""

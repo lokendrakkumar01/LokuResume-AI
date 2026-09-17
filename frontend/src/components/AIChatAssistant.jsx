@@ -6,48 +6,48 @@ import '../styles/AIChatAssistant.css';
 
 const MESSAGES_BY_LANG = {
       hi: {
-            welcome: "👋 नमस्ते! मैं आपका **LokuResume AI करियर और ATS कोच** हूँ।\n\nमैं आपकी मदद कर सकता हूँ:\n• 🎯 अपना ATS स्कोर 90%+ तक ले जाने में\n• ✍️ Google XYZ फॉर्मूला से असरदार बुलेट पॉइंट्स लिखने में\n• 💼 Tech और Business दोनों के लिए कस्टमाइज्ड टूल्स\n• 🎙️ आप नीचे दिए गए माइक बटन को दबाकर हिंदी में बोलकर भी सवाल पूछ सकते हैं!",
+            welcome: "👋 नमस्ते! मैं आपका **CVNex AI करियर और ATS कोच** हूँ।\n\nमैं आपकी मदद कर सकता हूँ:\n• 🎯 अपना ATS स्कोर 90%+ तक ले जाने में\n• ✍️ Google XYZ फॉर्मूला से असरदार बुलेट पॉइंट्स लिखने में\n• 💼 Tech और Business दोनों के लिए कस्टमाइज्ड टूल्स\n• 🎙️ आप नीचे दिए गए माइक बटन को दबाकर हिंदी में बोलकर भी सवाल पूछ सकते हैं!",
             placeholder: "माइक 🎙️ दबाकर बोलें या सवाल टाइप करें...",
             listening: "सुन रहा हूँ... अब बोलिए (हिंदी या इंग्लिश)",
             chipsTech: [
+                  "⚠️ गलतियाँ चेक करें (Audit Mistakes)",
                   "🚀 शुरुआत कैसे करें? (गाइड)",
                   "🎯 ATS स्कोर 90%+ कैसे करें?",
                   "✍️ सॉफ्टवेयर इंजीनियर की समरी लिखो",
                   "💡 5 दमदार एक्शन वर्ब्स",
-                  "🔍 ATS Job Matcher कैसे इस्तेमाल करें?",
                   "🛡️ LeetCode और GitHub प्रोफाइल्स"
             ],
             chipsBusiness: [
+                  "⚠️ गलतियाँ चेक करें (Audit Mistakes)",
                   "💼 बिजनेस समरी कैसे लिखें?",
                   "🎯 ATS स्कोर 90%+ कैसे करें?",
                   "🤝 रेफरेंसेज (References) कैसे जोड़ें?",
                   "📊 टॉप 10 बिजनेस स्किल्स",
-                  "🌟 Michael Scott टेम्पलेट कैसे इस्तेमाल करें?",
-                  "🗣️ भाषाएं व हॉबीज (Languages & Hobbies)"
+                  "🌟 Michael Scott टेम्पलेट कैसे इस्तेमाल करें?"
             ],
             fallbackDefault: "ATS स्कोर 90%+ करने के लिए अपने हर प्रोजेक्ट में संख्या (Numbers) जोड़ें और जॉब पोस्टिंग से 10+ मुख्य स्किल्स शामिल करें!",
             fallbackVerbs: "पावरफुल वर्ब्स का उपयोग करें: Architected, Spearheaded, Automated, Engineered, Streamlined. 'Worked on' जैसे कमज़ोर शब्द न लिखें।",
             fallbackSummary: "समरी फॉर्मूला: [अनुभव के वर्ष / रोल] + [प्रमुख टेक्नोलॉजीज़ या बिजनेस डोमेन] + [ठोस उपलब्धि]। 40 से 80 शब्दों में रखें।"
       },
       en: {
-            welcome: "👋 Hi! I'm your **LokuResume AI Career & ATS Coach**.\n\nI can help you:\n• 🎯 Optimize your ATS Score to 90%+\n• ✍️ Write high-impact bullet points with numbers\n• 💼 Tailor tools for Tech & Business students\n• 🎙️ You can also speak to me in English using the microphone button!",
+            welcome: "👋 Hi! I'm your **CVNex AI Career & ATS Coach**.\n\nI can help you:\n• 🎯 Optimize your ATS Score to 90%+\n• ✍️ Write high-impact bullet points with numbers\n• 💼 Tailor tools for Tech & Business students\n• 🎙️ You can also speak to me in English using the microphone button!",
             placeholder: "Speak with mic 🎙️ or type your question...",
             listening: "Listening... Speak your question now",
             chipsTech: [
+                  "⚠️ Check Resume Mistakes (Audit)",
                   "🚀 How to get started? (Guide)",
                   "🎯 How to get 90%+ ATS Score?",
                   "✍️ Write summary for Full Stack Engineer",
                   "💡 5 high-impact action verbs",
-                  "🔍 How to use ATS Job Matcher?",
                   "🛡️ LeetCode & GitHub profile tips"
             ],
             chipsBusiness: [
+                  "⚠️ Check Resume Mistakes (Audit)",
                   "💼 How to write Executive Summary?",
                   "🎯 How to get 90%+ ATS Score?",
                   "🤝 How to format References properly?",
                   "📊 Top 10 Business & Management Skills",
-                  "🌟 How to use Michael Scott Executive template?",
-                  "🗣️ Languages & Hobbies formatting"
+                  "🌟 How to use Michael Scott Executive template?"
             ],
             fallbackDefault: "Quantify your achievements with numbers (e.g. 'reduced costs by 25%' or 'improved latency by 40%') and match 10+ core keywords for a 90%+ ATS score!",
             fallbackVerbs: "Use power verbs: Spearheaded, Negotiated, Optimized, Streamlined, Orchestrated, and Engineered. Avoid generic terms like 'worked on'.",
@@ -62,13 +62,13 @@ const generateOnboardingGuide = (userName, targetLang) => {
 
       if (isHi) {
             return {
-                  text: `👋 **${salutation} LokuResume AI में आपका स्वागत है।** 🌟\n\nआइए मिलकर आपका रेज़्युमे **90%+ ATS स्कोर** वाला बनाएं! यहाँ आपके लिए 4 सबसे महत्वपूर्ण स्टेप्स हैं:\n\n1. 🚀 **शुरुआत (Start)**: Dashboard पर **'Create Resume'** दबाएं या तुरंत **'1-Click AI Sample'** लोड करें ताकि आपका समय बचे।\n2. 📝 **समरी और प्रोफाइल्स**: 40-70 शब्दों की असरदार समरी लिखें और LeetCode, GitHub या LinkedIn लिंक जोड़ें।\n3. 💼 **10-15 मुख्य स्किल्स**: अपने रोल से जुड़ी मुख्य स्किल्स जोड़ें। प्रोजेक्ट्स में आंकड़े (जैसे: '40% लेटेंसी कम की', '10,000+ यूज़र्स') जरूर लिखें।\n4. 🎯 **ATS Job Matcher**: जिस नौकरी में अप्लाई कर रहे हैं, उसकी जॉब डिस्क्रिप्शन पेस्ट करके चेक करें कि क्या मिसिंग है!\n\n🎙️ आप नीचे माइक दबाकर मुझसे कोई भी सवाल सीधे हिंदी में पूछ सकते हैं!`,
-                  speech: `${salutation} LokuResume AI में आपका स्वागत है। आइए मिलकर आपका रेज़्युमे 90%+ ATS स्कोर वाला बनाएं। सबसे पहले Dashboard पर Create Resume पर क्लिक करें या One Click Sample लोड करें। फिर 10 से 15 मुख्य स्किल्स जोड़ें और प्रोजेक्ट्स में आंकड़े लिखें। इसके बाद ATS Job Matcher से अपनी जॉब मैचिंग चेक करें। आप मुझसे कोई भी सवाल पूछ सकते हैं!`
+                  text: `👋 **${salutation} CVNex में आपका स्वागत है।** 🌟\n\nआइए मिलकर आपका रेज़्युमे **90%+ ATS स्कोर** वाला बनाएं! यहाँ आपके लिए 4 सबसे महत्वपूर्ण स्टेप्स हैं:\n\n1. 🚀 **शुरुआत (Start)**: Dashboard पर **'Create Resume'** दबाएं या तुरंत **'1-Click AI Sample'** लोड करें ताकि आपका समय बचे।\n2. 📝 **समरी और प्रोफाइल्स**: 40-70 शब्दों की असरदार समरी लिखें और LeetCode, GitHub या LinkedIn लिंक जोड़ें।\n3. 💼 **10-15 मुख्य स्किल्स**: अपने रोल से जुड़ी मुख्य स्किल्स जोड़ें। प्रोजेक्ट्स में आंकड़े (जैसे: '40% लेटेंसी कम की', '10,000+ यूज़र्स') जरूर लिखें।\n4. 🎯 **ATS Job Matcher**: जिस नौकरी में अप्लाई कर रहे हैं, उसकी जॉब डिस्क्रिप्शन पेस्ट करके चेक करें कि क्या मिसिंग है!\n\n🎙️ आप नीचे माइक दबाकर मुझसे कोई भी सवाल सीधे हिंदी में पूछ सकते हैं!`,
+                  speech: `${salutation} CVNex में आपका स्वागत है। आइए मिलकर आपका रेज़्युमे 90%+ ATS स्कोर वाला बनाएं। सबसे पहले Dashboard पर Create Resume पर क्लिक करें या One Click Sample लोड करें। फिर 10 से 15 मुख्य स्किल्स जोड़ें और प्रोजेक्ट्स में आंकड़े लिखें। इसके बाद ATS Job Matcher से अपनी जॉब मैचिंग चेक करें। आप मुझसे कोई भी सवाल पूछ सकते हैं!`
             };
       } else {
             return {
-                  text: `👋 **${salutation} Welcome to LokuResume AI!** 🌟\n\nLet's build a **90%+ ATS resume** that lands interviews! Here are your 4 essential steps:\n\n1. 🚀 **Get Started**: Click **'Create Resume'** or load the **'1-Click AI Sample'** on your dashboard.\n2. 📝 **Summary & Links**: Add a 40-70 word summary with numbers, plus your GitHub, LeetCode, or LinkedIn links.\n3. 💼 **10-15 Core Skills**: Include in-demand technical skills. In project bullet points, always quantify your impact (e.g. 'reduced latency by 40%').\n4. 🎯 **ATS Job Matcher**: Paste your target job post into the ATS Analyzer to verify matching keywords and score!\n\n🎙️ Ask me anything anytime using the mic button or chat!`,
-                  speech: `${salutation} Welcome to LokuResume AI! Let's build a 90%+ ATS resume that lands interviews. Start by clicking Create Resume or loading the One Click Sample. Add 10 to 15 core skills and quantify your project achievements with numbers. Then run ATS Job Matcher to check keyword alignment. Feel free to ask me anything with voice or chat!`
+                  text: `👋 **${salutation} Welcome to CVNex!** 🌟\n\nLet's build a **90%+ ATS resume** that lands interviews! Here are your 4 essential steps:\n\n1. 🚀 **Get Started**: Click **'Create Resume'** or load the **'1-Click AI Sample'** on your dashboard.\n2. 📝 **Summary & Links**: Add a 40-70 word summary with numbers, plus your GitHub, LeetCode, or LinkedIn links.\n3. 💼 **10-15 Core Skills**: Include in-demand technical skills. In project bullet points, always quantify your impact (e.g. 'reduced latency by 40%').\n4. 🎯 **ATS Job Matcher**: Paste your target job post into the ATS Analyzer to verify matching keywords and score!\n\n🎙️ Ask me anything anytime using the mic button or chat!`,
+                  speech: `${salutation} Welcome to CVNex! Let's build a 90%+ ATS resume that lands interviews. Start by clicking Create Resume or loading the One Click Sample. Add 10 to 15 core skills and quantify your project achievements with numbers. Then run ATS Job Matcher to check keyword alignment. Feel free to ask me anything with voice or chat!`
             };
       }
 };
@@ -156,11 +156,11 @@ function AIChatAssistant() {
                   sender: 'ai',
                   isStreamPrompt: true,
                   text: isHi
-                        ? "👋 **नमस्ते! LokuResume AI में आपका स्वागत है।** 🎓\n\nआप अपना रेज़्युमे किस स्ट्रीम के लिए बनाना चाहते हैं?\n• 💻 **Tech Student / Developer**: LeetCode, GitHub, कोड प्रोजेक्ट्स, टेक्निकल स्किल्स\n• 💼 **Business Student / Executive**: Michael Scott 2-कॉलम लेआउट, रेफरेंसेज, मैनेजमेंट स्किल्स\n\nनीचे दिए गए विकल्प को चुनें या बोलकर बताएं (जैसे: 'Business' या 'Tech')!"
-                        : "👋 **Welcome to LokuResume AI!** 🎓\n\nWhich stream are you building your resume for?\n• 💻 **Tech Student / Developer**: LeetCode, GitHub, coding projects, tech stacks\n• 💼 **Business Student / Executive**: 2-Column Executive layout, References, Hobbies, P&L skills\n\nTap an option below or speak your choice (e.g. 'Business' or 'Tech')!",
+                        ? "👋 **नमस्ते! CVNex में आपका स्वागत है।** 🎓\n\nआप अपना रेज़्युमे किस स्ट्रीम के लिए बनाना चाहते हैं?\n• 💻 **Tech Student / Developer**: LeetCode, GitHub, कोड प्रोजेक्ट्स, टेक्निकल स्किल्स\n• 💼 **Business Student / Executive**: Michael Scott 2-कॉलम लेआउट, रेफरेंसेज, मैनेजमेंट स्किल्स\n\nनीचे दिए गए विकल्प को चुनें या बोलकर बताएं (जैसे: 'Business' या 'Tech')!"
+                        : "👋 **Welcome to CVNex!** 🎓\n\nWhich stream are you building your resume for?\n• 💻 **Tech Student / Developer**: LeetCode, GitHub, coding projects, tech stacks\n• 💼 **Business Student / Executive**: 2-Column Executive layout, References, Hobbies, P&L skills\n\nTap an option below or speak your choice (e.g. 'Business' or 'Tech')!",
                   speech: isHi
-                        ? "नमस्ते! LokuResume AI में आपका स्वागत है। क्या आप बिजनेस के छात्र हैं या टेक के छात्र हैं? नीचे दिए गए विकल्प पर टैप करें या बोलकर बताएं।"
-                        : "Welcome to LokuResume AI! Are you a Business student or a Tech student? Please tap an option below or speak your choice.",
+                        ? "नमस्ते! CVNex में आपका स्वागत है। क्या आप बिजनेस के छात्र हैं या टेक के छात्र हैं? नीचे दिए गए विकल्प पर टैप करें या बोलकर बताएं।"
+                        : "Welcome to CVNex! Are you a Business student or a Tech student? Please tap an option below or speak your choice.",
                   timestamp: new Date()
             };
 
@@ -436,6 +436,11 @@ function AIChatAssistant() {
                   return;
             }
 
+            // Check if query is asking to audit or check mistakes
+            if (lower.includes('mistake') || lower.includes('galti') || lower.includes('galat') || lower.includes('audit') || lower.includes('kami') || lower.includes('check resume') || lower.includes('गलतियाँ') || lower.includes('गलती')) {
+                  window.dispatchEvent(new CustomEvent('trigger-resume-audit'));
+            }
+
             const userMsg = {
                   sender: 'user',
                   text: query,
@@ -513,7 +518,7 @@ function AIChatAssistant() {
                                     <div className="ai-chat-header-info">
                                           <div className="ai-status-indicator online"></div>
                                           <div>
-                                                <h4>LokuAI Career Coach</h4>
+                                                <h4>CVNex Career Coach</h4>
                                                 <p className="ai-subtitle">Voice &amp; ATS Assistant</p>
                                           </div>
                                     </div>

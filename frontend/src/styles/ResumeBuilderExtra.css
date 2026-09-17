@@ -488,3 +488,208 @@
     color: #ffffff;
     box-shadow: 0 2px 8px rgba(79, 70, 229, 0.4);
 }
+
+/* ===================================================
+   RESUME MISTAKES AUDIT & VOICE ASSISTANT STYLES
+   =================================================== */
+
+.mistakes-pill-indicator {
+    font-size: 0.78rem;
+    font-weight: 700;
+    padding: 3px 10px;
+    border-radius: var(--radius-full, 9999px);
+    transition: all 0.2s ease;
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    user-select: none;
+}
+
+.mistakes-pill-indicator.has-mistakes {
+    background: rgba(239, 68, 68, 0.15);
+    border: 1px solid rgba(239, 68, 68, 0.4);
+    color: #f87171;
+    animation: auditPulse 2s infinite ease-in-out;
+}
+
+.mistakes-pill-indicator.all-clean {
+    background: rgba(16, 185, 129, 0.15);
+    border: 1px solid rgba(16, 185, 129, 0.4);
+    color: #34d399;
+}
+
+.mistakes-pill-indicator:hover {
+    transform: translateY(-1px);
+    filter: brightness(1.15);
+}
+
+.btn-audit-mistakes {
+    background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%) !important;
+    color: #ffffff !important;
+    border: none !important;
+    font-weight: 700 !important;
+    box-shadow: 0 2px 10px rgba(245, 158, 11, 0.35) !important;
+    transition: all 0.2s ease !important;
+}
+
+.btn-audit-mistakes:hover {
+    transform: translateY(-1px) !important;
+    box-shadow: 0 4px 14px rgba(245, 158, 11, 0.5) !important;
+}
+
+@keyframes auditPulse {
+    0%, 100% {
+        box-shadow: 0 0 0 0 rgba(239, 68, 68, 0.4);
+    }
+    50% {
+        box-shadow: 0 0 0 6px rgba(239, 68, 68, 0);
+    }
+}
+
+/* Mistake Modal */
+.mistakes-audit-modal {
+    max-width: 680px !important;
+    width: 95% !important;
+    background: #0f172a !important;
+    border: 1px solid rgba(255, 255, 255, 0.12) !important;
+    border-radius: 16px !important;
+    padding: 24px !important;
+    box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.75), 0 0 40px rgba(239, 68, 68, 0.15) !important;
+    color: #f8fafc;
+}
+
+.voice-controls-strip {
+    margin: 16px 0;
+    padding: 12px 16px;
+    background: rgba(30, 41, 59, 0.7);
+    border: 1px solid rgba(56, 189, 248, 0.25);
+    border-radius: 12px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 12px;
+}
+
+.mistakes-list-container {
+    max-height: 440px;
+    overflow-y: auto;
+    padding-right: 6px;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    margin-top: 12px;
+}
+
+.mistakes-list-container::-webkit-scrollbar {
+    width: 6px;
+}
+.mistakes-list-container::-webkit-scrollbar-thumb {
+    background: rgba(255, 255, 255, 0.2);
+    border-radius: 4px;
+}
+
+.mistake-item-card {
+    background: rgba(15, 23, 42, 0.85);
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    border-radius: 10px;
+    padding: 14px 16px;
+    transition: all 0.2s ease;
+}
+
+.mistake-item-card.severity-critical {
+    border-left: 4px solid #ef4444;
+    background: rgba(239, 68, 68, 0.04);
+}
+
+.mistake-item-card.severity-warning {
+    border-left: 4px solid #f59e0b;
+    background: rgba(245, 158, 11, 0.04);
+}
+
+.mistake-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 8px;
+    flex-wrap: wrap;
+    gap: 8px;
+}
+
+.severity-tag {
+    font-size: 0.7rem;
+    font-weight: 800;
+    letter-spacing: 0.05em;
+    padding: 2px 8px;
+    border-radius: 6px;
+    text-transform: uppercase;
+}
+
+.severity-tag.critical {
+    background: rgba(239, 68, 68, 0.2);
+    color: #f87171;
+    border: 1px solid rgba(239, 68, 68, 0.4);
+}
+
+.severity-tag.warning {
+    background: rgba(245, 158, 11, 0.2);
+    color: #fbbf24;
+    border: 1px solid rgba(245, 158, 11, 0.4);
+}
+
+.fix-step-btn {
+    font-size: 0.78rem !important;
+    padding: 3px 10px !important;
+    border-radius: 6px !important;
+    font-weight: 600 !important;
+    background: rgba(59, 130, 246, 0.15) !important;
+    border: 1px solid rgba(59, 130, 246, 0.4) !important;
+    color: #60a5fa !important;
+    transition: all 0.2s ease !important;
+}
+
+.fix-step-btn:hover {
+    background: #3b82f6 !important;
+    color: #ffffff !important;
+}
+
+.mistake-title-en {
+    margin: 0 0 4px 0;
+    font-size: 0.95rem;
+    color: #f1f5f9;
+    font-weight: 600;
+}
+
+.mistake-title-hi {
+    margin: 0 0 6px 0;
+    font-size: 0.84rem;
+    color: #cbd5e1;
+}
+
+.mistake-desc-en {
+    margin: 0 0 4px 0;
+    font-size: 0.82rem;
+    color: #94a3b8;
+    line-height: 1.4;
+}
+
+.mistake-desc-hi {
+    margin: 0;
+    font-size: 0.8rem;
+    color: #94a3b8;
+    line-height: 1.4;
+}
+
+.no-mistakes-card {
+    text-align: center;
+    padding: 36px 20px;
+    background: rgba(16, 185, 129, 0.05);
+    border: 1px dashed rgba(16, 185, 129, 0.3);
+    border-radius: 12px;
+}
+
+.no-mistakes-card h4 {
+    color: #34d399;
+    font-size: 1.1rem;
+    margin: 0 0 8px 0;
+}

@@ -25,7 +25,7 @@ const API_BASE_URL = getApiBaseUrl();
 
 export default {
   API_BASE_URL,
-  APP_NAME: 'LokuResume AI',
+  APP_NAME: 'CVNex',
   FOUNDER: 'Lokendra Kumar',
   TAGLINE: 'Build Smart. Score High. Get Hired.',
 };

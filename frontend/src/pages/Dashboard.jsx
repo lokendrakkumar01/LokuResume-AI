@@ -10,7 +10,7 @@ import config from '../config';
 import '../styles/Dashboard.css';
 
 function Dashboard() {
-      const { user, logout, getAuthHeader, isAdmin } = useAuth();
+      const { user, logout, getAuthHeader, isAdmin, studentTrack, setStudentTrack } = useAuth();
       const { showToast } = useToast();
       const navigate = useNavigate();
 
@@ -167,12 +167,68 @@ function Dashboard() {
 
       const createSampleResume = async () => {
             try {
-                  showToast('Creating AI sample resume...', 'info');
-                  const sampleData = {
+                  const isBiz = (user?.track || studentTrack) === 'business';
+                  showToast(`Creating 90%+ ATS ${isBiz ? 'Business Executive' : 'Tech Developer'} sample...`, 'info');
+
+                  const sampleData = isBiz ? {
+                        track: 'business',
+                        personal_info: {
+                              name: user?.name || 'Michael Scott',
+                              email: user?.email || 'michael.scott@dundermifflin.com',
+                              phone: '+1 (555) 019-2834',
+                              location: 'Scranton, PA',
+                              linkedin: 'https://linkedin.com/in/michael-scott-executive',
+                              portfolio: 'https://dundermifflin.com/leadership/scranton',
+                              headline: 'Regional Manager & Executive Director | P&L, Operations & Sales Leadership'
+                        },
+                        summary: 'Dynamic, high-performing Business Executive with 12+ years of proven success directing branch operations, P&L management, and client relationship retention. Steered Scranton branch to highest profitability across all 7 regional offices, achieving 128% of annual revenue target.',
+                        skills: ['Strategic Planning', 'P&L Management', 'Sales & Negotiations', 'Team Leadership', 'Budgeting & Forecasting', 'Client Relationship (CRM)', 'Operations Management', 'Cross-Functional Collaboration'],
+                        references: [
+                              { name: 'David Wallace', company: 'Dunder Mifflin Inc.', role: 'Chief Financial Officer (CFO)', phone: '+1 (555) 019-9944', email: 'dwallace@dundermifflin.com' },
+                              { name: 'Jan Levinson', company: 'Corporate Headquarters', role: 'VP of Regional Sales', phone: '+1 (555) 019-4422', email: 'jlevinson@corporate.com' }
+                        ],
+                        experience: [
+                              {
+                                    company: 'Dunder Mifflin Paper Company',
+                                    role: 'Regional Manager',
+                                    duration: '2013 - Present',
+                                    description: 'Directed all branch sales operations, fiscal budgets, and 15-person cross-functional staff. Grew annual branch revenue by 24% and reduced client churn to sub-2%.'
+                              },
+                              {
+                                    company: 'Dunder Mifflin Paper Company',
+                                    role: 'Senior Sales Representative',
+                                    duration: '2008 - 2013',
+                                    description: 'Closed $1.8M in enterprise paper supply contracts. Awarded Consecutive Salesman of the Year for highest revenue generation.'
+                              }
+                        ],
+                        education: [
+                              {
+                                    degree: 'Bachelor of Science in Business Administration',
+                                    college: 'Pennsylvania State University',
+                                    year: '2004 - 2008',
+                                    grade: '3.8 GPA'
+                              }
+                        ],
+                        languages: [
+                              { language: 'English', proficiency: 'Native / Bilingual' },
+                              { language: 'Spanish', proficiency: 'Professional Working' }
+                        ],
+                        hobbies: ['Strategic Chess', 'Public Speaking', 'Improv Comedy', 'Mentorship & Coaching'],
+                        certifications: [
+                              { name: 'Executive Leadership & P&L Management', issued_by: 'Wharton Executive Education', date: '2022' }
+                        ],
+                        achievements: [
+                              { title: 'Regional Branch of the Year Award', description: 'Recognized for consecutive quarterly profitability and highest customer retention score nationwide.', date: '2024' }
+                        ],
+                        template_style: 'business_executive',
+                        pdf_preferences: { background_color: '#ffffff', accent_color: '#111827', include_photo: true }
+                  } : {
+                        track: 'tech',
                         personal_info: {
                               name: user?.name || 'Alex Morgan',
                               email: user?.email || 'alex.morgan@example.com',
                               phone: '+1 (555) 382-9102',
+                              location: 'San Francisco, CA',
                               linkedin: 'https://linkedin.com/in/alexmorgan',
                               github: 'https://github.com/alexmorgan',
                               leetcode: 'https://leetcode.com/alexmorgan',
@@ -255,7 +311,7 @@ function Dashboard() {
                         headers: getAuthHeader()
                   });
 
-                  showToast('AI Sample Resume created with 90%+ ATS score!', 'success');
+                  showToast(`${isBiz ? 'Michael Scott Business Executive' : 'Tech Developer'} 90%+ ATS Sample created!`, 'success');
                   fetchResumes();
             } catch (err) {
                   showToast('Failed to create sample resume', 'error');
@@ -348,6 +404,27 @@ function Dashboard() {
                                           <span>Admin Portal</span>
                                     </Link>
                               )}
+                              <button
+                                    type="button"
+                                    onClick={() => setStudentTrack && setStudentTrack(studentTrack === 'business' ? 'tech' : 'business')}
+                                    style={{
+                                          display: 'inline-flex',
+                                          alignItems: 'center',
+                                          gap: '6px',
+                                          padding: '5px 12px',
+                                          borderRadius: '9999px',
+                                          background: studentTrack === 'business' ? 'rgba(245, 158, 11, 0.15)' : 'rgba(59, 130, 246, 0.15)',
+                                          border: `1px solid ${studentTrack === 'business' ? 'rgba(245, 158, 11, 0.4)' : 'rgba(59, 130, 246, 0.4)'}`,
+                                          color: studentTrack === 'business' ? '#fbbf24' : '#60a5fa',
+                                          fontSize: '0.8rem',
+                                          fontWeight: '700',
+                                          cursor: 'pointer'
+                                    }}
+                                    title="Click to toggle your active stream track"
+                              >
+                                    <span>{studentTrack === 'business' ? '💼 Business Stream' : '💻 Tech Stream'}</span>
+                                    <span style={{ fontSize: '0.7rem', opacity: 0.8 }}>(Switch)</span>
+                              </button>
                               <div className="user-welcome-badge">
                                     <span>👤</span>
                                     <span>{user?.name}</span>

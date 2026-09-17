@@ -300,7 +300,7 @@ async def ai_chat_assist(request: AIChatRequest, authorization: Optional[str] = 
     elif any(k in msg for k in ["guide", "start", "shuru", "madad", "help", "kese", "kaise", "step", "banao", "create", "onboard", "new", "tour", "batao"]):
         if is_hindi:
             reply = (
-                "✨ **LokuResume AI पर 90%+ ATS रेज़्युमे बनाने की 4 आसान स्टेप्स:**\n\n"
+                "✨ **CVNex पर 90%+ ATS रेज़्युमे बनाने की 4 आसान स्टेप्स:**\n\n"
                 "1. 🚀 **शुरुआत (Start)**: Dashboard पर **'Create Resume'** दबाएं या तुरंत **'1-Click AI Sample'** लोड करें ताकि आपका समय बचे।\n"
                 "2. 📝 **समरी और प्रोफाइल**: Google XYZ फॉर्मूला ('Accomplished X by Y through Z') का उपयोग करके 40-70 शब्दों की मजबूत समरी लिखें और LeetCode/GitHub प्रोफाइल जोड़ें।\n"
                 "3. 💼 **10-15 मुख्य स्किल्स**: अपने फील्ड (उदा. React, Python, Docker, AWS) की जरूरी स्किल्स जोड़ें। प्रोजेक्ट्स में आंकड़े (उदा. '35% परफॉर्मेंस बूस्ट') जरूर लिखें।\n"
@@ -316,7 +316,7 @@ async def ai_chat_assist(request: AIChatRequest, authorization: Optional[str] = 
             ]
         else:
             reply = (
-                "✨ **4 Fast Steps to Build a 90%+ ATS Resume with LokuResume AI:**\n\n"
+                "✨ **4 Fast Steps to Build a 90%+ ATS Resume with CVNex:**\n\n"
                 "1. 🚀 **Get Started**: Click **'Create Resume'** or load the **'1-Click AI Sample'** on your dashboard to start with a proven layout.\n"
                 "2. 📝 **Summary & Profiles**: Craft a 40-70 word summary packed with metrics, and link your GitHub, LeetCode, and LinkedIn.\n"
                 "3. 💼 **10-15 Core Skills**: Include in-demand tech stack skills. In project bullet points, always quantify results (e.g. 'reduced latency by 45%').\n"
@@ -362,12 +362,45 @@ async def ai_chat_assist(request: AIChatRequest, authorization: Optional[str] = 
                 "Skills for Cybersecurity"
             ]
 
-    # 9. Default / Conversational
+    # 9. Resume Mistakes & Audit Queries
+    elif any(k in msg for k in ["mistake", "galti", "audit", "kami", "kamiyan", "error", "weakness", "review"]):
+        if is_hindi:
+            reply = (
+                "⚠️ **रेज़्युमे में होने वाली 4 सबसे घातक गलतियाँ (और उन्हें ठीक करने का तरीका):**\n\n"
+                "1. ❌ **आंकड़े (Numbers) न होना**: 'कंपनी के लिए काम किया' की जगह लिखें '15,000+ यूज़र्स के लिए API लेटेंसी 40% कम की'।\n"
+                "2. ❌ **कमज़ोर समरी**: समरी बहुत छोटी (<25 शब्द) या सिर्फ तारीफों से भरी न हो। उसमें अपने अनुभव के साल और टॉप 3 स्किल्स ज़रूर लिखें।\n"
+                "3. ❌ **गलत स्ट्रीम ऑप्शन**: Tech छात्र LeetCode/GitHub और कोडिंग प्रोजेक्ट्स जोड़ें; Business छात्र P&L आंकड़े, 2-कॉलम लेआउट और रेफरेंसेज जोड़ें।\n"
+                "4. ❌ **अधूरी संपर्क जानकारी**: ईमेल, फोन और लिंक्डइन का एक्टिव लिंक ज़रूर दें।\n\n"
+                "💡 Builder पेज के ऊपर **'🔍 गलतियाँ चेक करें (Audit Resume)'** बटन दबाकर आप अपने मौजूदा रेज़्युमे की लाइव गलतियाँ भी सुन सकते हैं!"
+            )
+            suggestions = [
+                "ATS स्कोर 90%+ कैसे करें?",
+                "5 दमदार एक्शन वर्ब्स बताओ",
+                "सॉफ्टवेयर इंजीनियर की समरी लिखो",
+                "बिजनेस समरी कैसे लिखें?"
+            ]
+        else:
+            reply = (
+                "⚠️ **The 4 Most Common Resume Mistakes (and How to Fix Them):**\n\n"
+                "1. ❌ **Lack of Numbers / Metrics**: Replace vague lines with Google XYZ formula (e.g., 'Reduced API latency by 40% for 15,000+ daily users').\n"
+                "2. ❌ **Weak or Short Summary**: Keep your summary between 40-70 words packed with your years of experience, core tech or business domain, and high-impact wins.\n"
+                "3. ❌ **Mismatched Track Content**: Tech developers must include GitHub/LeetCode & projects; Business students must highlight P&L metrics, references, and multilingual fluency.\n"
+                "4. ❌ **Missing Contact Links**: Always verify valid phone, email, and LinkedIn profile URLs.\n\n"
+                "💡 Tap the **'🔍 Audit Resume'** button at the top of the builder anytime to hear a live voice audit of your draft!"
+            )
+            suggestions = [
+                "How to get 90%+ ATS Score?",
+                "Give me 5 strong action verbs",
+                "Write a summary for Full Stack Engineer",
+                "How to write Executive Summary?"
+            ]
+
+    # 10. Default / Conversational
     else:
         if is_hindi:
             reply = (
-                "नमस्ते! मैं आपका LokuResume AI करियर और ATS कोच हूँ। "
-                "मैं आपके रेज़्युमे का ATS स्कोर बढ़ाने, Google XYZ फॉर्मूला से बुलेट पॉइंट्स लिखने, या Tech और Business दोनों फील्ड्स में मदद कर सकता हूँ। "
+                "नमस्ते! मैं आपका CVNex AI करियर और ATS कोच हूँ। "
+                "मैं आपके रेज़्युमे का ATS स्कोर बढ़ाने, Google XYZ फॉर्मूला से बुलेट पॉइंट्स लिखने, या Tech और Business दोनों फील्ड्स में गलतियाँ पकड़ने में मदद कर सकता हूँ। "
                 "आप माइक 🎙️ बटन दबाकर हिंदी में बोलकर भी सवाल पूछ सकते हैं!"
             )
             suggestions = [
@@ -378,8 +411,8 @@ async def ai_chat_assist(request: AIChatRequest, authorization: Optional[str] = 
             ]
         else:
             reply = (
-                "Hello! I am your LokuResume AI Career & ATS Coach. "
-                "I can help you boost your ATS score, write impactful Google XYZ bullet points, recommend high-demand skills, or tailor your resume for Tech & Business roles. "
+                "Hello! I am your CVNex AI Career & ATS Coach. "
+                "I can help you boost your ATS score, detect resume mistakes, write impactful Google XYZ bullet points, or tailor your resume for Tech & Business roles. "
                 "You can also use the microphone icon 🎙️ to ask me anything with your voice!"
             )
             suggestions = [

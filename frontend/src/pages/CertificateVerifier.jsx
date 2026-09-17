@@ -76,7 +76,7 @@ function CertificateVerifier() {
                               <div style={{ textAlign: 'center', padding: '4rem 1rem' }}>
                                     <div style={{ width: 44, height: 44, border: '3px solid rgba(255,255,255,0.15)', borderTopColor: '#e11d48', borderRadius: '50%', animation: 'spin 1s linear infinite', margin: '0 auto 1.5rem' }} />
                                     <h3 style={{ fontSize: '1.15rem', color: '#e2e8f0', margin: 0 }}>Authenticating Credential Proof...</h3>
-                                    <p style={{ color: '#94a3b8', fontSize: '0.85rem', marginTop: '0.5rem' }}>Verifying tamper-proof digital signature via LokuResume AI</p>
+                                    <p style={{ color: '#94a3b8', fontSize: '0.85rem', marginTop: '0.5rem' }}>Verifying tamper-proof digital signature via CVNex</p>
                               </div>
                         ) : error ? (
                               <div style={{ textAlign: 'center', padding: '3rem 1rem' }}>
@@ -209,7 +209,7 @@ function CertificateVerifier() {
                   </main>
 
                   <footer style={{ marginTop: '2.5rem', textAlign: 'center', color: '#64748b', fontSize: '0.82rem' }}>
-                        Authenticated by <strong style={{ color: '#e11d48' }}>LokuResume AI</strong> • Build Smart. Score High. Get Hired.
+                        Authenticated by <strong style={{ color: '#e11d48' }}>CVNex</strong> • Build Smart. Score High. Get Hired.
                   </footer>
             </div>
       );
