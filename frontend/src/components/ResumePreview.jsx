@@ -99,11 +99,25 @@ function ResumePreview({ formData = {}, score, onDownloadPDF, onUpdatePreference
             certifications = [],
             achievements = [],
             coding_profiles = [],
+            references = [],
+            hobbies = [],
             languages = [],
             interests = [],
             custom_sections = [],
-            pdf_preferences = {}
+            pdf_preferences = {},
+            track = 'tech'
       } = safeFormData;
+
+      const getLanguagePercent = (prof) => {
+            if (!prof) return 85;
+            const lower = String(prof).toLowerCase();
+            if (lower.includes('native') || lower.includes('bilingual')) return 100;
+            if (lower.includes('fluent')) return 90;
+            if (lower.includes('professional')) return 75;
+            if (lower.includes('intermediate')) return 60;
+            if (lower.includes('elementary') || lower.includes('basic')) return 40;
+            return 80;
+      };
 
       const effectiveScore = score !== undefined ? score : (safeFormData.score || 0);
       const isUnlocked = effectiveScore >= 50;
@@ -295,13 +309,20 @@ function ResumePreview({ formData = {}, score, onDownloadPDF, onUpdatePreference
                               {/* Secondary Toolbar */}
                               <div className="preview-toolbar-scrollable">
                                     <div className="preview-template-pills">
-                                          {['modern', 'executive', 'tech', 'compact'].map((t) => (
+                                          {[
+                                                { id: 'business_executive', label: '💼 Business 2-Col' },
+                                                { id: 'business_timeline', label: '📊 Business Timeline' },
+                                                { id: 'modern', label: 'Modern' },
+                                                { id: 'executive', label: 'Executive' },
+                                                { id: 'tech', label: 'Tech' },
+                                                { id: 'compact', label: 'Compact' }
+                                          ].map((t) => (
                                                 <button
-                                                      key={t}
-                                                      className={`pill-btn ${template === t ? 'active' : ''}`}
-                                                      onClick={() => handleTemplateChange(t)}
+                                                      key={t.id}
+                                                      className={`pill-btn ${template === t.id ? 'active' : ''}`}
+                                                      onClick={() => handleTemplateChange(t.id)}
                                                 >
-                                                      {t.charAt(0).toUpperCase() + t.slice(1)}
+                                                      {t.label}
                                                 </button>
                                           ))}
                                     </div>
@@ -362,421 +383,738 @@ function ResumePreview({ formData = {}, score, onDownloadPDF, onUpdatePreference
                                                 fontFamily: 'Inter, Segoe UI, Arial, sans-serif'
                                           }}
                                     >
-                                          {/* Header matching Reference Image */}
-                                          <div className="resume-header" style={{ textAlign: template === 'executive' ? 'center' : 'left', marginBottom: '16px' }}>
-                                                {includePhoto && personal_info.profile_photo && (
-                                                      <img
-                                                            src={personal_info.profile_photo}
-                                                            alt="Profile"
-                                                            style={{ width: 68, height: 68, borderRadius: '50%', objectFit: 'cover', float: 'right' }}
-                                                      />
-                                                )}
-                                                <div>
-                                                      <h1 className="name" style={{ margin: '0 0 4px 0', fontSize: '1.8rem', fontWeight: 800, letterSpacing: '0.5px', textTransform: 'uppercase' }}>
-                                                            {personal_info.name || 'Your Name'}
-                                                      </h1>
-                                                      {personal_info.headline && (
-                                                            <p className="title" style={{ margin: '0 0 8px 0', fontSize: '0.92rem', fontStyle: 'italic', color: '#475569' }}>
-                                                                  {personal_info.headline}
-                                                            </p>
+                                          {template === 'business_executive' ? (
+                                                /* 2-Column Business Executive Layout (Michael Scott Reference) */
+                                                <div className="business-executive-layout" style={{ display: 'flex', minHeight: '1070px', width: '100%', backgroundColor: '#ffffff', boxSizing: 'border-box' }}>
+                                                      {/* Left Dark Charcoal Sidebar */}
+                                                      <div
+                                                            className="business-sidebar"
+                                                            style={{
+                                                                  width: '240px',
+                                                                  flexShrink: 0,
+                                                                  backgroundColor: '#272b30',
+                                                                  color: '#f8fafc',
+                                                                  padding: '28px 18px',
+                                                                  boxSizing: 'border-box'
+                                                            }}
+                                                      >
+                                                            {/* Photo */}
+                                                            {includePhoto && personal_info.profile_photo && (
+                                                                  <div style={{ textAlign: 'center', marginBottom: '22px' }}>
+                                                                        <img
+                                                                              src={personal_info.profile_photo}
+                                                                              alt="Profile"
+                                                                              style={{
+                                                                                    width: '105px',
+                                                                                    height: '105px',
+                                                                                    borderRadius: '50%',
+                                                                                    objectFit: 'cover',
+                                                                                    border: '3px solid rgba(255, 255, 255, 0.25)',
+                                                                                    boxShadow: '0 4px 12px rgba(0,0,0,0.3)',
+                                                                                    display: 'inline-block'
+                                                                              }}
+                                                                        />
+                                                                  </div>
+                                                            )}
+
+                                                            {/* ABOUT ME */}
+                                                            {summary && (
+                                                                  <div style={{ marginBottom: '22px' }}>
+                                                                        <h4 style={{ fontSize: '0.85rem', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '1.5px', color: '#f8fafc', borderBottom: '1px solid rgba(255,255,255,0.2)', paddingBottom: '4px', marginBottom: '8px' }}>
+                                                                              ABOUT ME
+                                                                        </h4>
+                                                                        <p style={{ fontSize: '0.78rem', lineHeight: 1.45, color: '#cbd5e1', margin: 0 }}>
+                                                                              {summary}
+                                                                        </p>
+                                                                  </div>
+                                                            )}
+
+                                                            {/* LINKS & CONTACT */}
+                                                            <div style={{ marginBottom: '22px' }}>
+                                                                  <h4 style={{ fontSize: '0.85rem', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '1.5px', color: '#f8fafc', borderBottom: '1px solid rgba(255,255,255,0.2)', paddingBottom: '4px', marginBottom: '10px' }}>
+                                                                        LINKS &amp; CONTACT
+                                                                  </h4>
+                                                                  <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', fontSize: '0.76rem', color: '#cbd5e1' }}>
+                                                                        {personal_info.phone && (
+                                                                              <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                                                                                    <PhoneIcon />
+                                                                                    <span>{personal_info.phone}</span>
+                                                                              </div>
+                                                                        )}
+                                                                        {personal_info.email && (
+                                                                              <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                                                                                    <MailIcon />
+                                                                                    <span style={{ wordBreak: 'break-all' }}>{personal_info.email}</span>
+                                                                              </div>
+                                                                        )}
+                                                                        {personal_info.location && (
+                                                                              <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                                                                                    <MapPinIcon />
+                                                                                    <span>{personal_info.location}</span>
+                                                                              </div>
+                                                                        )}
+                                                                        {personal_info.linkedin && (
+                                                                              <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                                                                                    <LinkedInIcon />
+                                                                                    <a href={formatUrl(personal_info.linkedin)} target="_blank" rel="noopener noreferrer" style={{ color: '#93c5fd', textDecoration: 'none' }}>
+                                                                                          {getDisplayLabel(personal_info.linkedin, 'LinkedIn')}
+                                                                                    </a>
+                                                                              </div>
+                                                                        )}
+                                                                        {personal_info.portfolio && (
+                                                                              <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                                                                                    <GlobeIcon />
+                                                                                    <a href={formatUrl(personal_info.portfolio)} target="_blank" rel="noopener noreferrer" style={{ color: '#93c5fd', textDecoration: 'none' }}>
+                                                                                          {getDisplayLabel(personal_info.portfolio, 'Portfolio')}
+                                                                                    </a>
+                                                                              </div>
+                                                                        )}
+                                                                        {personal_info.github && (
+                                                                              <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                                                                                    <GitHubIcon />
+                                                                                    <a href={formatUrl(personal_info.github)} target="_blank" rel="noopener noreferrer" style={{ color: '#93c5fd', textDecoration: 'none' }}>
+                                                                                          {getDisplayLabel(personal_info.github, 'GitHub')}
+                                                                                    </a>
+                                                                              </div>
+                                                                        )}
+                                                                  </div>
+                                                            </div>
+
+                                                            {/* REFERENCES */}
+                                                            {references && references.length > 0 && (
+                                                                  <div style={{ marginBottom: '22px' }}>
+                                                                        <h4 style={{ fontSize: '0.85rem', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '1.5px', color: '#f8fafc', borderBottom: '1px solid rgba(255,255,255,0.2)', paddingBottom: '4px', marginBottom: '10px' }}>
+                                                                              REFERENCES
+                                                                        </h4>
+                                                                        {references.map((ref, rIdx) => (
+                                                                              <div key={rIdx} style={{ marginBottom: '12px', fontSize: '0.76rem', color: '#cbd5e1' }}>
+                                                                                    <strong style={{ color: '#ffffff', fontSize: '0.8rem', display: 'block' }}>{ref.name}</strong>
+                                                                                    <span style={{ color: '#94a3b8', fontStyle: 'italic', display: 'block' }}>{ref.role} | {ref.company}</span>
+                                                                                    {ref.phone && <div>📞 {ref.phone}</div>}
+                                                                                    {ref.email && <div style={{ wordBreak: 'break-all' }}>✉️ {ref.email}</div>}
+                                                                              </div>
+                                                                        ))}
+                                                                  </div>
+                                                            )}
+
+                                                            {/* HOBBIES & INTERESTS */}
+                                                            {((hobbies && hobbies.length > 0) || (interests && interests.length > 0)) && (
+                                                                  <div>
+                                                                        <h4 style={{ fontSize: '0.85rem', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '1.5px', color: '#f8fafc', borderBottom: '1px solid rgba(255,255,255,0.2)', paddingBottom: '4px', marginBottom: '8px' }}>
+                                                                              HOBBIES &amp; INTERESTS
+                                                                        </h4>
+                                                                        <ul style={{ margin: 0, paddingLeft: '16px', fontSize: '0.78rem', color: '#cbd5e1', lineHeight: 1.5 }}>
+                                                                              {[...(hobbies || []), ...(interests || []).map(i => typeof i === 'string' ? i : i?.name)].filter(Boolean).map((h, hIdx) => (
+                                                                                    <li key={hIdx}>{h}</li>
+                                                                              ))}
+                                                                        </ul>
+                                                                  </div>
+                                                            )}
+                                                      </div>
+
+                                                      {/* Right Main Column */}
+                                                      <div
+                                                            className="business-main-column"
+                                                            style={{
+                                                                  flex: 1,
+                                                                  padding: '30px 26px',
+                                                                  boxSizing: 'border-box',
+                                                                  color: '#1e293b'
+                                                            }}
+                                                      >
+                                                            {/* Header */}
+                                                            <div style={{ marginBottom: '18px' }}>
+                                                                  <h1 style={{ margin: 0, fontSize: '2rem', fontWeight: 900, textTransform: 'uppercase', letterSpacing: '1.5px', color: '#111827' }}>
+                                                                        {personal_info.name || 'Your Name'}
+                                                                  </h1>
+                                                                  {personal_info.headline && (
+                                                                        <p style={{ margin: '4px 0 0 0', fontSize: '0.88rem', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '2px', color: accentColor || '#475569' }}>
+                                                                              {personal_info.headline}
+                                                                        </p>
+                                                                  )}
+                                                                  <div style={{ width: '100%', height: '1.5px', backgroundColor: '#e2e8f0', marginTop: '12px' }} />
+                                                            </div>
+
+                                                            {/* WORK EXPERIENCE */}
+                                                            {experience && experience.length > 0 && (
+                                                                  <div style={{ marginBottom: '20px' }}>
+                                                                        <h3 style={{ fontSize: '0.92rem', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '1.2px', color: accentColor || '#111827', borderBottom: '1.5px solid #e2e8f0', paddingBottom: '4px', marginBottom: '12px' }}>
+                                                                              WORK EXPERIENCE
+                                                                        </h3>
+                                                                        {experience.map((exp, eIdx) => (
+                                                                              <div key={eIdx} style={{ position: 'relative', paddingLeft: '16px', marginBottom: '14px', borderLeft: `2px solid ${accentColor || '#cbd5e1'}` }}>
+                                                                                    <div style={{ position: 'absolute', left: '-5px', top: '3px', width: '8px', height: '8px', borderRadius: '50%', backgroundColor: accentColor || '#111827' }} />
+                                                                                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', flexWrap: 'wrap' }}>
+                                                                                          <span style={{ fontSize: '0.88rem', fontWeight: 700, color: '#0f172a' }}>
+                                                                                                {exp.role} <span style={{ fontWeight: 400, color: '#64748b' }}>at {exp.company}</span>
+                                                                                          </span>
+                                                                                          <span style={{ fontSize: '0.8rem', color: '#64748b', fontWeight: 600 }}>
+                                                                                                {exp.duration}
+                                                                                          </span>
+                                                                                    </div>
+                                                                                    {exp.description && (
+                                                                                          <p style={{ margin: '4px 0 0 0', fontSize: '0.82rem', lineHeight: 1.45, color: '#334155' }}>
+                                                                                                {exp.description}
+                                                                                          </p>
+                                                                                    )}
+                                                                              </div>
+                                                                        ))}
+                                                                  </div>
+                                                            )}
+
+                                                            {/* EDUCATION */}
+                                                            {education && education.length > 0 && (
+                                                                  <div style={{ marginBottom: '20px' }}>
+                                                                        <h3 style={{ fontSize: '0.92rem', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '1.2px', color: accentColor || '#111827', borderBottom: '1.5px solid #e2e8f0', paddingBottom: '4px', marginBottom: '12px' }}>
+                                                                              EDUCATION
+                                                                        </h3>
+                                                                        {education.map((edu, edIdx) => (
+                                                                              <div key={edIdx} style={{ position: 'relative', paddingLeft: '16px', marginBottom: '12px', borderLeft: `2px solid ${accentColor || '#cbd5e1'}` }}>
+                                                                                    <div style={{ position: 'absolute', left: '-5px', top: '3px', width: '8px', height: '8px', borderRadius: '50%', backgroundColor: accentColor || '#111827' }} />
+                                                                                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', flexWrap: 'wrap' }}>
+                                                                                          <span style={{ fontSize: '0.88rem', fontWeight: 700, color: '#0f172a' }}>
+                                                                                                {edu.degree}
+                                                                                          </span>
+                                                                                          {edu.grade && (
+                                                                                                <span style={{ fontSize: '0.8rem', fontWeight: 700, color: '#0f172a' }}>
+                                                                                                      {edu.grade}
+                                                                                                </span>
+                                                                                          )}
+                                                                                    </div>
+                                                                                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', flexWrap: 'wrap' }}>
+                                                                                          <span style={{ fontSize: '0.82rem', color: '#475569' }}>
+                                                                                                {edu.college}
+                                                                                          </span>
+                                                                                          <span style={{ fontSize: '0.8rem', color: '#64748b' }}>
+                                                                                                {edu.year}
+                                                                                          </span>
+                                                                                    </div>
+                                                                              </div>
+                                                                        ))}
+                                                                  </div>
+                                                            )}
+
+                                                            {/* SKILLS (2-Column Underlined Layout) */}
+                                                            {rawSkillsList.length > 0 && (
+                                                                  <div style={{ marginBottom: '20px' }}>
+                                                                        <h3 style={{ fontSize: '0.92rem', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '1.2px', color: accentColor || '#111827', borderBottom: '1.5px solid #e2e8f0', paddingBottom: '4px', marginBottom: '12px' }}>
+                                                                              SKILLS &amp; EXPERTISE
+                                                                        </h3>
+                                                                        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px 24px' }}>
+                                                                              {rawSkillsList.map((skill, sIdx) => (
+                                                                                    <div
+                                                                                          key={sIdx}
+                                                                                          style={{
+                                                                                                fontSize: '0.82rem',
+                                                                                                fontWeight: 600,
+                                                                                                color: '#1e293b',
+                                                                                                borderBottom: '1px solid #e2e8f0',
+                                                                                                paddingBottom: '4px'
+                                                                                          }}
+                                                                                    >
+                                                                                          {skill}
+                                                                                    </div>
+                                                                              ))}
+                                                                        </div>
+                                                                  </div>
+                                                            )}
+
+                                                            {/* LANGUAGES */}
+                                                            {languages && languages.length > 0 && (
+                                                                  <div style={{ marginBottom: '20px' }}>
+                                                                        <h3 style={{ fontSize: '0.92rem', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '1.2px', color: accentColor || '#111827', borderBottom: '1.5px solid #e2e8f0', paddingBottom: '4px', marginBottom: '12px' }}>
+                                                                              LANGUAGES
+                                                                        </h3>
+                                                                        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px 24px' }}>
+                                                                              {languages.map((langItem, lIdx) => {
+                                                                                    const name = typeof langItem === 'string' ? langItem : (langItem.language || langItem.name || '');
+                                                                                    const prof = typeof langItem === 'object' ? (langItem.proficiency || 'Fluent') : 'Fluent';
+                                                                                    const pct = getLanguagePercent(prof);
+                                                                                    return (
+                                                                                          <div key={lIdx}>
+                                                                                                <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.8rem', fontWeight: 600, color: '#1e293b' }}>
+                                                                                                      <span>{name}</span>
+                                                                                                      <span style={{ fontSize: '0.72rem', color: '#64748b', fontStyle: 'italic' }}>{prof}</span>
+                                                                                                </div>
+                                                                                                <div style={{ width: '100%', height: '5px', backgroundColor: '#e2e8f0', borderRadius: '3px', marginTop: '4px', overflow: 'hidden' }}>
+                                                                                                      <div style={{ width: `${pct}%`, height: '100%', backgroundColor: accentColor || '#111827', borderRadius: '3px' }} />
+                                                                                                </div>
+                                                                                          </div>
+                                                                                    );
+                                                                              })}
+                                                                        </div>
+                                                                  </div>
+                                                            )}
+
+                                                            {/* CERTIFICATIONS */}
+                                                            {certifications && certifications.length > 0 && (
+                                                                  <div style={{ marginBottom: '18px' }}>
+                                                                        <h3 style={{ fontSize: '0.92rem', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '1.2px', color: accentColor || '#111827', borderBottom: '1.5px solid #e2e8f0', paddingBottom: '4px', marginBottom: '10px' }}>
+                                                                              CERTIFICATIONS
+                                                                        </h3>
+                                                                        {certifications.map((cert, cIdx) => (
+                                                                              <div key={cIdx} style={{ fontSize: '0.8rem', marginBottom: '6px', color: '#1e293b' }}>
+                                                                                    <strong>{typeof cert === 'string' ? cert : cert.name}</strong>
+                                                                                    {typeof cert === 'object' && cert.issued_by && <span style={{ color: '#64748b' }}> - {cert.issued_by}</span>}
+                                                                                    {typeof cert === 'object' && cert.date && <span style={{ color: '#94a3b8' }}> ({cert.date})</span>}
+                                                                              </div>
+                                                                        ))}
+                                                                  </div>
+                                                            )}
+
+                                                            {/* ACHIEVEMENTS */}
+                                                            {achievements && achievements.length > 0 && (
+                                                                  <div>
+                                                                        <h3 style={{ fontSize: '0.92rem', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '1.2px', color: accentColor || '#111827', borderBottom: '1.5px solid #e2e8f0', paddingBottom: '4px', marginBottom: '10px' }}>
+                                                                              AWARDS &amp; ACHIEVEMENTS
+                                                                        </h3>
+                                                                        {achievements.map((ach, aIdx) => (
+                                                                              <div key={aIdx} style={{ fontSize: '0.8rem', marginBottom: '6px', color: '#1e293b' }}>
+                                                                                    • <strong>{typeof ach === 'string' ? ach : ach.title}</strong>
+                                                                                    {typeof ach === 'object' && ach.description && <span>: {ach.description}</span>}
+                                                                              </div>
+                                                                        ))}
+                                                                  </div>
+                                                            )}
+                                                      </div>
+                                                </div>
+                                          ) : (
+                                                /* Standard Single-Column Layout (Modern, Tech, Executive, Compact, Business Timeline) */
+                                                <div style={{ padding: '28px 32px' }}>
+                                                      {/* Header matching Reference Image */}
+                                                      <div className="resume-header" style={{ textAlign: template === 'executive' ? 'center' : 'left', marginBottom: '16px' }}>
+                                                            {includePhoto && personal_info.profile_photo && (
+                                                                  <img
+                                                                        src={personal_info.profile_photo}
+                                                                        alt="Profile"
+                                                                        style={{ width: 68, height: 68, borderRadius: '50%', objectFit: 'cover', float: 'right' }}
+                                                                  />
+                                                            )}
+                                                            <div>
+                                                                  <h1 className="name" style={{ margin: '0 0 4px 0', fontSize: '1.8rem', fontWeight: 800, letterSpacing: '0.5px', textTransform: 'uppercase' }}>
+                                                                        {personal_info.name || 'Your Name'}
+                                                                  </h1>
+                                                                  {personal_info.headline && (
+                                                                        <p className="title" style={{ margin: '0 0 8px 0', fontSize: '0.92rem', fontStyle: 'italic', color: '#475569' }}>
+                                                                              {personal_info.headline}
+                                                                        </p>
+                                                                  )}
+                                                                  <div className="contact-links" style={{ justifyContent: template === 'executive' ? 'center' : 'flex-start' }}>
+                                                                        {personal_info.email && (
+                                                                              <a href={`mailto:${personal_info.email}`} className="contact-link" title={`Email: ${personal_info.email}`}>
+                                                                                    <MailIcon />
+                                                                                    <span>{personal_info.email}</span>
+                                                                              </a>
+                                                                        )}
+                                                                        {personal_info.phone && (
+                                                                              <a href={`tel:${personal_info.phone}`} className="contact-link" title={`Phone: ${personal_info.phone}`}>
+                                                                                    <PhoneIcon />
+                                                                                    <span>{personal_info.phone}</span>
+                                                                              </a>
+                                                                        )}
+                                                                        {personal_info.location && (
+                                                                              <span className="contact-item" title={`Location: ${personal_info.location}`}>
+                                                                                    <MapPinIcon />
+                                                                                    <span>{personal_info.location}</span>
+                                                                              </span>
+                                                                        )}
+                                                                        {personal_info.github && (
+                                                                              <a href={formatUrl(personal_info.github)} target="_blank" rel="noopener noreferrer" className="contact-link" title="GitHub">
+                                                                                    <GitHubIcon />
+                                                                                    <span>{getDisplayLabel(personal_info.github, 'GitHub')}</span>
+                                                                                    <ExternalLinkIcon />
+                                                                              </a>
+                                                                        )}
+                                                                        {personal_info.linkedin && (
+                                                                              <a href={formatUrl(personal_info.linkedin)} target="_blank" rel="noopener noreferrer" className="contact-link" title="LinkedIn">
+                                                                                    <LinkedInIcon />
+                                                                                    <span>{getDisplayLabel(personal_info.linkedin, 'LinkedIn')}</span>
+                                                                                    <ExternalLinkIcon />
+                                                                              </a>
+                                                                        )}
+                                                                        {personal_info.portfolio && (
+                                                                              <a href={formatUrl(personal_info.portfolio)} target="_blank" rel="noopener noreferrer" className="contact-link" title="Portfolio">
+                                                                                    <GlobeIcon />
+                                                                                    <span>{getDisplayLabel(personal_info.portfolio, 'Portfolio')}</span>
+                                                                                    <ExternalLinkIcon />
+                                                                              </a>
+                                                                        )}
+                                                                        {(personal_info.leetcode || personal_info.problem_solving) && (
+                                                                              <a href={formatUrl(personal_info.leetcode || personal_info.problem_solving)} target="_blank" rel="noopener noreferrer" className="contact-link" title="Problem Solving Profile">
+                                                                                    <CodeIcon />
+                                                                                    <span>{getDisplayLabel(personal_info.leetcode || personal_info.problem_solving, 'LeetCode')}</span>
+                                                                                    <ExternalLinkIcon />
+                                                                              </a>
+                                                                        )}
+                                                                  </div>
+                                                            </div>
+                                                      </div>
+
+                                                      {/* SUMMARY */}
+                                                      {summary && (
+                                                            <div className="resume-section">
+                                                                  <h3 style={{ color: accentColor, borderBottom: '1px solid #cbd5e1', paddingBottom: '3px', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
+                                                                        SUMMARY
+                                                                  </h3>
+                                                                  <p style={{ margin: '4px 0', fontSize: '0.88rem', lineHeight: 1.45, color: '#1e293b' }}>
+                                                                        {summary}
+                                                                  </p>
+                                                            </div>
                                                       )}
-                                                      <div className="contact-links" style={{ justifyContent: template === 'executive' ? 'center' : 'flex-start' }}>
-                                                            {personal_info.email && (
-                                                                  <a href={`mailto:${personal_info.email}`} className="contact-link" title={`Email: ${personal_info.email}`}>
-                                                                        <MailIcon />
-                                                                        <span>{personal_info.email}</span>
-                                                                  </a>
-                                                            )}
-                                                            {personal_info.phone && (
-                                                                  <a href={`tel:${personal_info.phone}`} className="contact-link" title={`Phone: ${personal_info.phone}`}>
-                                                                        <PhoneIcon />
-                                                                        <span>{personal_info.phone}</span>
-                                                                  </a>
-                                                            )}
-                                                            {personal_info.location && (
-                                                                  <span className="contact-item" title={`Location: ${personal_info.location}`}>
-                                                                        <MapPinIcon />
-                                                                        <span>{personal_info.location}</span>
-                                                                  </span>
-                                                            )}
-                                                            {personal_info.github && (
-                                                                  <a href={formatUrl(personal_info.github)} target="_blank" rel="noopener noreferrer" className="contact-link" title="GitHub">
-                                                                        <GitHubIcon />
-                                                                        <span>{getDisplayLabel(personal_info.github, 'GitHub')}</span>
-                                                                        <ExternalLinkIcon />
-                                                                  </a>
-                                                            )}
-                                                            {personal_info.linkedin && (
-                                                                  <a href={formatUrl(personal_info.linkedin)} target="_blank" rel="noopener noreferrer" className="contact-link" title="LinkedIn">
-                                                                        <LinkedInIcon />
-                                                                        <span>{getDisplayLabel(personal_info.linkedin, 'LinkedIn')}</span>
-                                                                        <ExternalLinkIcon />
-                                                                  </a>
-                                                            )}
-                                                            {personal_info.portfolio && (
-                                                                  <a href={formatUrl(personal_info.portfolio)} target="_blank" rel="noopener noreferrer" className="contact-link" title="Portfolio">
-                                                                        <GlobeIcon />
-                                                                        <span>{getDisplayLabel(personal_info.portfolio, 'Portfolio')}</span>
-                                                                        <ExternalLinkIcon />
-                                                                  </a>
-                                                            )}
-                                                            {(personal_info.leetcode || personal_info.problem_solving) && (
-                                                                  <a href={formatUrl(personal_info.leetcode || personal_info.problem_solving)} target="_blank" rel="noopener noreferrer" className="contact-link" title="Problem Solving Profile">
-                                                                        <CodeIcon />
-                                                                        <span>{getDisplayLabel(personal_info.leetcode || personal_info.problem_solving, 'LeetCode')}</span>
-                                                                        <ExternalLinkIcon />
-                                                                  </a>
-                                                            )}
-                                                      </div>
-                                                </div>
-                                          </div>
 
-                                          {/* SUMMARY */}
-                                          {summary && (
-                                                <div className="resume-section">
-                                                      <h3 style={{ color: accentColor, borderBottom: '1px solid #cbd5e1', paddingBottom: '3px', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
-                                                            SUMMARY
-                                                      </h3>
-                                                      <p style={{ margin: '4px 0', fontSize: '0.88rem', lineHeight: 1.45, color: '#1e293b' }}>
-                                                            {summary}
-                                                      </p>
-                                                </div>
-                                          )}
+                                                      {/* SKILLS */}
+                                                      {rawSkillsList.length > 0 && (
+                                                            <div className="resume-section">
+                                                                  <h3 style={{ color: accentColor, borderBottom: '1px solid #cbd5e1', paddingBottom: '3px', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
+                                                                        SKILLS
+                                                                  </h3>
+                                                                  <div style={{ fontSize: '0.88rem', lineHeight: 1.5, color: '#1e293b' }}>
+                                                                        {hardSkills.length > 0 && (
+                                                                              <p style={{ margin: '3px 0' }}>
+                                                                                    <strong>Hard Skills:</strong> {hardSkills.join(', ')}
+                                                                              </p>
+                                                                        )}
+                                                                        {softSkills.length > 0 && (
+                                                                              <p style={{ margin: '3px 0' }}>
+                                                                                    <strong>Soft Skills:</strong> {softSkills.join(', ')}
+                                                                              </p>
+                                                                        )}
+                                                                        {hardSkills.length === 0 && softSkills.length === 0 && (
+                                                                              <p style={{ margin: '3px 0' }}>
+                                                                                    <strong>Technical Skills:</strong> {rawSkillsList.join(', ')}
+                                                                              </p>
+                                                                        )}
+                                                                  </div>
+                                                            </div>
+                                                      )}
 
-                                          {/* SKILLS */}
-                                          {rawSkillsList.length > 0 && (
-                                                <div className="resume-section">
-                                                      <h3 style={{ color: accentColor, borderBottom: '1px solid #cbd5e1', paddingBottom: '3px', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
-                                                            SKILLS
-                                                      </h3>
-                                                      <div style={{ fontSize: '0.88rem', lineHeight: 1.5, color: '#1e293b' }}>
-                                                            {hardSkills.length > 0 && (
-                                                                  <p style={{ margin: '3px 0' }}>
-                                                                        <strong>Hard Skills:</strong> {hardSkills.join(', ')}
-                                                                  </p>
-                                                            )}
-                                                            {softSkills.length > 0 && (
-                                                                  <p style={{ margin: '3px 0' }}>
-                                                                        <strong>Soft Skills:</strong> {softSkills.join(', ')}
-                                                                  </p>
-                                                            )}
-                                                            {hardSkills.length === 0 && softSkills.length === 0 && (
-                                                                  <p style={{ margin: '3px 0' }}>
-                                                                        <strong>Technical Skills:</strong> {rawSkillsList.join(', ')}
-                                                                  </p>
-                                                            )}
-                                                      </div>
-                                                </div>
-                                          )}
+                                                      {/* TECHNICAL PROJECTS */}
+                                                      {projects && projects.length > 0 && (
+                                                            <div className="resume-section">
+                                                                  <h3 style={{ color: accentColor, borderBottom: '1px solid #cbd5e1', paddingBottom: '3px', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
+                                                                        TECHNICAL PROJECTS
+                                                                  </h3>
+                                                                  {projects.map((proj, index) => {
+                                                                        const repoLink = proj?.repository_url || proj?.github_url;
+                                                                        const demoLink = proj?.live_demo_url || proj?.live_url || proj?.link;
+                                                                        return (
+                                                                              <div key={index} className="section-item" style={{ marginBottom: '12px' }}>
+                                                                                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', flexWrap: 'wrap' }}>
+                                                                                          <span style={{ fontSize: '0.92rem', fontWeight: 700, color: '#0f172a' }}>
+                                                                                                {proj?.title || 'Project'}
+                                                                                                {proj?.technologies && (
+                                                                                                      <span style={{ fontWeight: 400, fontStyle: 'italic', color: '#475569', marginLeft: '6px' }}>
+                                                                                                            ({proj.technologies})
+                                                                                                      </span>
+                                                                                                )}
+                                                                                          </span>
+                                                                                          {proj?.date && (
+                                                                                                <span style={{ fontSize: '0.88rem', fontWeight: 700, color: '#0f172a' }}>
+                                                                                                      {proj.date}
+                                                                                                </span>
+                                                                                          )}
+                                                                                    </div>
 
-                                          {/* TECHNICAL PROJECTS */}
-                                          {projects && projects.length > 0 && (
-                                                <div className="resume-section">
-                                                      <h3 style={{ color: accentColor, borderBottom: '1px solid #cbd5e1', paddingBottom: '3px', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
-                                                            TECHNICAL PROJECTS
-                                                      </h3>
-                                                      {projects.map((proj, index) => {
-                                                            const repoLink = proj?.repository_url || proj?.github_url;
-                                                            const demoLink = proj?.live_demo_url || proj?.live_url || proj?.link;
-                                                            return (
-                                                                  <div key={index} className="section-item" style={{ marginBottom: '12px' }}>
-                                                                        {/* Row 1: Title (Tech) + Year */}
-                                                                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', flexWrap: 'wrap' }}>
-                                                                              <span style={{ fontSize: '0.92rem', fontWeight: 700, color: '#0f172a' }}>
-                                                                                    {proj?.title || 'Project'}
-                                                                                    {proj?.technologies && (
-                                                                                          <span style={{ fontWeight: 400, fontStyle: 'italic', color: '#475569', marginLeft: '6px' }}>
-                                                                                                ({proj.technologies})
+                                                                                    {(repoLink || demoLink) && (
+                                                                                          <div style={{ marginTop: '2px', fontSize: '0.82rem', fontWeight: 600 }}>
+                                                                                                {repoLink && (
+                                                                                                      <a
+                                                                                                            href={formatUrl(repoLink)}
+                                                                                                            target="_blank"
+                                                                                                            rel="noopener noreferrer"
+                                                                                                            style={{ color: accentColor, textDecoration: 'none', display: 'inline-flex', alignItems: 'center' }}
+                                                                                                      >
+                                                                                                            GitHub Repository <ExternalLinkIcon />
+                                                                                                      </a>
+                                                                                                )}
+                                                                                                {repoLink && demoLink && <span style={{ margin: '0 8px', color: '#94a3b8' }}>|</span>}
+                                                                                                {demoLink && (
+                                                                                                      <a
+                                                                                                            href={formatUrl(demoLink)}
+                                                                                                            target="_blank"
+                                                                                                            rel="noopener noreferrer"
+                                                                                                            style={{ color: accentColor, textDecoration: 'none', display: 'inline-flex', alignItems: 'center' }}
+                                                                                                      >
+                                                                                                            Live Demo <ExternalLinkIcon />
+                                                                                                      </a>
+                                                                                                )}
+                                                                                          </div>
+                                                                                    )}
+
+                                                                                    {proj?.description && (
+                                                                                          <div style={{ marginTop: '4px', fontSize: '0.86rem', lineHeight: 1.45, color: '#334155' }}>
+                                                                                                <span style={{ marginRight: '6px', color: '#64748b' }}>•</span>
+                                                                                                {proj.description}
+                                                                                          </div>
+                                                                                    )}
+                                                                              </div>
+                                                                        );
+                                                                  })}
+                                                            </div>
+                                                      )}
+
+                                                      {/* WORK EXPERIENCE */}
+                                                      {experience && experience.length > 0 && (
+                                                            <div className="resume-section">
+                                                                  <h3 style={{ color: accentColor, borderBottom: '1px solid #cbd5e1', paddingBottom: '3px', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
+                                                                        WORK EXPERIENCE
+                                                                  </h3>
+                                                                  {experience.map((exp, index) => (
+                                                                        <div key={index} className="section-item" style={{ marginBottom: '10px' }}>
+                                                                              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', flexWrap: 'wrap' }}>
+                                                                                    <span style={{ fontSize: '0.92rem', fontWeight: 700, color: '#0f172a' }}>
+                                                                                          {exp?.role || 'Role'} - {exp?.company || 'Company'}
+                                                                                    </span>
+                                                                                    {exp?.duration && (
+                                                                                          <span style={{ fontSize: '0.86rem', color: '#475569', fontWeight: 600 }}>
+                                                                                                {exp.duration}
                                                                                           </span>
                                                                                     )}
-                                                                              </span>
-                                                                              {proj?.date && (
-                                                                                    <span style={{ fontSize: '0.88rem', fontWeight: 700, color: '#0f172a' }}>
-                                                                                          {proj.date}
-                                                                                    </span>
+                                                                              </div>
+                                                                              {exp?.description && (
+                                                                                    <div style={{ marginTop: '4px', fontSize: '0.86rem', lineHeight: 1.45, color: '#334155' }}>
+                                                                                          <span style={{ marginRight: '6px', color: '#64748b' }}>•</span>
+                                                                                          {exp.description}
+                                                                                    </div>
                                                                               )}
                                                                         </div>
+                                                                  ))}
+                                                            </div>
+                                                      )}
 
-                                                                        {/* Row 2: Dual Links (GitHub Repository | Live Demo) */}
-                                                                        {(repoLink || demoLink) && (
-                                                                              <div style={{ marginTop: '2px', fontSize: '0.82rem', fontWeight: 600 }}>
-                                                                                    {repoLink && (
-                                                                                          <a
-                                                                                                href={formatUrl(repoLink)}
-                                                                                                target="_blank"
-                                                                                                rel="noopener noreferrer"
-                                                                                                style={{ color: accentColor, textDecoration: 'none', display: 'inline-flex', alignItems: 'center' }}
-                                                                                          >
-                                                                                                GitHub Repository <ExternalLinkIcon />
-                                                                                          </a>
-                                                                                    )}
-                                                                                    {repoLink && demoLink && <span style={{ margin: '0 8px', color: '#94a3b8' }}>|</span>}
-                                                                                    {demoLink && (
-                                                                                          <a
-                                                                                                href={formatUrl(demoLink)}
-                                                                                                target="_blank"
-                                                                                                rel="noopener noreferrer"
-                                                                                                style={{ color: accentColor, textDecoration: 'none', display: 'inline-flex', alignItems: 'center' }}
-                                                                                          >
-                                                                                                Live Demo <ExternalLinkIcon />
-                                                                                          </a>
-                                                                                    )}
-                                                                              </div>
-                                                                        )}
-
-                                                                        {/* Row 3: Description Bullet Point */}
-                                                                        {proj?.description && (
-                                                                              <div style={{ marginTop: '4px', fontSize: '0.86rem', lineHeight: 1.45, color: '#334155' }}>
-                                                                                    <span style={{ marginRight: '6px', color: '#64748b' }}>•</span>
-                                                                                    {proj.description}
-                                                                              </div>
-                                                                        )}
-                                                                  </div>
-                                                            );
-                                                      })}
-                                                </div>
-                                          )}
-
-                                          {/* WORK EXPERIENCE */}
-                                          {experience && experience.length > 0 && (
-                                                <div className="resume-section">
-                                                      <h3 style={{ color: accentColor, borderBottom: '1px solid #cbd5e1', paddingBottom: '3px', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
-                                                            WORK EXPERIENCE
-                                                      </h3>
-                                                      {experience.map((exp, index) => (
-                                                            <div key={index} className="section-item" style={{ marginBottom: '10px' }}>
-                                                                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', flexWrap: 'wrap' }}>
-                                                                        <span style={{ fontSize: '0.92rem', fontWeight: 700, color: '#0f172a' }}>
-                                                                              {exp?.role || 'Role'} - {exp?.company || 'Company'}
-                                                                        </span>
-                                                                        {exp?.duration && (
-                                                                              <span style={{ fontSize: '0.86rem', color: '#475569', fontWeight: 600 }}>
-                                                                                    {exp.duration}
-                                                                              </span>
-                                                                        )}
-                                                                  </div>
-                                                                  {exp?.description && (
-                                                                        <div style={{ marginTop: '4px', fontSize: '0.86rem', lineHeight: 1.45, color: '#334155' }}>
+                                                      {/* PROBLEM SOLVING & DATA STRUCTURES */}
+                                                      {coding_profiles && coding_profiles.length > 0 && (
+                                                            <div className="resume-section">
+                                                                  <h3 style={{ color: accentColor, borderBottom: '1px solid #cbd5e1', paddingBottom: '3px', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
+                                                                        PROBLEM SOLVING &amp; DATA STRUCTURES
+                                                                  </h3>
+                                                                  {coding_profiles.map((prof, index) => (
+                                                                        <div key={index} style={{ marginBottom: '6px', fontSize: '0.88rem', lineHeight: 1.4, color: '#1e293b' }}>
                                                                               <span style={{ marginRight: '6px', color: '#64748b' }}>•</span>
-                                                                              {exp.description}
-                                                                        </div>
-                                                                  )}
-                                                            </div>
-                                                      ))}
-                                                </div>
-                                          )}
-
-                                          {/* PROBLEM SOLVING & DATA STRUCTURES */}
-                                          {coding_profiles && coding_profiles.length > 0 && (
-                                                <div className="resume-section">
-                                                      <h3 style={{ color: accentColor, borderBottom: '1px solid #cbd5e1', paddingBottom: '3px', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
-                                                            PROBLEM SOLVING &amp; DATA STRUCTURES
-                                                      </h3>
-                                                      {coding_profiles.map((prof, index) => (
-                                                            <div key={index} style={{ marginBottom: '6px', fontSize: '0.88rem', lineHeight: 1.4, color: '#1e293b' }}>
-                                                                  <span style={{ marginRight: '6px', color: '#64748b' }}>•</span>
-                                                                  <strong style={{ color: '#0f172a' }}>{prof?.platform || 'Profile'}:</strong>{' '}
-                                                                  {prof?.headline || ''}{' '}
-                                                                  {prof?.link && (
-                                                                        <a
-                                                                              href={formatUrl(prof.link)}
-                                                                              target="_blank"
-                                                                              rel="noopener noreferrer"
-                                                                              style={{ color: accentColor, fontWeight: 600, textDecoration: 'none', marginLeft: '6px', display: 'inline-flex', alignItems: 'center' }}
-                                                                        >
-                                                                              View Profile <ExternalLinkIcon />
-                                                                        </a>
-                                                                  )}
-                                                            </div>
-                                                      ))}
-                                                </div>
-                                          )}
-
-                                          {/* EDUCATION */}
-                                          {education && education.length > 0 && (
-                                                <div className="resume-section">
-                                                      <h3 style={{ color: accentColor, borderBottom: '1px solid #cbd5e1', paddingBottom: '3px', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
-                                                            EDUCATION
-                                                      </h3>
-                                                      {education.map((edu, index) => (
-                                                            <div key={index} className="section-item" style={{ marginBottom: '8px' }}>
-                                                                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', flexWrap: 'wrap' }}>
-                                                                        <span style={{ fontSize: '0.92rem', fontWeight: 700, color: '#0f172a' }}>
-                                                                              {edu?.degree || 'Degree'}
-                                                                        </span>
-                                                                        {edu?.grade && (
-                                                                              <span style={{ fontSize: '0.88rem', fontWeight: 700, color: '#0f172a' }}>
-                                                                                    {edu.grade}
-                                                                              </span>
-                                                                        )}
-                                                                  </div>
-                                                                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', flexWrap: 'wrap', marginTop: '2px' }}>
-                                                                        <span style={{ fontSize: '0.86rem', color: '#475569' }}>
-                                                                              {edu?.college || 'Institution'}
-                                                                        </span>
-                                                                        {edu?.year && (
-                                                                              <span style={{ fontSize: '0.86rem', color: '#475569', fontWeight: 500 }}>
-                                                                                    {edu.year}
-                                                                              </span>
-                                                                        )}
-                                                                  </div>
-                                                            </div>
-                                                      ))}
-                                                </div>
-                                          )}
-
-                                          {/* CERTIFICATIONS */}
-                                          {certifications && certifications.length > 0 && (
-                                                <div className="resume-section">
-                                                      <h3 style={{ color: accentColor, borderBottom: '1px solid #cbd5e1', paddingBottom: '3px', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
-                                                            CERTIFICATIONS
-                                                      </h3>
-                                                      {certifications.map((cert, index) => {
-                                                            const certName = typeof cert === 'string' ? cert : (cert?.name || 'Certification');
-                                                            const issuer = typeof cert === 'object' ? cert?.issued_by : '';
-                                                            const date = typeof cert === 'object' ? cert?.date : '';
-                                                            const link = typeof cert === 'object' ? cert?.link : '';
-                                                            const hasFile = typeof cert === 'object' && Boolean(cert?.file_data || cert?.file_url);
-                                                            const skillsLearned = typeof cert === 'object' ? cert?.skills_learned : '';
-                                                            const resId = safeFormData.id || safeFormData._id;
-
-                                                            return (
-                                                                  <div key={index} className="section-item" style={{ marginBottom: '10px' }}>
-                                                                        {/* Row 1: Cert Name + Date */}
-                                                                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', flexWrap: 'wrap' }}>
-                                                                              <span style={{ fontSize: '0.92rem', fontWeight: 700, color: '#0f172a' }}>
-                                                                                    {certName}
-                                                                              </span>
-                                                                              {date && (
-                                                                                    <span style={{ fontSize: '0.88rem', fontWeight: 700, color: '#0f172a' }}>
-                                                                                          {date}
-                                                                                    </span>
+                                                                              <strong style={{ color: '#0f172a' }}>{prof?.platform || 'Profile'}:</strong>{' '}
+                                                                              {prof?.headline || ''}{' '}
+                                                                              {prof?.link && (
+                                                                                    <a
+                                                                                          href={formatUrl(prof.link)}
+                                                                                          target="_blank"
+                                                                                          rel="noopener noreferrer"
+                                                                                          style={{ color: accentColor, fontWeight: 600, textDecoration: 'none', marginLeft: '6px', display: 'inline-flex', alignItems: 'center' }}
+                                                                                    >
+                                                                                          View Profile <ExternalLinkIcon />
+                                                                                    </a>
                                                                               )}
                                                                         </div>
+                                                                  ))}
+                                                            </div>
+                                                      )}
 
-                                                                        {/* Row 2: Issuer + Proof Link / Certificate Link */}
-                                                                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', flexWrap: 'wrap', marginTop: '2px' }}>
-                                                                              <span style={{ fontSize: '0.86rem', color: '#475569' }}>
-                                                                                    {issuer}
-                                                                              </span>
-                                                                              <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
+                                                      {/* EDUCATION */}
+                                                      {education && education.length > 0 && (
+                                                            <div className="resume-section">
+                                                                  <h3 style={{ color: accentColor, borderBottom: '1px solid #cbd5e1', paddingBottom: '3px', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
+                                                                        EDUCATION
+                                                                  </h3>
+                                                                  {education.map((edu, index) => (
+                                                                        <div key={index} className="section-item" style={{ marginBottom: '8px' }}>
+                                                                              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', flexWrap: 'wrap' }}>
+                                                                                    <span style={{ fontSize: '0.92rem', fontWeight: 700, color: '#0f172a' }}>
+                                                                                          {edu?.degree || 'Degree'}
+                                                                                    </span>
+                                                                                    {edu?.grade && (
+                                                                                          <span style={{ fontSize: '0.88rem', fontWeight: 700, color: '#0f172a' }}>
+                                                                                                {edu.grade}
+                                                                                          </span>
+                                                                                    )}
+                                                                              </div>
+                                                                              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', flexWrap: 'wrap', marginTop: '2px' }}>
+                                                                                    <span style={{ fontSize: '0.86rem', color: '#475569' }}>
+                                                                                          {edu?.college || 'Institution'}
+                                                                                    </span>
+                                                                                    {edu?.year && (
+                                                                                          <span style={{ fontSize: '0.86rem', color: '#475569', fontWeight: 500 }}>
+                                                                                                {edu.year}
+                                                                                          </span>
+                                                                                    )}
+                                                                              </div>
+                                                                        </div>
+                                                                  ))}
+                                                            </div>
+                                                      )}
+
+                                                      {/* CERTIFICATIONS */}
+                                                      {certifications && certifications.length > 0 && (
+                                                            <div className="resume-section">
+                                                                  <h3 style={{ color: accentColor, borderBottom: '1px solid #cbd5e1', paddingBottom: '3px', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
+                                                                        CERTIFICATIONS
+                                                                  </h3>
+                                                                  {certifications.map((cert, index) => {
+                                                                        const certName = typeof cert === 'string' ? cert : (cert?.name || 'Certification');
+                                                                        const issuer = typeof cert === 'object' ? cert?.issued_by : '';
+                                                                        const date = typeof cert === 'object' ? cert?.date : '';
+                                                                        const link = typeof cert === 'object' ? cert?.link : '';
+                                                                        const hasFile = typeof cert === 'object' && Boolean(cert?.file_data || cert?.file_url);
+                                                                        const skillsLearned = typeof cert === 'object' ? cert?.skills_learned : '';
+                                                                        const resId = safeFormData.id || safeFormData._id;
+
+                                                                        return (
+                                                                              <div key={index} className="section-item" style={{ marginBottom: '10px' }}>
+                                                                                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', flexWrap: 'wrap' }}>
+                                                                                          <span style={{ fontSize: '0.92rem', fontWeight: 700, color: '#0f172a' }}>
+                                                                                                {certName}
+                                                                                          </span>
+                                                                                          {date && (
+                                                                                                <span style={{ fontSize: '0.88rem', fontWeight: 700, color: '#0f172a' }}>
+                                                                                                      {date}
+                                                                                                </span>
+                                                                                          )}
+                                                                                    </div>
+
+                                                                                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', flexWrap: 'wrap', marginTop: '2px' }}>
+                                                                                          <span style={{ fontSize: '0.86rem', color: '#475569' }}>
+                                                                                                {issuer}
+                                                                                          </span>
+                                                                                          <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
+                                                                                                {link && (
+                                                                                                      <a
+                                                                                                            href={formatUrl(link)}
+                                                                                                            target="_blank"
+                                                                                                            rel="noopener noreferrer"
+                                                                                                            style={{ color: accentColor, fontSize: '0.82rem', fontWeight: 600, textDecoration: 'none', display: 'inline-flex', alignItems: 'center' }}
+                                                                                                      >
+                                                                                                            Verify Credential <ExternalLinkIcon />
+                                                                                                      </a>
+                                                                                                )}
+                                                                                                {hasFile && (
+                                                                                                      <a
+                                                                                                            href={resId ? `/verify-certificate/${resId}/${index}` : '#'}
+                                                                                                            onClick={(e) => handleViewCertProof(e, cert, index)}
+                                                                                                            target="_blank"
+                                                                                                            rel="noopener noreferrer"
+                                                                                                            style={{ color: '#059669', fontSize: '0.82rem', fontWeight: 600, textDecoration: 'none', display: 'inline-flex', alignItems: 'center' }}
+                                                                                                            title="View verified certificate proof"
+                                                                                                      >
+                                                                                                            Verify Proof 📎
+                                                                                                      </a>
+                                                                                                )}
+                                                                                          </div>
+                                                                                    </div>
+
+                                                                                    {skillsLearned && (
+                                                                                          <div style={{ marginTop: '3px', fontSize: '0.84rem', color: '#475569', paddingLeft: '8px' }}>
+                                                                                                <span style={{ marginRight: '6px', color: '#94a3b8' }}>•</span>
+                                                                                                <em>Skills learned:</em> <strong>{skillsLearned}</strong>
+                                                                                          </div>
+                                                                                    )}
+                                                                              </div>
+                                                                        );
+                                                                  })}
+                                                            </div>
+                                                      )}
+
+                                                      {/* ACHIEVEMENTS */}
+                                                      {achievements && achievements.length > 0 && (
+                                                            <div className="resume-section">
+                                                                  <h3 style={{ color: accentColor, borderBottom: '1px solid #cbd5e1', paddingBottom: '3px', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
+                                                                        ACHIEVEMENTS
+                                                                  </h3>
+                                                                  {achievements.map((ach, index) => {
+                                                                        const title = typeof ach === 'string' ? ach : (ach?.title || 'Achievement');
+                                                                        const date = typeof ach === 'object' ? ach?.date : '';
+                                                                        const desc = typeof ach === 'object' ? ach?.description : '';
+                                                                        const link = typeof ach === 'object' ? (ach?.link || ach?.file_url) : '';
+
+                                                                        return (
+                                                                              <div key={index} style={{ marginBottom: '8px', fontSize: '0.88rem', lineHeight: 1.45, color: '#1e293b' }}>
+                                                                                    <span style={{ marginRight: '6px', color: '#64748b' }}>•</span>
+                                                                                    <strong style={{ color: '#0f172a' }}>{title}</strong>
+                                                                                    {date && <span style={{ color: '#475569', fontWeight: 600 }}> ({date})</span>}
+                                                                                    {desc && <span>: {desc}</span>}
                                                                                     {link && (
                                                                                           <a
                                                                                                 href={formatUrl(link)}
                                                                                                 target="_blank"
                                                                                                 rel="noopener noreferrer"
-                                                                                                style={{ color: accentColor, fontSize: '0.82rem', fontWeight: 600, textDecoration: 'none', display: 'inline-flex', alignItems: 'center' }}
+                                                                                                style={{ color: accentColor, fontWeight: 600, textDecoration: 'none', marginLeft: '6px', display: 'inline-flex', alignItems: 'center' }}
                                                                                           >
-                                                                                                Verify Credential <ExternalLinkIcon />
-                                                                                          </a>
-                                                                                    )}
-                                                                                    {hasFile && (
-                                                                                          <a
-                                                                                                href={resId ? `/verify-certificate/${resId}/${index}` : '#'}
-                                                                                                onClick={(e) => handleViewCertProof(e, cert, index)}
-                                                                                                target="_blank"
-                                                                                                rel="noopener noreferrer"
-                                                                                                style={{ color: '#059669', fontSize: '0.82rem', fontWeight: 600, textDecoration: 'none', display: 'inline-flex', alignItems: 'center' }}
-                                                                                                title="View verified certificate proof"
-                                                                                          >
-                                                                                                Verify Proof 📎
+                                                                                                [View Proof <ExternalLinkIcon />]
                                                                                           </a>
                                                                                     )}
                                                                               </div>
-                                                                        </div>
+                                                                        );
+                                                                  })}
+                                                            </div>
+                                                      )}
 
-                                                                        {/* Row 3: Skills Learned (Matching reference screenshot) */}
-                                                                        {skillsLearned && (
-                                                                              <div style={{ marginTop: '3px', fontSize: '0.84rem', color: '#475569', paddingLeft: '8px' }}>
-                                                                                    <span style={{ marginRight: '6px', color: '#94a3b8' }}>•</span>
-                                                                                    <em>Skills learned:</em> <strong>{skillsLearned}</strong>
+                                                      {/* REFERENCES (Single Column) */}
+                                                      {references && references.length > 0 && (
+                                                            <div className="resume-section">
+                                                                  <h3 style={{ color: accentColor, borderBottom: '1px solid #cbd5e1', paddingBottom: '3px', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
+                                                                        REFERENCES
+                                                                  </h3>
+                                                                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: '12px', marginTop: '8px' }}>
+                                                                        {references.map((ref, idx) => (
+                                                                              <div key={idx} style={{ background: '#f8fafc', border: '1px solid #e2e8f0', padding: '10px 12px', borderRadius: '6px' }}>
+                                                                                    <strong style={{ color: '#0f172a', fontSize: '0.88rem', display: 'block' }}>{ref.name}</strong>
+                                                                                    <span style={{ color: '#64748b', fontSize: '0.8rem', fontStyle: 'italic', display: 'block' }}>{ref.role} | {ref.company}</span>
+                                                                                    {ref.phone && <div style={{ fontSize: '0.78rem', color: '#334155', marginTop: '3px' }}>📞 {ref.phone}</div>}
+                                                                                    {ref.email && <div style={{ fontSize: '0.78rem', color: '#334155', wordBreak: 'break-all' }}>✉️ {ref.email}</div>}
                                                                               </div>
-                                                                        )}
+                                                                        ))}
                                                                   </div>
-                                                            );
-                                                      })}
+                                                            </div>
+                                                      )}
+
+                                                      {/* LANGUAGES */}
+                                                      {languages && languages.length > 0 && (
+                                                            <div className="resume-section">
+                                                                  <h3 style={{ color: accentColor, borderBottom: '1px solid #cbd5e1', paddingBottom: '3px', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
+                                                                        LANGUAGES
+                                                                  </h3>
+                                                                  <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px', marginTop: '6px' }}>
+                                                                        {languages.map((lang, idx) => {
+                                                                              const name = typeof lang === 'string' ? lang : (lang?.name || lang?.language || '');
+                                                                              const prof = typeof lang === 'object' && lang?.proficiency ? ` (${lang.proficiency})` : '';
+                                                                              return (
+                                                                                    <span key={idx} style={{ background: '#f1f5f9', color: '#1e293b', padding: '3px 10px', borderRadius: '4px', fontSize: '0.84rem', fontWeight: 600 }}>
+                                                                                          {name}{prof}
+                                                                                    </span>
+                                                                              );
+                                                                        })}
+                                                                  </div>
+                                                            </div>
+                                                      )}
+
+                                                      {/* HOBBIES & INTERESTS */}
+                                                      {((hobbies && hobbies.length > 0) || (interests && interests.length > 0)) && (
+                                                            <div className="resume-section">
+                                                                  <h3 style={{ color: accentColor, borderBottom: '1px solid #cbd5e1', paddingBottom: '3px', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
+                                                                        HOBBIES &amp; INTERESTS
+                                                                  </h3>
+                                                                  <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px', marginTop: '6px' }}>
+                                                                        {[...(hobbies || []), ...(interests || []).map(i => typeof i === 'string' ? i : i?.name)].filter(Boolean).map((h, idx) => (
+                                                                              <span key={idx} style={{ background: '#f8fafc', border: '1px solid #e2e8f0', color: '#334155', padding: '3px 10px', borderRadius: '4px', fontSize: '0.84rem' }}>
+                                                                                    {h}
+                                                                              </span>
+                                                                        ))}
+                                                                  </div>
+                                                            </div>
+                                                      )}
+
+                                                      {/* CUSTOM SECTIONS */}
+                                                      {custom_sections && custom_sections.length > 0 && (
+                                                            custom_sections.map((sec, idx) => (
+                                                                  <div key={idx} className="resume-section">
+                                                                        <h3 style={{ color: accentColor, borderBottom: '1px solid #cbd5e1', paddingBottom: '3px', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
+                                                                              {sec.title || 'ADDITIONAL SECTION'}
+                                                                        </h3>
+                                                                        <div style={{ marginTop: '6px', fontSize: '0.88rem', lineHeight: 1.5, color: '#334155', whiteSpace: 'pre-wrap' }}>
+                                                                              {sec.content || ''}
+                                                                        </div>
+                                                                  </div>
+                                                            ))
+                                                      )}
                                                 </div>
                                           )}
-
-                                          {/* ACHIEVEMENTS */}
-                                          {achievements && achievements.length > 0 && (
-                                                <div className="resume-section">
-                                                      <h3 style={{ color: accentColor, borderBottom: '1px solid #cbd5e1', paddingBottom: '3px', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
-                                                            ACHIEVEMENTS
-                                                      </h3>
-                                                      {achievements.map((ach, index) => {
-                                                            const title = typeof ach === 'string' ? ach : (ach?.title || 'Achievement');
-                                                            const date = typeof ach === 'object' ? ach?.date : '';
-                                                            const desc = typeof ach === 'object' ? ach?.description : '';
-                                                            const link = typeof ach === 'object' ? (ach?.link || ach?.file_url) : '';
-
-                                                            return (
-                                                                  <div key={index} style={{ marginBottom: '8px', fontSize: '0.88rem', lineHeight: 1.45, color: '#1e293b' }}>
-                                                                        <span style={{ marginRight: '6px', color: '#64748b' }}>•</span>
-                                                                        <strong style={{ color: '#0f172a' }}>{title}</strong>
-                                                                        {date && <span style={{ color: '#475569', fontWeight: 600 }}> ({date})</span>}
-                                                                        {desc && <span>: {desc}</span>}
-                                                                        {link && (
-                                                                              <a
-                                                                                    href={formatUrl(link)}
-                                                                                    target="_blank"
-                                                                                    rel="noopener noreferrer"
-                                                                                    style={{ color: accentColor, fontWeight: 600, textDecoration: 'none', marginLeft: '6px', display: 'inline-flex', alignItems: 'center' }}
-                                                                              >
-                                                    [View Proof <ExternalLinkIcon />]
-                                              </a>
-                                        )}
-                                  </div>
-                            );
-                      })}
-                </div>
-          )}
-
-          {/* LANGUAGES */}
-          {languages && languages.length > 0 && (
-                <div className="resume-section">
-                      <h3 style={{ color: accentColor, borderBottom: '1px solid #cbd5e1', paddingBottom: '3px', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
-                            LANGUAGES
-                      </h3>
-                      <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px', marginTop: '6px' }}>
-                            {languages.map((lang, idx) => (
-                                  <span key={idx} style={{ background: '#f1f5f9', color: '#1e293b', padding: '3px 10px', borderRadius: '4px', fontSize: '0.84rem', fontWeight: 600 }}>
-                                        {typeof lang === 'string' ? lang : (lang?.name || lang?.language || '')}
-                                  </span>
-                            ))}
-                      </div>
-                </div>
-          )}
-
-          {/* INTERESTS */}
-          {interests && interests.length > 0 && (
-                <div className="resume-section">
-                      <h3 style={{ color: accentColor, borderBottom: '1px solid #cbd5e1', paddingBottom: '3px', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
-                            INTERESTS
-                      </h3>
-                      <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px', marginTop: '6px' }}>
-                            {interests.map((interest, idx) => (
-                                  <span key={idx} style={{ background: '#f8fafc', border: '1px solid #e2e8f0', color: '#334155', padding: '3px 10px', borderRadius: '4px', fontSize: '0.84rem' }}>
-                                        {typeof interest === 'string' ? interest : (interest?.name || '')}
-                                  </span>
-                            ))}
-                      </div>
-                </div>
-          )}
-
-          {/* CUSTOM SECTIONS */}
-          {custom_sections && custom_sections.length > 0 && (
-                custom_sections.map((sec, idx) => (
-                      <div key={idx} className="resume-section">
-                            <h3 style={{ color: accentColor, borderBottom: '1px solid #cbd5e1', paddingBottom: '3px', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
-                                  {sec.title || 'ADDITIONAL SECTION'}
-                            </h3>
-                            <div style={{ marginTop: '6px', fontSize: '0.88rem', lineHeight: 1.5, color: '#334155', whiteSpace: 'pre-wrap' }}>
-                                  {sec.content || ''}
-                            </div>
-                      </div>
-                ))
-          )}
                                     </div>
                               </div>
                         </div>

@@ -1,5 +1,5 @@
 from fastapi import APIRouter, HTTPException, status, Header
-from models.user import UserSignup, UserLogin, TokenResponse, UserResponse, AdminLoginRequest, ChangePasswordRequest
+from models.user import UserSignup, UserLogin, TokenResponse, UserResponse, AdminLoginRequest, ChangePasswordRequest, TrackUpdateRequest
 from auth.hash_password import hash_password, verify_password
 from auth.jwt_handler import create_access_token, get_user_from_token, get_admin_from_token
 from database import get_database
@@ -47,12 +47,17 @@ async def signup(user: UserSignup):
             detail="Email already registered"
         )
     
+    track = (getattr(user, "track", None) or "tech").strip().lower()
+    if track not in ["tech", "business"]:
+        track = "tech"
+
     # Create new user
     user_doc = {
         "name": user.name.strip(),
         "email": normalized_email,
         "hashed_password": hash_password(user.password),
         "role": "user",
+        "track": track,
         "created_at": datetime.now(timezone.utc)
     }
     
@@ -68,6 +73,7 @@ async def signup(user: UserSignup):
         name=user_doc["name"],
         email=user_doc["email"],
         role="user",
+        track=user_doc.get("track", "tech"),
         created_at=user_doc["created_at"]
     )
     
@@ -103,6 +109,7 @@ async def login(credentials: UserLogin):
         name=user["name"],
         email=user["email"],
         role=role,
+        track=user.get("track", "tech"),
         created_at=user.get("created_at", datetime.now(timezone.utc))
     )
     
@@ -148,6 +155,7 @@ async def admin_login(credentials: AdminLoginRequest):
         name=user["name"],
         email=user["email"],
         role="admin",
+        track=user.get("track", "tech"),
         created_at=user.get("created_at", datetime.now(timezone.utc))
     )
     
@@ -186,6 +194,27 @@ async def change_password(req: ChangePasswordRequest, authorization: str = Heade
     
     return {"message": "Password changed successfully"}
 
+@router.put("/track")
+async def update_user_track(req: TrackUpdateRequest, authorization: str = Header(None)):
+    """Allow user to switch active student track ('tech' | 'business')"""
+    if not authorization:
+        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Missing authorization header")
+    token = authorization.replace("Bearer ", "").strip()
+    user_id = get_user_from_token(token)
+    if not user_id:
+        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid token")
+    
+    clean_track = req.track.strip().lower()
+    if clean_track not in ["tech", "business"]:
+        clean_track = "tech"
+        
+    db = await get_database()
+    await db.users.update_one(
+        {"_id": ObjectId(user_id)},
+        {"$set": {"track": clean_track, "updated_at": datetime.now(timezone.utc)}}
+    )
+    return {"message": "Track updated successfully", "track": clean_track}
+
 @router.get("/me", response_model=UserResponse)
 async def get_current_user_profile(authorization: str = Header(None)):
     """Validate current session token and return user profile"""
@@ -214,5 +243,6 @@ async def get_current_user_profile(authorization: str = Header(None)):
         name=user["name"],
         email=user["email"],
         role=user.get("role", "user"),
+        track=user.get("track", "tech"),
         created_at=user.get("created_at", datetime.now(timezone.utc))
     )

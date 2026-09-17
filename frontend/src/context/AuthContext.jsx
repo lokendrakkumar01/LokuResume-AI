@@ -55,6 +55,40 @@ export const AuthProvider = ({ children }) => {
             }
       });
 
+      const [studentTrack, setStudentTrackState] = useState(() => {
+            const saved = localStorage.getItem('student_track');
+            if (saved === 'business' || saved === 'tech') return saved;
+            try {
+                  const savedUser = localStorage.getItem('user');
+                  if (savedUser) {
+                        const parsed = JSON.parse(savedUser);
+                        if (parsed.track) return parsed.track;
+                  }
+            } catch (e) {}
+            return 'tech';
+      });
+
+      const setStudentTrack = async (newTrack) => {
+            const clean = (newTrack || 'tech').toLowerCase() === 'business' ? 'business' : 'tech';
+            setStudentTrackState(clean);
+            localStorage.setItem('student_track', clean);
+            if (user) {
+                  const updatedUser = { ...user, track: clean };
+                  setUser(updatedUser);
+                  localStorage.setItem('user', JSON.stringify(updatedUser));
+                  if (token) {
+                        try {
+                              await axios.put(`${config.API_BASE_URL}/auth/track`, { track: clean }, {
+                                    headers: { Authorization: `Bearer ${token}` },
+                                    timeout: 5000
+                              });
+                        } catch (e) {
+                              // silent
+                        }
+                  }
+            }
+      };
+
       // Never block rendering if user credentials are already present in localStorage!
       const [loading, setLoading] = useState(false);
 
@@ -85,6 +119,10 @@ export const AuthProvider = ({ children }) => {
                         if (isMounted && response.data) {
                               setUser(response.data);
                               localStorage.setItem('user', JSON.stringify(response.data));
+                              if (response.data.track) {
+                                    setStudentTrackState(response.data.track);
+                                    localStorage.setItem('student_track', response.data.track);
+                              }
                         }
                   } catch (err) {
                         // Only wipe local session if backend explicitly replied 401 Unauthorized
@@ -137,10 +175,14 @@ export const AuthProvider = ({ children }) => {
 
                   localStorage.setItem('token', access_token);
                   localStorage.setItem('user', JSON.stringify(userData));
+                  if (userData.track) {
+                        setStudentTrackState(userData.track);
+                        localStorage.setItem('student_track', userData.track);
+                  }
 
                   // Set session trigger for AI Voice & Chat Onboarding Guide
-                  sessionStorage.setItem('loku_ai_guide_trigger', JSON.stringify({ name: userData.name, action: 'login', timestamp: Date.now() }));
-                  window.dispatchEvent(new CustomEvent('trigger-loku-ai-guide', { detail: { name: userData.name, action: 'login' } }));
+                  sessionStorage.setItem('loku_ai_guide_trigger', JSON.stringify({ name: userData.name, action: 'login', track: userData.track || studentTrack, timestamp: Date.now() }));
+                  window.dispatchEvent(new CustomEvent('trigger-loku-ai-guide', { detail: { name: userData.name, action: 'login', track: userData.track || studentTrack } }));
 
                   setToken(access_token);
                   setUser(userData);
@@ -154,22 +196,26 @@ export const AuthProvider = ({ children }) => {
             }
       };
 
-      const signup = async (name, email, password) => {
+      const signup = async (name, email, password, trackChoice) => {
             try {
+                  const selectedTrack = trackChoice || studentTrack || 'tech';
                   const response = await axios.post(`${config.API_BASE_URL}/auth/signup`, {
                         name: name.trim(),
                         email: email.trim().toLowerCase(),
-                        password
+                        password,
+                        track: selectedTrack
                   });
 
                   const { access_token, user: userData } = response.data;
 
                   localStorage.setItem('token', access_token);
                   localStorage.setItem('user', JSON.stringify(userData));
+                  setStudentTrackState(selectedTrack);
+                  localStorage.setItem('student_track', selectedTrack);
 
                   // Set session trigger for AI Voice & Chat Onboarding Guide
-                  sessionStorage.setItem('loku_ai_guide_trigger', JSON.stringify({ name: userData.name, action: 'signup', timestamp: Date.now() }));
-                  window.dispatchEvent(new CustomEvent('trigger-loku-ai-guide', { detail: { name: userData.name, action: 'signup' } }));
+                  sessionStorage.setItem('loku_ai_guide_trigger', JSON.stringify({ name: userData.name, action: 'signup', track: selectedTrack, timestamp: Date.now() }));
+                  window.dispatchEvent(new CustomEvent('trigger-loku-ai-guide', { detail: { name: userData.name, action: 'signup', track: selectedTrack } }));
 
                   setToken(access_token);
                   setUser(userData);
@@ -225,7 +271,7 @@ export const AuthProvider = ({ children }) => {
       const isAdmin = Boolean(user && (user.role === 'admin' || user.role === 'super_admin' || user.role === 'moderator'));
 
       return (
-            <AuthContext.Provider value={{ user, token, login, signup, logout, adminLogin, adminLogout, isAdmin, getAuthHeader, loading }}>
+            <AuthContext.Provider value={{ user, token, login, signup, logout, adminLogin, adminLogout, isAdmin, getAuthHeader, loading, studentTrack, setStudentTrack }}>
                   {children}
             </AuthContext.Provider>
       );

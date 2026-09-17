@@ -10,15 +10,23 @@ import config from '../config';
 import '../styles/ResumeBuilder.css';
 import '../styles/ResumeBuilderExtra.css';
 
-const POPULAR_SKILLS = [
+const POPULAR_TECH_SKILLS = [
       'React.js', 'TypeScript', 'JavaScript', 'Node.js', 'Python', 'FastAPI',
       'Docker', 'AWS', 'PostgreSQL', 'MongoDB', 'Redis', 'Git', 'Next.js',
       'GraphQL', 'Tailwind CSS', 'CI/CD', 'REST APIs', 'Kubernetes'
 ];
 
+const POPULAR_BUSINESS_SKILLS = [
+      'Strategic Planning', 'P&L Management', 'Sales & Negotiations',
+      'Team Leadership', 'Budgeting & Forecasting', 'Client Relationship (CRM)',
+      'Operations Management', 'Market Analysis', 'Revenue Optimization',
+      'Agile Project Management', 'Risk Management', 'Stakeholder Communication',
+      'Public Speaking & Pitching', 'Cross-Functional Collaboration'
+];
+
 function ResumeBuilder() {
       const { id } = useParams();
-      const { getAuthHeader } = useAuth();
+      const { getAuthHeader, studentTrack, setStudentTrack } = useAuth();
       const { showToast } = useToast();
       const navigate = useNavigate();
 
@@ -33,8 +41,9 @@ function ResumeBuilder() {
       const [uploadingAchIndex, setUploadingAchIndex] = useState(null);
       const isInitialMount = useRef(true);
 
-      // Inline skill input state
+      // Inline skill & hobby input state
       const [skillInput, setSkillInput] = useState('');
+      const [hobbyInput, setHobbyInput] = useState('');
 
       // AI Bullet Generator state
       const [aiTarget, setAiTarget] = useState(null); // { type: 'project'|'experience', index }
@@ -51,6 +60,7 @@ function ResumeBuilder() {
                   }
             }
             return {
+                  track: studentTrack || 'tech',
                   personal_info: {
                         name: '',
                         email: '',
@@ -70,12 +80,14 @@ function ResumeBuilder() {
                   skills: [],
                   projects: [],
                   experience: [],
+                  references: [],
+                  hobbies: [],
                   certifications: [],
                   achievements: [],
                   languages: [],
                   interests: [],
                   custom_sections: [],
-                  template_style: 'modern',
+                  template_style: (studentTrack === 'business') ? 'business_executive' : 'modern',
                   pdf_preferences: {
                         background_color: '#ffffff',
                         accent_color: '#111827'
@@ -145,11 +157,18 @@ function ResumeBuilder() {
             if (formData.summary && formData.summary.trim().split(/\s+/).filter(Boolean).length >= 20) pts += 15;
             if (formData.education && formData.education.length > 0 && formData.education[0].degree) pts += 10;
             if (formData.skills && formData.skills.length >= 4) pts += 15;
-            if (formData.projects && formData.projects.length > 0 && formData.projects[0].title) pts += 10;
             if (formData.experience && formData.experience.length > 0 && formData.experience[0].company) pts += 5;
             if (formData.certifications && formData.certifications.length > 0 && formData.certifications[0].name) pts += 5;
             if (formData.achievements && formData.achievements.length > 0 && formData.achievements[0].title) pts += 5;
-            if (formData.coding_profiles && formData.coding_profiles.length > 0) pts += 5;
+
+            if (formData.track === 'business') {
+                  if (formData.references && formData.references.length > 0 && formData.references[0].name) pts += 10;
+                  if (formData.languages && formData.languages.length > 0) pts += 5;
+                  if (formData.hobbies && formData.hobbies.length > 0) pts += 5;
+            } else {
+                  if (formData.projects && formData.projects.length > 0 && formData.projects[0].title) pts += 10;
+                  if (formData.coding_profiles && formData.coding_profiles.length > 0) pts += 5;
+            }
             return Math.min(100, pts);
       }, [formData]);
 
@@ -160,6 +179,9 @@ function ResumeBuilder() {
                   });
 
                   const data = response.data;
+                  if (!data.track) data.track = studentTrack || 'tech';
+                  if (!data.references) data.references = [];
+                  if (!data.hobbies) data.hobbies = [];
                   if (data.certifications && data.certifications.length > 0) {
                         data.certifications = data.certifications.map(cert => {
                               if (typeof cert === 'string') {
@@ -201,7 +223,7 @@ function ResumeBuilder() {
                         data.pdf_preferences.accent_color = '#111827';
                   }
                   if (!data.template_style) {
-                        data.template_style = 'modern';
+                        data.template_style = data.track === 'business' ? 'business_executive' : 'modern';
                   }
                   if (!data.languages) data.languages = [];
                   if (!data.interests) data.interests = [];
@@ -380,7 +402,117 @@ function ResumeBuilder() {
 
       // 1-Click Auto-fill Sample Data
       const handleAutoFill = () => {
+            if (formData.track === 'business') {
+                  setFormData({
+                        track: 'business',
+                        personal_info: {
+                              name: 'Michael Scott',
+                              email: 'michael.scott@dundermifflin.com',
+                              phone: '+1 (555) 019-2834',
+                              location: 'Scranton, Pennsylvania',
+                              linkedin: 'https://linkedin.com/in/michaelscott-regional',
+                              github: '',
+                              leetcode: '',
+                              problem_solving: '',
+                              portfolio: 'https://dundermifflin.com/scranton',
+                              headline: 'Regional Manager | Sales & Business Operations',
+                              profile_photo: formData.personal_info?.profile_photo || ''
+                        },
+                        coding_profiles: [],
+                        summary: 'Dynamic, result-oriented Regional Manager with 12+ years of leadership across branch operations, client acquisitions, and corporate sales strategy. Proven track record boosting branch profitability by 140%, fostering high-morale sales teams, and establishing long-term enterprise client partnerships.',
+                        education: [
+                              { degree: 'BBA | Marketing & Business Administration (2008-2012)', college: 'Scranton Business Institute', year: '2008 - 2012', grade: 'GPA: 3.9 / 4.0 (Dean\'s List)' },
+                              { degree: 'Executive Management Certificate (2015)', college: 'Wharton Executive Education', year: '2015', grade: 'Completed with Honors' }
+                        ],
+                        skills: [
+                              'Regional Branch Management', 'Client Acquisition & Retention', 'P&L Optimization',
+                              'Strategic Sales & Negotiations', 'Cross-Functional Leadership', 'Budgeting & Forecasting',
+                              'Crisis Management', 'Public Speaking & Pitching', 'Contract Negotiation', 'Agile Team Building'
+                        ],
+                        projects: [],
+                        experience: [
+                              {
+                                    company: 'Dunder Mifflin Paper Company',
+                                    role: 'Regional Manager',
+                                    duration: '2013 - Present',
+                                    description: 'Spearheaded northeast branch operations delivering 140% of corporate revenue target for 4 consecutive years. Mentored a 15-person sales and distribution team achieving the lowest staff turnover rate in corporate history. Personally negotiated and closed top 5 municipal supplier contracts generating $1.8M ARR.'
+                              },
+                              {
+                                    company: 'Dunder Mifflin Paper Company',
+                                    role: 'Senior Sales Executive',
+                                    duration: '2009 - 2013',
+                                    description: 'Awarded Top Salesperson of the Year twice consecutively. Consistently surpassed quarterly sales quotas by 35% through relationship-driven enterprise client acquisition.'
+                              }
+                        ],
+                        references: [
+                              {
+                                    name: 'David Wallace',
+                                    company: 'Dunder Mifflin Corporate HQ',
+                                    role: 'Chief Financial Officer',
+                                    phone: '+1 (555) 302-8811',
+                                    email: 'dwallace@dundermifflin.com'
+                              },
+                              {
+                                    name: 'Jan Levinson',
+                                    company: 'Corporate Operations',
+                                    role: 'VP of Regional Sales',
+                                    phone: '+1 (555) 302-9900',
+                                    email: 'jlevinson@corporate.com'
+                              }
+                        ],
+                        hobbies: [
+                              'Improvisational Comedy',
+                              'Ice Hockey Coaching',
+                              'Screenwriting',
+                              'Community Youth Mentorship'
+                        ],
+                        languages: [
+                              { language: 'English', proficiency: 'Native' },
+                              { language: 'Spanish', proficiency: 'Professional' }
+                        ],
+                        certifications: [
+                              {
+                                    name: 'Certified Sales Executive (CSE)',
+                                    issued_by: 'SMEI International',
+                                    date: '2020',
+                                    link: 'https://smei.org/verify/cse-9921',
+                                    skills_learned: 'Enterprise Sales, Client Relationship Management',
+                                    file_data: '',
+                                    file_url: ''
+                              },
+                              {
+                                    name: 'Advanced Executive Leadership',
+                                    issued_by: 'Harvard Division of Continuing Education',
+                                    date: '2022',
+                                    link: 'https://professional.dce.harvard.edu/verify/lead',
+                                    skills_learned: 'P&L Strategy, Organizational Culture',
+                                    file_data: '',
+                                    file_url: ''
+                              }
+                        ],
+                        achievements: [
+                              {
+                                    title: 'Best Branch Performance Award (6 Consecutive Years)',
+                                    description: 'Awarded top performing branch across 12 northeastern states for outstanding customer retention and profit margins.',
+                                    date: '2024',
+                                    link: 'https://linkedin.com/posts/dunder-mifflin-award'
+                              },
+                              {
+                                    title: 'Keynote Speaker - Scranton Chamber of Commerce Annual Gala',
+                                    description: 'Delivered keynote address on client-first sales methodologies and entrepreneurial leadership to 400+ attendees.',
+                                    date: '2023',
+                                    link: ''
+                              }
+                        ],
+                        template_style: 'business_executive',
+                        pdf_preferences: { background_color: '#ffffff', accent_color: '#111827' }
+                  });
+                  showToast('Loaded Michael Scott Executive business sample!', 'success');
+                  return;
+            }
+
             setFormData({
+                  track: 'tech',
                   personal_info: {
                         name: 'Alex Morgan',
                         email: 'alex.morgan@example.com',
@@ -430,6 +562,9 @@ function ResumeBuilder() {
                               description: 'Developed web applications using MERN stack and strengthened DSA skills through problem solving. Worked with React, Node.js, Express.js, APIs, GitHub and modern web development practices.'
                         }
                   ],
+                  references: [],
+                  hobbies: [],
+                  languages: [],
                   certifications: [
                         {
                               name: 'Prompt Engineering Mastery',
@@ -809,11 +944,73 @@ function ResumeBuilder() {
             setFormData({ ...formData, coding_profiles: (formData.coding_profiles || []).filter((_, i) => i !== index) });
       };
 
-      const stepsList = [
+      // References handlers
+      const addReference = () => {
+            setFormData({
+                  ...formData,
+                  references: [...(formData.references || []), { name: '', company: '', role: '', phone: '', email: '' }]
+            });
+      };
+      const updateReference = (index, field, value) => {
+            const newRefs = [...(formData.references || [])];
+            if (newRefs[index]) {
+                  newRefs[index] = { ...newRefs[index], [field]: value };
+                  setFormData({ ...formData, references: newRefs });
+            }
+      };
+      const removeReference = (index) => {
+            setFormData({ ...formData, references: (formData.references || []).filter((_, i) => i !== index) });
+      };
+
+      // Languages handlers
+      const addLanguage = () => {
+            setFormData({
+                  ...formData,
+                  languages: [...(formData.languages || []), { language: '', proficiency: 'Fluent' }]
+            });
+      };
+      const updateLanguage = (index, field, value) => {
+            const newLangs = [...(formData.languages || [])];
+            if (newLangs[index]) {
+                  newLangs[index] = { ...newLangs[index], [field]: value };
+                  setFormData({ ...formData, languages: newLangs });
+            }
+      };
+      const removeLanguage = (index) => {
+            setFormData({ ...formData, languages: (formData.languages || []).filter((_, i) => i !== index) });
+      };
+
+      // Hobbies handlers
+      const handleAddHobby = (h) => {
+            const toAdd = (h || hobbyInput).trim();
+            if (!toAdd) return;
+            if (!(formData.hobbies || []).includes(toAdd)) {
+                  setFormData({ ...formData, hobbies: [...(formData.hobbies || []), toAdd] });
+            }
+            setHobbyInput('');
+      };
+      const handleRemoveHobby = (h) => {
+            setFormData({ ...formData, hobbies: (formData.hobbies || []).filter(item => item !== h) });
+      };
+
+      const isBusiness = formData.track === 'business';
+
+      const stepsList = isBusiness ? [
             { num: 1, label: '👤 Personal' },
             { num: 2, label: '📝 Summary' },
             { num: 3, label: '🎓 Education' },
             { num: 4, label: '💼 Skills' },
+            { num: 5, label: '🤝 References' },
+            { num: 6, label: '🏢 Experience' },
+            { num: 7, label: '📜 Certs' },
+            { num: 8, label: '🏆 Awards' },
+            { num: 9, label: '🌐 Lang & Hobbies' },
+            { num: 10, label: '👀 Review' },
+      ] : [
+            { num: 1, label: '👤 Personal' },
+            { num: 2, label: '📝 Summary' },
+            { num: 3, label: '🎓 Education' },
+            { num: 4, label: '💻 Skills' },
             { num: 5, label: '🚀 Projects' },
             { num: 6, label: '💻 Experience' },
             { num: 7, label: '📜 Certs' },
@@ -832,6 +1029,50 @@ function ResumeBuilder() {
 
       return (
             <div className="resume-builder">
+                  {/* Stream Track Switcher Banner */}
+                  <div className="stream-track-banner">
+                        <div className="stream-track-info">
+                              <span className="track-badge-icon">{isBusiness ? '💼' : '💻'}</span>
+                              <div>
+                                    <div className="track-badge-title">
+                                          <strong>{isBusiness ? 'Business & Executive Track' : 'Tech & Developer Track'}</strong>
+                                          <span className="track-pill-status">Active Stream</span>
+                                    </div>
+                                    <p className="track-badge-sub">
+                                          {isBusiness
+                                                ? 'Optimized for Sales, Management, MBA, References, Languages & 2-Column Executive Layouts'
+                                                : 'Optimized for Software Developers, LeetCode, GitHub, Code Projects & Technical Stacks'}
+                                    </p>
+                              </div>
+                        </div>
+                        <div className="stream-track-toggle-btns">
+                              <button
+                                    type="button"
+                                    className={`track-switch-btn ${!isBusiness ? 'active' : ''}`}
+                                    onClick={() => {
+                                          setStudentTrack && setStudentTrack('tech');
+                                          setFormData(prev => ({ ...prev, track: 'tech' }));
+                                    }}
+                              >
+                                    💻 Tech Track
+                              </button>
+                              <button
+                                    type="button"
+                                    className={`track-switch-btn ${isBusiness ? 'active' : ''}`}
+                                    onClick={() => {
+                                          setStudentTrack && setStudentTrack('business');
+                                          setFormData(prev => ({
+                                                ...prev,
+                                                track: 'business',
+                                                template_style: prev.template_style === 'modern' ? 'business_executive' : prev.template_style
+                                          }));
+                                    }}
+                              >
+                                    💼 Business Track
+                              </button>
+                        </div>
+                  </div>
+
                   {/* Top Builder Bar */}
                   <div className="builder-header">
                         <div className="header-left-col">
@@ -908,8 +1149,10 @@ function ResumeBuilder() {
                                     <label style={{ fontSize: '0.88rem', fontWeight: 600, display: 'block', marginBottom: '6px' }}>Resume Layout Template:</label>
                                     <div className="template-selector-grid">
                                           {[
+                                                { id: 'business_executive', name: '💼 Business Executive (Michael Scott)' },
+                                                { id: 'business_timeline', name: '📊 Business Timeline (Tyler Vader)' },
                                                 { id: 'modern', name: 'Modern Minimal' },
-                                                { id: 'executive', name: 'Executive' },
+                                                { id: 'executive', name: 'Classic Executive' },
                                                 { id: 'tech', name: 'Tech Developer' },
                                                 { id: 'compact', name: 'Compact 1-Page' }
                                           ].map(tpl => (
@@ -1353,156 +1596,261 @@ function ResumeBuilder() {
                                           </div>
                                     </div>
 
-                                    {/* Quick Suggestions */}
-                                    <div className="skill-suggestions-box">
-                                          <span className="suggestions-label">💡 Popular Tech Skills (Click to add):</span>
-                                          <div className="popular-skills-pills">
-                                                {POPULAR_SKILLS.map((sk) => {
-                                                      const isAdded = formData.skills.includes(sk);
-                                                      return (
-                                                            <button
-                                                                  key={sk}
-                                                                  type="button"
-                                                                  disabled={isAdded}
-                                                                  onClick={() => handleAddSkill(sk)}
-                                                                  className={`pill-suggestion ${isAdded ? 'pill-added' : ''}`}
-                                                            >
-                                                                  {isAdded ? `✓ ${sk}` : `+ ${sk}`}
-                                                            </button>
-                                                      );
-                                                })}
-                                          </div>
-                                    </div>
+                                     {/* Quick Suggestions */}
+                                     <div className="skill-suggestions-box">
+                                           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px', flexWrap: 'wrap', gap: '6px' }}>
+                                                 <span className="suggestions-label">💡 Popular {isBusiness ? 'Business & Executive' : 'Tech Developer'} Skills (Click to add):</span>
+                                                 <button
+                                                       type="button"
+                                                       className="btn btn-sm btn-secondary"
+                                                       onClick={() => setFormData(prev => ({ ...prev, track: isBusiness ? 'tech' : 'business' }))}
+                                                       style={{ fontSize: '0.75rem', padding: '2px 8px' }}
+                                                 >
+                                                       Switch to {isBusiness ? 'Tech Skills' : 'Business Skills'}
+                                                 </button>
+                                           </div>
+                                           <div className="popular-skills-pills">
+                                                 {(isBusiness ? POPULAR_BUSINESS_SKILLS : POPULAR_TECH_SKILLS).map((sk) => {
+                                                       const isAdded = formData.skills.includes(sk);
+                                                       return (
+                                                             <button
+                                                                   key={sk}
+                                                                   type="button"
+                                                                   disabled={isAdded}
+                                                                   onClick={() => handleAddSkill(sk)}
+                                                                   className={`pill-suggestion ${isAdded ? 'pill-added' : ''}`}
+                                                             >
+                                                                   {isAdded ? `✓ ${sk}` : `+ ${sk}`}
+                                                             </button>
+                                                       );
+                                                 })}
+                                           </div>
+                                     </div>
                               </div>
                         )}
 
-                        {/* Step 5: Projects */}
+                        {/* Step 5: References (Business Stream) or Projects (Tech Stream) */}
                         {currentStep === 5 && (
                               <div className="form-step fade-in">
-                                    <h2>🚀 Step 5: Projects</h2>
-                                    <p className="step-description">Showcase high-impact projects with metrics and tech stack</p>
-                                    {formData.projects.map((proj, index) => (
-                                          <div key={index} className="repeatable-item">
-                                                <div className="repeatable-item-header">
-                                                      <span className="item-badge">Project #{index + 1}</span>
-                                                      <div className="item-reorder-actions">
-                                                            <button
-                                                                  type="button"
-                                                                  disabled={index === 0}
-                                                                  onClick={() => moveItem('projects', index, -1)}
-                                                                  className="btn-icon"
-                                                                  title="Move Up"
-                                                            >
-                                                                  ⬆️
-                                                            </button>
-                                                            <button
-                                                                  type="button"
-                                                                  disabled={index === formData.projects.length - 1}
-                                                                  onClick={() => moveItem('projects', index, 1)}
-                                                                  className="btn-icon"
-                                                                  title="Move Down"
-                                                            >
-                                                                  ⬇️
-                                                            </button>
-                                                            <button
-                                                                  type="button"
-                                                                  onClick={() => removeProject(index)}
-                                                                  className="btn-icon btn-icon-danger"
-                                                                  title="Delete"
-                                                            >
-                                                                  🗑️
-                                                            </button>
-                                                      </div>
-                                                </div>
+                                    {isBusiness ? (
+                                          <>
+                                                <h2>🤝 Step 5: Professional References</h2>
+                                                <p className="step-description">Add mentors, managers, or corporate executives who can vouch for your business performance</p>
+                                                {(formData.references || []).map((refItem, index) => (
+                                                      <div key={index} className="repeatable-item">
+                                                            <div className="repeatable-item-header">
+                                                                  <span className="item-badge">Reference #{index + 1}</span>
+                                                                  <div className="item-reorder-actions">
+                                                                        <button
+                                                                              type="button"
+                                                                              disabled={index === 0}
+                                                                              onClick={() => moveItem('references', index, -1)}
+                                                                              className="btn-icon"
+                                                                              title="Move Up"
+                                                                        >
+                                                                              ⬆️
+                                                                        </button>
+                                                                        <button
+                                                                              type="button"
+                                                                              disabled={index === (formData.references || []).length - 1}
+                                                                              onClick={() => moveItem('references', index, 1)}
+                                                                              className="btn-icon"
+                                                                              title="Move Down"
+                                                                        >
+                                                                              ⬇️
+                                                                        </button>
+                                                                        <button
+                                                                              type="button"
+                                                                              onClick={() => removeReference(index)}
+                                                                              className="btn-icon btn-icon-danger"
+                                                                              title="Delete"
+                                                                        >
+                                                                              🗑️
+                                                                        </button>
+                                                                  </div>
+                                                            </div>
 
-                                                <div className="form-row">
-                                                      <div className="form-group">
-                                                            <label>Project Title</label>
-                                                            <input
-                                                                  type="text"
-                                                                  value={proj.title}
-                                                                  onChange={(e) => updateProject(index, 'title', e.target.value)}
-                                                                  placeholder="e.g. ZUNO / AI Resume Platform"
-                                                            />
+                                                            <div className="form-row">
+                                                                  <div className="form-group">
+                                                                        <label>Reference Full Name *</label>
+                                                                        <input
+                                                                              type="text"
+                                                                              value={refItem.name}
+                                                                              onChange={(e) => updateReference(index, 'name', e.target.value)}
+                                                                              placeholder="e.g. David Wallace"
+                                                                        />
+                                                                  </div>
+                                                                  <div className="form-group">
+                                                                        <label>Company / Organization *</label>
+                                                                        <input
+                                                                              type="text"
+                                                                              value={refItem.company}
+                                                                              onChange={(e) => updateReference(index, 'company', e.target.value)}
+                                                                              placeholder="e.g. Dunder Mifflin Corporate"
+                                                                        />
+                                                                  </div>
+                                                            </div>
+                                                            <div className="form-row">
+                                                                  <div className="form-group">
+                                                                        <label>Designation / Role</label>
+                                                                        <input
+                                                                              type="text"
+                                                                              value={refItem.role}
+                                                                              onChange={(e) => updateReference(index, 'role', e.target.value)}
+                                                                              placeholder="e.g. Chief Financial Officer (CFO)"
+                                                                        />
+                                                                  </div>
+                                                                  <div className="form-group">
+                                                                        <label>Phone Number</label>
+                                                                        <input
+                                                                              type="tel"
+                                                                              value={refItem.phone}
+                                                                              onChange={(e) => updateReference(index, 'phone', e.target.value)}
+                                                                              placeholder="e.g. +1 (555) 302-8811"
+                                                                        />
+                                                                  </div>
+                                                                  <div className="form-group">
+                                                                        <label>Email Address</label>
+                                                                        <input
+                                                                              type="email"
+                                                                              value={refItem.email}
+                                                                              onChange={(e) => updateReference(index, 'email', e.target.value)}
+                                                                              placeholder="e.g. dwallace@company.com"
+                                                                        />
+                                                                  </div>
+                                                            </div>
                                                       </div>
-                                                      <div className="form-group">
-                                                            <label>Year / Duration</label>
-                                                            <input
-                                                                  type="text"
-                                                                  value={proj.date || ''}
-                                                                  onChange={(e) => updateProject(index, 'date', e.target.value)}
-                                                                  placeholder="e.g. 2025"
-                                                            />
-                                                      </div>
-                                                </div>
-                                                <div className="form-group">
-                                                      <label>Technologies Used</label>
-                                                      <input
-                                                            type="text"
-                                                            value={proj.technologies}
-                                                            onChange={(e) => updateProject(index, 'technologies', e.target.value)}
-                                                            placeholder="React, FastAPI, MongoDB, Docker"
-                                                      />
-                                                </div>
-                                                <div className="form-group">
-                                                      <label>Description (Impact &amp; Metrics)</label>
-                                                      <textarea
-                                                            value={proj.description}
-                                                            onChange={(e) => updateProject(index, 'description', e.target.value)}
-                                                            rows={3}
-                                                            placeholder="Engineered scalable full-stack application serving 1,000+ users with sub-50ms API responses..."
-                                                      />
-                                                      <button
-                                                            type="button"
-                                                            onClick={() => handleAIEnhanceBullet('project', index, proj.description)}
-                                                            className="ai-generator-btn"
-                                                            disabled={aiLoading}
-                                                      >
-                                                            ✨ {aiLoading && aiTarget?.type === 'project' && aiTarget?.index === index ? 'Enhancing...' : 'Enhance with AI'}
-                                                      </button>
+                                                ))}
+                                                <button onClick={addReference} type="button" className="btn btn-secondary">+ Add Reference</button>
+                                          </>
+                                    ) : (
+                                          <>
+                                                <h2>🚀 Step 5: Projects</h2>
+                                                <p className="step-description">Showcase high-impact software projects with quantifiable metrics and tech stack</p>
+                                                {formData.projects.map((proj, index) => (
+                                                      <div key={index} className="repeatable-item">
+                                                            <div className="repeatable-item-header">
+                                                                  <span className="item-badge">Project #{index + 1}</span>
+                                                                  <div className="item-reorder-actions">
+                                                                        <button
+                                                                              type="button"
+                                                                              disabled={index === 0}
+                                                                              onClick={() => moveItem('projects', index, -1)}
+                                                                              className="btn-icon"
+                                                                              title="Move Up"
+                                                                        >
+                                                                              ⬆️
+                                                                        </button>
+                                                                        <button
+                                                                              type="button"
+                                                                              disabled={index === formData.projects.length - 1}
+                                                                              onClick={() => moveItem('projects', index, 1)}
+                                                                              className="btn-icon"
+                                                                              title="Move Down"
+                                                                        >
+                                                                              ⬇️
+                                                                        </button>
+                                                                        <button
+                                                                              type="button"
+                                                                              onClick={() => removeProject(index)}
+                                                                              className="btn-icon btn-icon-danger"
+                                                                              title="Delete"
+                                                                        >
+                                                                              🗑️
+                                                                        </button>
+                                                                  </div>
+                                                            </div>
 
-                                                      {aiTarget?.type === 'project' && aiTarget?.index === index && (
-                                                            <div className="ai-variations-drawer fade-in">
-                                                                  <h5>✨ Select an AI-Optimized Bullet Point:</h5>
-                                                                  {aiLoading ? (
-                                                                        <div className="spinner-small" style={{ margin: '8px 0' }} />
-                                                                  ) : (
-                                                                        aiVariations.map((varText, vIdx) => (
-                                                                              <div
-                                                                                    key={vIdx}
-                                                                                    className="ai-variation-item"
-                                                                                    onClick={() => applyAIVariation(varText)}
-                                                                              >
-                                                                                    • {varText}
-                                                                              </div>
-                                                                        ))
+                                                            <div className="form-row">
+                                                                  <div className="form-group">
+                                                                        <label>Project Title</label>
+                                                                        <input
+                                                                              type="text"
+                                                                              value={proj.title}
+                                                                              onChange={(e) => updateProject(index, 'title', e.target.value)}
+                                                                              placeholder="e.g. ZUNO / AI Resume Platform"
+                                                                        />
+                                                                  </div>
+                                                                  <div className="form-group">
+                                                                        <label>Year / Duration</label>
+                                                                        <input
+                                                                              type="text"
+                                                                              value={proj.date || ''}
+                                                                              onChange={(e) => updateProject(index, 'date', e.target.value)}
+                                                                              placeholder="e.g. 2025"
+                                                                        />
+                                                                  </div>
+                                                            </div>
+                                                            <div className="form-group">
+                                                                  <label>Technologies Used</label>
+                                                                  <input
+                                                                        type="text"
+                                                                        value={proj.technologies}
+                                                                        onChange={(e) => updateProject(index, 'technologies', e.target.value)}
+                                                                        placeholder="React, FastAPI, MongoDB, Docker"
+                                                                  />
+                                                            </div>
+                                                            <div className="form-group">
+                                                                  <label>Description (Impact &amp; Metrics)</label>
+                                                                  <textarea
+                                                                        value={proj.description}
+                                                                        onChange={(e) => updateProject(index, 'description', e.target.value)}
+                                                                        rows={3}
+                                                                        placeholder="Engineered scalable full-stack application serving 1,000+ users with sub-50ms API responses..."
+                                                                  />
+                                                                  <button
+                                                                        type="button"
+                                                                        onClick={() => handleAIEnhanceBullet('project', index, proj.description)}
+                                                                        className="ai-generator-btn"
+                                                                        disabled={aiLoading}
+                                                                  >
+                                                                        ✨ {aiLoading && aiTarget?.type === 'project' && aiTarget?.index === index ? 'Enhancing...' : 'Enhance with AI'}
+                                                                  </button>
+
+                                                                  {aiTarget?.type === 'project' && aiTarget?.index === index && (
+                                                                        <div className="ai-variations-drawer fade-in">
+                                                                              <h5>✨ Select an AI-Optimized Bullet Point:</h5>
+                                                                              {aiLoading ? (
+                                                                                    <div className="spinner-small" style={{ margin: '8px 0' }} />
+                                                                              ) : (
+                                                                                    aiVariations.map((varText, vIdx) => (
+                                                                                          <div
+                                                                                                key={vIdx}
+                                                                                                className="ai-variation-item"
+                                                                                                onClick={() => applyAIVariation(varText)}
+                                                                                          >
+                                                                                                • {varText}
+                                                                                          </div>
+                                                                                    ))
+                                                                              )}
+                                                                        </div>
                                                                   )}
                                                             </div>
-                                                      )}
-                                                </div>
-                                                <div className="form-row">
-                                                      <div className="form-group">
-                                                            <label>Repository URL (GitHub)</label>
-                                                            <input
-                                                                  type="url"
-                                                                  value={proj.repository_url || ''}
-                                                                  onChange={(e) => updateProject(index, 'repository_url', e.target.value)}
-                                                                  placeholder="https://github.com/username/project"
-                                                            />
+                                                            <div className="form-row">
+                                                                  <div className="form-group">
+                                                                        <label>Repository URL (GitHub)</label>
+                                                                        <input
+                                                                              type="url"
+                                                                              value={proj.repository_url || ''}
+                                                                              onChange={(e) => updateProject(index, 'repository_url', e.target.value)}
+                                                                              placeholder="https://github.com/username/project"
+                                                                        />
+                                                                  </div>
+                                                                  <div className="form-group">
+                                                                        <label>Live Demo URL</label>
+                                                                        <input
+                                                                              type="url"
+                                                                              value={proj.live_demo_url || ''}
+                                                                              onChange={(e) => updateProject(index, 'live_demo_url', e.target.value)}
+                                                                              placeholder="https://demo-app.com"
+                                                                        />
+                                                                  </div>
+                                                            </div>
                                                       </div>
-                                                      <div className="form-group">
-                                                            <label>Live Demo URL</label>
-                                                            <input
-                                                                  type="url"
-                                                                  value={proj.live_demo_url || ''}
-                                                                  onChange={(e) => updateProject(index, 'live_demo_url', e.target.value)}
-                                                                  placeholder="https://demo-app.com"
-                                                            />
-                                                      </div>
-                                                </div>
-                                          </div>
-                                    ))}
-                                    <button onClick={addProject} type="button" className="btn btn-secondary">+ Add Project</button>
+                                                ))}
+                                                <button onClick={addProject} type="button" className="btn btn-secondary">+ Add Project</button>
+                                          </>
+                                    )}
                               </div>
                         )}
 
@@ -1892,77 +2240,256 @@ function ResumeBuilder() {
                               </div>
                         )}
 
-                        {/* Step 9: Coding Profiles */}
+                        {/* Step 9: Coding Profiles OR Languages & Hobbies */}
                         {currentStep === 9 && (
                               <div className="form-step fade-in">
-                                    <h2>👨‍💻 Step 9: Problem Solving &amp; Coding Profiles</h2>
-                                    <p className="step-description">Add LeetCode, Codeforces, HackerRank, or GitHub profile stats</p>
-                                    {(formData.coding_profiles || []).map((prof, index) => (
-                                          <div key={index} className="repeatable-item">
-                                                <div className="repeatable-item-header">
-                                                      <span className="item-badge">Profile #{index + 1}</span>
-                                                      <div className="item-reorder-actions">
-                                                            <button
-                                                                  type="button"
-                                                                  disabled={index === 0}
-                                                                  onClick={() => moveItem('coding_profiles', index, -1)}
-                                                                  className="btn-icon"
-                                                                  title="Move Up"
-                                                            >
-                                                                  ⬆️
-                                                            </button>
-                                                            <button
-                                                                  type="button"
-                                                                  disabled={index === formData.coding_profiles.length - 1}
-                                                                  onClick={() => moveItem('coding_profiles', index, 1)}
-                                                                  className="btn-icon"
-                                                                  title="Move Down"
-                                                            >
-                                                                  ⬇️
-                                                            </button>
-                                                            <button
-                                                                  type="button"
-                                                                  onClick={() => removeCodingProfile(index)}
-                                                                  className="btn-icon btn-icon-danger"
-                                                                  title="Delete"
-                                                            >
-                                                                  🗑️
+                                    {isBusiness ? (
+                                          <>
+                                                <h2>🌐 Step 9: Languages &amp; Hobbies / Interests</h2>
+                                                <p className="step-description">Executive resumes highlight multilingual fluency and leadership-focused personal interests</p>
+
+                                                {/* Languages Section */}
+                                                <div style={{ marginBottom: '28px', background: 'rgba(255, 255, 255, 0.03)', padding: '18px 20px', borderRadius: '12px', border: '1px solid rgba(255, 255, 255, 0.08)' }}>
+                                                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '14px', flexWrap: 'wrap', gap: '10px' }}>
+                                                            <div>
+                                                                  <h4 style={{ margin: 0, fontSize: '1.05rem', color: '#f8fafc', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                                                                        🗣️ Spoken Languages
+                                                                  </h4>
+                                                                  <span style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>
+                                                                        Rendered with visual proficiency bars in executive templates
+                                                                  </span>
+                                                            </div>
+                                                            <button onClick={addLanguage} type="button" className="btn btn-sm btn-primary">
+                                                                  + Add Language
                                                             </button>
                                                       </div>
+
+                                                      {(!formData.languages || formData.languages.length === 0) ? (
+                                                            <div style={{ textAlign: 'center', padding: '16px', color: 'var(--text-muted)', fontSize: '0.9rem' }}>
+                                                                  No languages added yet. Click "+ Add Language" or pick from:
+                                                                  <div style={{ display: 'flex', gap: '8px', justifyContent: 'center', flexWrap: 'wrap', marginTop: '10px' }}>
+                                                                        {['English (Native)', 'Hindi (Fluent)', 'Spanish (Professional)', 'French (Intermediate)', 'German (Basic)'].map(preset => {
+                                                                              const [lang, prof] = preset.replace(')', '').split(' (');
+                                                                              return (
+                                                                                    <button
+                                                                                          key={preset}
+                                                                                          type="button"
+                                                                                          className="btn btn-sm btn-secondary"
+                                                                                          onClick={() => {
+                                                                                                const existing = formData.languages || [];
+                                                                                                setFormData({
+                                                                                                      ...formData,
+                                                                                                      languages: [...existing, { language: lang, proficiency: prof || 'Fluent' }]
+                                                                                                });
+                                                                                          }}
+                                                                                          style={{ fontSize: '0.8rem' }}
+                                                                                    >
+                                                                                          + {preset}
+                                                                                    </button>
+                                                                              );
+                                                                        })}
+                                                                  </div>
+                                                            </div>
+                                                      ) : (
+                                                            formData.languages.map((langItem, idx) => {
+                                                                  const langObj = typeof langItem === 'string' ? { language: langItem, proficiency: 'Fluent' } : langItem;
+                                                                  return (
+                                                                        <div key={idx} className="repeatable-item" style={{ marginBottom: '12px' }}>
+                                                                              <div className="repeatable-item-header">
+                                                                                    <span className="item-badge">Language #{idx + 1}</span>
+                                                                                    <div className="item-reorder-actions">
+                                                                                          <button
+                                                                                                type="button"
+                                                                                                onClick={() => removeLanguage(idx)}
+                                                                                                className="btn-icon btn-icon-danger"
+                                                                                                title="Delete Language"
+                                                                                          >
+                                                                                                🗑️
+                                                                                          </button>
+                                                                                    </div>
+                                                                              </div>
+                                                                              <div className="form-row">
+                                                                                    <div className="form-group">
+                                                                                          <label>Language</label>
+                                                                                          <input
+                                                                                                type="text"
+                                                                                                value={langObj.language || ''}
+                                                                                                onChange={(e) => updateLanguage(idx, 'language', e.target.value)}
+                                                                                                placeholder="e.g. English, Hindi, Spanish"
+                                                                                          />
+                                                                                    </div>
+                                                                                    <div className="form-group">
+                                                                                          <label>Proficiency Level</label>
+                                                                                          <select
+                                                                                                value={langObj.proficiency || 'Fluent'}
+                                                                                                onChange={(e) => updateLanguage(idx, 'proficiency', e.target.value)}
+                                                                                                style={{ width: '100%', padding: '10px 12px', borderRadius: '8px', background: 'rgba(255,255,255,0.06)', color: '#fff', border: '1px solid rgba(255,255,255,0.15)' }}
+                                                                                          >
+                                                                                                <option value="Native / Bilingual" style={{ background: '#1e293b' }}>Native / Bilingual (100%)</option>
+                                                                                                <option value="Fluent" style={{ background: '#1e293b' }}>Fluent (90%)</option>
+                                                                                                <option value="Professional Working" style={{ background: '#1e293b' }}>Professional Working (75%)</option>
+                                                                                                <option value="Intermediate" style={{ background: '#1e293b' }}>Intermediate (60%)</option>
+                                                                                                <option value="Elementary" style={{ background: '#1e293b' }}>Elementary / Basic (40%)</option>
+                                                                                          </select>
+                                                                                    </div>
+                                                                              </div>
+                                                                        </div>
+                                                                  );
+                                                            })
+                                                      )}
                                                 </div>
 
-                                                <div className="form-row">
-                                                      <div className="form-group">
-                                                            <label>Platform Name</label>
+                                                {/* Hobbies & Interests Section */}
+                                                <div style={{ background: 'rgba(255, 255, 255, 0.03)', padding: '18px 20px', borderRadius: '12px', border: '1px solid rgba(255, 255, 255, 0.08)' }}>
+                                                      <h4 style={{ margin: '0 0 6px 0', fontSize: '1.05rem', color: '#f8fafc', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                                                            🎯 Hobbies &amp; Executive Interests
+                                                      </h4>
+                                                      <span style={{ fontSize: '0.8rem', color: 'var(--text-muted)', display: 'block', marginBottom: '14px' }}>
+                                                            Displayed in the left sidebar of your 2-column executive resume
+                                                      </span>
+
+                                                      <div style={{ display: 'flex', gap: '10px', marginBottom: '14px' }}>
                                                             <input
                                                                   type="text"
-                                                                  value={prof.platform}
-                                                                  onChange={(e) => updateCodingProfile(index, 'platform', e.target.value)}
-                                                                  placeholder="LeetCode / Codeforces / GitHub"
+                                                                  value={hobbyInput}
+                                                                  onChange={(e) => setHobbyInput(e.target.value)}
+                                                                  onKeyDown={(e) => {
+                                                                        if (e.key === 'Enter') {
+                                                                              e.preventDefault();
+                                                                              handleAddHobby();
+                                                                        }
+                                                                  }}
+                                                                  placeholder="Type interest (e.g. Strategic Chess, Public Speaking, Golf) and press Enter"
+                                                                  style={{ flex: 1 }}
                                                             />
+                                                            <button type="button" onClick={() => handleAddHobby()} className="btn btn-secondary">
+                                                                  + Add
+                                                            </button>
                                                       </div>
-                                                      <div className="form-group">
-                                                            <label>Profile Link</label>
-                                                            <input
-                                                                  type="url"
-                                                                  value={prof.link}
-                                                                  onChange={(e) => updateCodingProfile(index, 'link', e.target.value)}
-                                                                  placeholder="https://leetcode.com/username"
-                                                            />
+
+                                                      {/* Suggested Hobbies */}
+                                                      <div style={{ marginBottom: '14px' }}>
+                                                            <span style={{ fontSize: '0.78rem', color: 'var(--text-muted)', display: 'block', marginBottom: '6px' }}>
+                                                                  💡 Suggested Interests:
+                                                            </span>
+                                                            <div style={{ display: 'flex', gap: '6px', flexWrap: 'wrap' }}>
+                                                                  {['Strategic Chess', 'Public Speaking', 'Improv Comedy', 'Mentorship & Coaching', 'Golf', 'Financial Market Analysis', 'Marathon Running', 'Case Competitions'].map(h => (
+                                                                        <button
+                                                                              key={h}
+                                                                              type="button"
+                                                                              onClick={() => handleAddHobby(h)}
+                                                                              className="btn btn-sm btn-secondary"
+                                                                              style={{ fontSize: '0.75rem', padding: '3px 8px' }}
+                                                                        >
+                                                                              + {h}
+                                                                        </button>
+                                                                  ))}
+                                                            </div>
+                                                      </div>
+
+                                                      {/* Active Hobbies Badges */}
+                                                      <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
+                                                            {(formData.hobbies || []).map((h, i) => (
+                                                                  <span
+                                                                        key={i}
+                                                                        style={{
+                                                                              display: 'inline-flex',
+                                                                              alignItems: 'center',
+                                                                              gap: '6px',
+                                                                              background: 'rgba(59, 130, 246, 0.15)',
+                                                                              border: '1px solid rgba(59, 130, 246, 0.35)',
+                                                                              color: '#93c5fd',
+                                                                              padding: '4px 10px',
+                                                                              borderRadius: '20px',
+                                                                              fontSize: '0.85rem'
+                                                                        }}
+                                                                  >
+                                                                        {h}
+                                                                        <button
+                                                                              type="button"
+                                                                              onClick={() => handleRemoveHobby(h)}
+                                                                              style={{ background: 'none', border: 'none', color: '#f87171', cursor: 'pointer', padding: 0, fontWeight: 'bold' }}
+                                                                              title="Remove"
+                                                                        >
+                                                                              ✕
+                                                                        </button>
+                                                                  </span>
+                                                            ))}
                                                       </div>
                                                 </div>
-                                                <div className="form-group">
-                                                      <label>Headline / Stats</label>
-                                                      <input
-                                                            type="text"
-                                                            value={prof.headline || ''}
-                                                            onChange={(e) => updateCodingProfile(index, 'headline', e.target.value)}
-                                                            placeholder="Knight Rank (2150 Rating) | 650+ Problems Solved"
-                                                      />
-                                                </div>
-                                          </div>
-                                    ))}
-                                    <button onClick={addCodingProfile} type="button" className="btn btn-secondary">+ Add Platform Profile</button>
+                                          </>
+                                    ) : (
+                                          <>
+                                                <h2>👨‍💻 Step 9: Problem Solving &amp; Coding Profiles</h2>
+                                                <p className="step-description">Add LeetCode, Codeforces, HackerRank, or GitHub profile stats</p>
+                                                {(formData.coding_profiles || []).map((prof, index) => (
+                                                      <div key={index} className="repeatable-item">
+                                                            <div className="repeatable-item-header">
+                                                                  <span className="item-badge">Profile #{index + 1}</span>
+                                                                  <div className="item-reorder-actions">
+                                                                        <button
+                                                                              type="button"
+                                                                              disabled={index === 0}
+                                                                              onClick={() => moveItem('coding_profiles', index, -1)}
+                                                                              className="btn-icon"
+                                                                              title="Move Up"
+                                                                        >
+                                                                              ⬆️
+                                                                        </button>
+                                                                        <button
+                                                                              type="button"
+                                                                              disabled={index === (formData.coding_profiles || []).length - 1}
+                                                                              onClick={() => moveItem('coding_profiles', index, 1)}
+                                                                              className="btn-icon"
+                                                                              title="Move Down"
+                                                                        >
+                                                                              ⬇️
+                                                                        </button>
+                                                                        <button
+                                                                              type="button"
+                                                                              onClick={() => removeCodingProfile(index)}
+                                                                              className="btn-icon btn-icon-danger"
+                                                                              title="Delete"
+                                                                        >
+                                                                              🗑️
+                                                                        </button>
+                                                                  </div>
+                                                            </div>
+
+                                                            <div className="form-row">
+                                                                  <div className="form-group">
+                                                                        <label>Platform Name</label>
+                                                                        <input
+                                                                              type="text"
+                                                                              value={prof.platform}
+                                                                              onChange={(e) => updateCodingProfile(index, 'platform', e.target.value)}
+                                                                              placeholder="LeetCode / Codeforces / GitHub"
+                                                                        />
+                                                                  </div>
+                                                                  <div className="form-group">
+                                                                        <label>Profile Link</label>
+                                                                        <input
+                                                                              type="url"
+                                                                              value={prof.link}
+                                                                              onChange={(e) => updateCodingProfile(index, 'link', e.target.value)}
+                                                                              placeholder="https://leetcode.com/username"
+                                                                        />
+                                                                  </div>
+                                                            </div>
+                                                            <div className="form-group">
+                                                                  <label>Headline / Stats</label>
+                                                                  <input
+                                                                        type="text"
+                                                                        value={prof.headline || ''}
+                                                                        onChange={(e) => updateCodingProfile(index, 'headline', e.target.value)}
+                                                                        placeholder="Knight Rank (2150 Rating) | 650+ Problems Solved"
+                                                                  />
+                                                            </div>
+                                                      </div>
+                                                ))}
+                                                <button onClick={addCodingProfile} type="button" className="btn btn-secondary">+ Add Platform Profile</button>
+                                          </>
+                                    )}
                               </div>
                         )}
 
@@ -1987,14 +2514,17 @@ function ResumeBuilder() {
                                                             📄 Layout Template:
                                                       </label>
                                                       <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
-                                                            {['modern', 'executive', 'tech', 'compact'].map((t) => (
+                                                            {(isBusiness
+                                                                  ? ['business_executive', 'business_timeline', 'executive', 'modern', 'compact']
+                                                                  : ['modern', 'tech', 'business_executive', 'business_timeline', 'executive', 'compact']
+                                                            ).map((t) => (
                                                                   <button
                                                                         key={t}
                                                                         type="button"
                                                                         className={`btn btn-sm ${formData.template_style === t ? 'btn-primary' : 'btn-secondary'}`}
                                                                         onClick={() => handleUpdatePreferences({ template_style: t })}
                                                                   >
-                                                                        {t.charAt(0).toUpperCase() + t.slice(1)}
+                                                                        {t === 'business_executive' ? 'Business 2-Col Executive' : t === 'business_timeline' ? 'Business Timeline' : t.charAt(0).toUpperCase() + t.slice(1)}
                                                                   </button>
                                                             ))}
                                                       </div>

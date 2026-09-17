@@ -65,6 +65,19 @@ class CodingProfile(BaseModel):
     link: Optional[str] = ""
     headline: Optional[str] = ""  # e.g. "Max Rating: 1600" or "5 Star"
 
+class Reference(BaseModel):
+    model_config = ConfigDict(extra='allow')
+    name: Optional[str] = ""
+    company: Optional[str] = ""
+    role: Optional[str] = ""
+    phone: Optional[str] = ""
+    email: Optional[str] = ""
+
+class LanguageItem(BaseModel):
+    model_config = ConfigDict(extra='allow')
+    name: Optional[str] = ""
+    level: Optional[str] = ""  # e.g. "Native", "Fluent", "Professional Working", "Intermediate"
+
 class PDFPreferences(BaseModel):
     model_config = ConfigDict(extra='allow')
     background_color: str = "#ffffff"
@@ -75,6 +88,7 @@ class Resume(BaseModel):
     model_config = ConfigDict(extra='allow')
     id: Optional[str] = None
     user_id: Optional[str] = None
+    track: Optional[str] = "tech"  # "tech" | "business"
     personal_info: PersonalInfo
     education: List[Education]
     experience: List[Experience]
@@ -83,7 +97,9 @@ class Resume(BaseModel):
     certifications: List[Certification]
     achievements: List[Achievement]
     coding_profiles: List[CodingProfile] = []
-    languages: List[str] = []
+    references: List[Reference] = []
+    hobbies: List[str] = []
+    languages: List[Any] = []
     interests: List[str] = []
     custom_sections: List[Dict[str, Any]] = []
     template_style: Optional[str] = "modern"
@@ -100,6 +116,7 @@ class ScoreBreakdown(BaseModel):
 
 class ResumeCreate(BaseModel):
     model_config = ConfigDict(extra='allow')
+    track: Optional[str] = "tech"  # "tech" | "business"
     personal_info: PersonalInfo
     summary: str = ""
     education: List[Education] = []
@@ -109,7 +126,9 @@ class ResumeCreate(BaseModel):
     certifications: List[Certification] = []
     achievements: List[Achievement] = []
     coding_profiles: List[CodingProfile] = []
-    languages: List[str] = []
+    references: List[Reference] = []
+    hobbies: List[str] = []
+    languages: List[Any] = []
     interests: List[str] = []
     custom_sections: List[Dict[str, Any]] = []
     template_style: Optional[str] = "modern"
@@ -117,6 +136,7 @@ class ResumeCreate(BaseModel):
 
 class ResumeUpdate(BaseModel):
     model_config = ConfigDict(extra='allow')
+    track: Optional[str] = None
     personal_info: Optional[PersonalInfo] = None
     summary: Optional[str] = None
     education: Optional[List[Education]] = None
@@ -126,7 +146,9 @@ class ResumeUpdate(BaseModel):
     certifications: Optional[List[Certification]] = None
     achievements: Optional[List[Achievement]] = None
     coding_profiles: Optional[List[CodingProfile]] = None
-    languages: Optional[List[str]] = None
+    references: Optional[List[Reference]] = None
+    hobbies: Optional[List[str]] = None
+    languages: Optional[List[Any]] = None
     interests: Optional[List[str]] = None
     custom_sections: Optional[List[Dict[str, Any]]] = None
     template_style: Optional[str] = None
@@ -136,6 +158,7 @@ class ResumeResponse(BaseModel):
     model_config = ConfigDict(extra='allow')
     id: str
     user_id: str
+    track: Optional[str] = "tech"
     personal_info: PersonalInfo
     summary: str = ""
     education: List[Education] = []
@@ -145,7 +168,9 @@ class ResumeResponse(BaseModel):
     certifications: List[Certification] = []
     achievements: List[Achievement] = []
     coding_profiles: List[CodingProfile] = []
-    languages: List[str] = []
+    references: List[Reference] = []
+    hobbies: List[str] = []
+    languages: List[Any] = []
     interests: List[str] = []
     custom_sections: List[Dict[str, Any]] = []
     template_style: Optional[str] = "modern"

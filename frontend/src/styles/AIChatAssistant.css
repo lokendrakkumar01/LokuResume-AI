@@ -472,6 +472,94 @@
     cursor: not-allowed;
 }
 
+/* Track Pill in Header */
+.track-pill {
+    background: rgba(99, 102, 241, 0.2);
+    border: 1px solid rgba(139, 92, 246, 0.4) !important;
+    color: #a855f7 !important;
+    font-weight: 800 !important;
+    letter-spacing: 0.3px;
+    padding: 3px 9px !important;
+    transition: all 0.2s ease;
+}
+
+.track-pill:hover {
+    background: rgba(139, 92, 246, 0.35);
+    color: #ffffff !important;
+    transform: translateY(-1px);
+}
+
+/* Stream Prompt Interactive Cards */
+.stream-prompt-cards {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    margin-top: 10px;
+    width: 100%;
+}
+
+.stream-choice-card {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 10px 12px;
+    background: rgba(255, 255, 255, 0.05);
+    border: 1.5px solid var(--card-border);
+    border-radius: 12px;
+    cursor: pointer;
+    text-align: left;
+    transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+    position: relative;
+}
+
+.stream-choice-card:hover {
+    background: rgba(99, 102, 241, 0.15);
+    border-color: #6366f1;
+    transform: translateY(-2px);
+}
+
+.stream-choice-card.selected {
+    background: linear-gradient(135deg, rgba(99, 102, 241, 0.25) 0%, rgba(168, 85, 247, 0.2) 100%);
+    border-color: #8b5cf6;
+    box-shadow: 0 4px 15px rgba(139, 92, 246, 0.25);
+}
+
+.choice-icon {
+    font-size: 1.5rem;
+    flex-shrink: 0;
+}
+
+.choice-info {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+}
+
+.choice-title {
+    font-size: 0.88rem;
+    font-weight: 700;
+    color: var(--text-main);
+}
+
+.choice-desc {
+    font-size: 0.72rem;
+    color: var(--text-muted);
+    margin-top: 2px;
+}
+
+.choice-check {
+    font-size: 0.85rem;
+    font-weight: 900;
+    color: #10b981;
+    background: rgba(16, 185, 129, 0.15);
+    border-radius: 50%;
+    width: 20px;
+    height: 20px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
 /* Mobile Screen Adaptations */
 @media (max-width: 768px) {
     .ai-chat-assistant-root {

@@ -392,3 +392,99 @@
         white-space: nowrap;
     }
 }
+
+/* Stream Track Banner (Tech vs Business) */
+.stream-track-banner {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    background: linear-gradient(135deg, rgba(30, 41, 59, 0.7) 0%, rgba(15, 23, 42, 0.85) 100%);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: var(--radius-md, 12px);
+    padding: 12px 18px;
+    margin-bottom: 20px;
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.25);
+    flex-wrap: wrap;
+    gap: 12px;
+}
+
+.stream-track-info {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+
+.track-badge-icon {
+    font-size: 1.8rem;
+    width: 44px;
+    height: 44px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: rgba(255, 255, 255, 0.06);
+    border-radius: 10px;
+    border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.track-badge-title {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 1rem;
+    color: #f8fafc;
+}
+
+.track-pill-status {
+    font-size: 0.7rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    background: rgba(16, 185, 129, 0.2);
+    color: #34d399;
+    border: 1px solid rgba(16, 185, 129, 0.4);
+    padding: 2px 8px;
+    border-radius: 12px;
+}
+
+.track-badge-sub {
+    font-size: 0.8rem;
+    color: #94a3b8;
+    margin: 2px 0 0 0;
+}
+
+.stream-track-toggle-btns {
+    display: flex;
+    gap: 8px;
+    background: rgba(0, 0, 0, 0.3);
+    padding: 4px;
+    border-radius: 10px;
+    border: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.track-switch-btn {
+    padding: 7px 14px;
+    border-radius: 8px;
+    font-size: 0.82rem;
+    font-weight: 600;
+    cursor: pointer;
+    background: transparent;
+    border: none;
+    color: #94a3b8;
+    transition: all 0.2s ease;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+}
+
+.track-switch-btn:hover {
+    color: #f1f5f9;
+    background: rgba(255, 255, 255, 0.05);
+}
+
+.track-switch-btn.active {
+    background: linear-gradient(135deg, #6366f1 0%, #4f46e5 100%);
+    color: #ffffff;
+    box-shadow: 0 2px 8px rgba(79, 70, 229, 0.4);
+}

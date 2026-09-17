@@ -6,6 +6,7 @@ class UserSignup(BaseModel):
     name: str
     email: EmailStr
     password: str
+    track: Optional[str] = "tech"  # "tech" | "business"
 
 class UserLogin(BaseModel):
     email: EmailStr
@@ -16,12 +17,16 @@ class UserResponse(BaseModel):
     name: str
     email: str
     role: Optional[str] = "user"
+    track: Optional[str] = "tech"
     created_at: datetime
 
 class TokenResponse(BaseModel):
     access_token: str
     token_type: str = "bearer"
     user: UserResponse
+
+class TrackUpdateRequest(BaseModel):
+    track: str  # "tech" | "business"
 
 class AdminLoginRequest(BaseModel):
     email: EmailStr

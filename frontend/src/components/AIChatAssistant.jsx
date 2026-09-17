@@ -1,40 +1,57 @@
 import React, { useState, useEffect, useRef } from 'react';
 import axios from 'axios';
+import { useAuth } from '../context/AuthContext';
 import config from '../config';
 import '../styles/AIChatAssistant.css';
 
 const MESSAGES_BY_LANG = {
       hi: {
-            welcome: "👋 नमस्ते! मैं आपका **LokiResume AI करियर और ATS कोच** हूँ।\n\nमैं आपकी मदद कर सकता हूँ:\n• 🎯 अपना ATS स्कोर 90%+ तक ले जाने में\n• ✍️ Google XYZ फॉर्मूला से दमदार बुलेट पॉइंट्स लिखने में\n• 💼 इंडस्ट्री की टॉप स्किल्स चुनने में\n• 🎙️ आप नीचे दिए गए माइक बटन को दबाकर हिंदी में बोलकर भी सवाल पूछ सकते हैं!",
+            welcome: "👋 नमस्ते! मैं आपका **LokiResume AI करियर और ATS कोच** हूँ।\n\nमैं आपकी मदद कर सकता हूँ:\n• 🎯 अपना ATS स्कोर 90%+ तक ले जाने में\n• ✍️ Google XYZ फॉर्मूला से असरदार बुलेट पॉइंट्स लिखने में\n• 💼 Tech और Business दोनों के लिए कस्टमाइज्ड टूल्स\n• 🎙️ आप नीचे दिए गए माइक बटन को दबाकर हिंदी में बोलकर भी सवाल पूछ सकते हैं!",
             placeholder: "माइक 🎙️ दबाकर बोलें या सवाल टाइप करें...",
             listening: "सुन रहा हूँ... अब बोलिए (हिंदी या इंग्लिश)",
-            chips: [
+            chipsTech: [
                   "🚀 शुरुआत कैसे करें? (गाइड)",
                   "🎯 ATS स्कोर 90%+ कैसे करें?",
                   "✍️ सॉफ्टवेयर इंजीनियर की समरी लिखो",
                   "💡 5 दमदार एक्शन वर्ब्स",
                   "🔍 ATS Job Matcher कैसे इस्तेमाल करें?",
-                  "🛡️ साइबर सिक्योरिटी के लिए स्किल्स"
+                  "🛡️ LeetCode और GitHub प्रोफाइल्स"
+            ],
+            chipsBusiness: [
+                  "💼 बिजनेस समरी कैसे लिखें?",
+                  "🎯 ATS स्कोर 90%+ कैसे करें?",
+                  "🤝 रेफरेंसेज (References) कैसे जोड़ें?",
+                  "📊 टॉप 10 बिजनेस स्किल्स",
+                  "🌟 Michael Scott टेम्पलेट कैसे इस्तेमाल करें?",
+                  "🗣️ भाषाएं व हॉबीज (Languages & Hobbies)"
             ],
             fallbackDefault: "ATS स्कोर 90%+ करने के लिए अपने हर प्रोजेक्ट में संख्या (Numbers) जोड़ें और जॉब पोस्टिंग से 10+ मुख्य स्किल्स शामिल करें!",
             fallbackVerbs: "पावरफुल वर्ब्स का उपयोग करें: Architected, Spearheaded, Automated, Engineered, Streamlined. 'Worked on' जैसे कमज़ोर शब्द न लिखें।",
-            fallbackSummary: "समरी फॉर्मूला: [अनुभव के वर्ष / रोल] + [प्रमुख टेक्नोलॉजीज़] + [ठोस उपलब्धि]। 40 से 80 शब्दों में रखें।"
+            fallbackSummary: "समरी फॉर्मूला: [अनुभव के वर्ष / रोल] + [प्रमुख टेक्नोलॉजीज़ या बिजनेस डोमेन] + [ठोस उपलब्धि]। 40 से 80 शब्दों में रखें।"
       },
       en: {
-            welcome: "👋 Hi! I'm your **LokiResume AI Career & ATS Coach**.\n\nI can help you:\n• 🎯 Optimize your ATS Score to 90%+\n• ✍️ Write high-impact bullet points with numbers\n• 💼 Recommend in-demand tech skills\n• 🎙️ You can also speak to me in English using the microphone button!",
+            welcome: "👋 Hi! I'm your **LokiResume AI Career & ATS Coach**.\n\nI can help you:\n• 🎯 Optimize your ATS Score to 90%+\n• ✍️ Write high-impact bullet points with numbers\n• 💼 Tailor tools for Tech & Business students\n• 🎙️ You can also speak to me in English using the microphone button!",
             placeholder: "Speak with mic 🎙️ or type your question...",
             listening: "Listening... Speak your question now",
-            chips: [
+            chipsTech: [
                   "🚀 How to get started? (Guide)",
                   "🎯 How to get 90%+ ATS Score?",
                   "✍️ Write summary for Full Stack Engineer",
                   "💡 5 high-impact action verbs",
                   "🔍 How to use ATS Job Matcher?",
-                  "🛡️ Skills for Cybersecurity Analyst"
+                  "🛡️ LeetCode & GitHub profile tips"
             ],
-            fallbackDefault: "Quantify your achievements with numbers (e.g. 'reduced latency by 40%') and match 10+ core keywords from the job description for a 90%+ ATS score!",
-            fallbackVerbs: "Use power verbs: Spearheaded, Architected, Automated, Streamlined, and Engineered. Avoid generic terms like 'worked on'.",
-            fallbackSummary: "Summary Formula: [Years of Experience / Role] + [Key Technologies] + [Proven High-Impact Metric]. Keep it between 40-90 words."
+            chipsBusiness: [
+                  "💼 How to write Executive Summary?",
+                  "🎯 How to get 90%+ ATS Score?",
+                  "🤝 How to format References properly?",
+                  "📊 Top 10 Business & Management Skills",
+                  "🌟 How to use Michael Scott Executive template?",
+                  "🗣️ Languages & Hobbies formatting"
+            ],
+            fallbackDefault: "Quantify your achievements with numbers (e.g. 'reduced costs by 25%' or 'improved latency by 40%') and match 10+ core keywords for a 90%+ ATS score!",
+            fallbackVerbs: "Use power verbs: Spearheaded, Negotiated, Optimized, Streamlined, Orchestrated, and Engineered. Avoid generic terms like 'worked on'.",
+            fallbackSummary: "Summary Formula: [Years of Experience / Role] + [Key Business or Tech Domain] + [Proven High-Impact Metric]. Keep it between 40-90 words."
       }
 };
 
@@ -57,6 +74,7 @@ const generateOnboardingGuide = (userName, targetLang) => {
 };
 
 function AIChatAssistant() {
+      const { studentTrack, setStudentTrack, user } = useAuth();
       const [isOpen, setIsOpen] = useState(false);
       const [language, setLanguage] = useState(() => {
             return localStorage.getItem('ai_chat_lang') || 'hi';
@@ -109,6 +127,61 @@ function AIChatAssistant() {
             };
             setMessages((prev) => [...prev, switchMsg]);
             speakText(switchMsg.text, newLang);
+      };
+
+      // Trigger Stream Selection Onboarding Guide & Voice
+      const triggerStreamWelcome = (targetLang) => {
+            const currentLang = targetLang || language;
+            const isHi = currentLang === 'hi';
+
+            setIsOpen(true);
+            const promptMsg = {
+                  sender: 'ai',
+                  isStreamPrompt: true,
+                  text: isHi
+                        ? "👋 **नमस्ते! LokuResume AI में आपका स्वागत है।** 🎓\n\nआप अपना रेज़्युमे किस स्ट्रीम के लिए बनाना चाहते हैं?\n• 💻 **Tech Student / Developer**: LeetCode, GitHub, कोड प्रोजेक्ट्स, टेक्निकल स्किल्स\n• 💼 **Business Student / Executive**: Michael Scott 2-कॉलम लेआउट, रेफरेंसेज, मैनेजमेंट स्किल्स\n\nनीचे दिए गए विकल्प को चुनें या बोलकर बताएं (जैसे: 'Business' या 'Tech')!"
+                        : "👋 **Welcome to LokuResume AI!** 🎓\n\nWhich stream are you building your resume for?\n• 💻 **Tech Student / Developer**: LeetCode, GitHub, coding projects, tech stacks\n• 💼 **Business Student / Executive**: 2-Column Executive layout, References, Hobbies, P&L skills\n\nTap an option below or speak your choice (e.g. 'Business' or 'Tech')!",
+                  speech: isHi
+                        ? "नमस्ते! LokuResume AI में आपका स्वागत है। क्या आप बिजनेस के छात्र हैं या टेक के छात्र हैं? नीचे दिए गए विकल्प पर टैप करें या बोलकर बताएं।"
+                        : "Welcome to LokuResume AI! Are you a Business student or a Tech student? Please tap an option below or speak your choice.",
+                  timestamp: new Date()
+            };
+
+            setMessages((prev) => [...prev, promptMsg]);
+            setTimeout(() => {
+                  speakText(promptMsg.speech, currentLang);
+            }, 600);
+      };
+
+      const handleSelectStream = (chosenTrack) => {
+            if (setStudentTrack) {
+                  setStudentTrack(chosenTrack);
+            }
+            const isHi = language === 'hi';
+            const confirmMsg = chosenTrack === 'business'
+                  ? {
+                        sender: 'ai',
+                        text: isHi
+                              ? "💼 **बिजनेस (Business / Executive) स्ट्रीम चुन लिया गया है!**\n\n✨ आपके लिए एक्टिवेट किया गया:\n• 🌟 Michael Scott 2-कॉलम एग्जीक्यूटिव टेम्पलेट\n• 🤝 रेफरेंसेज (References) और मैनेजमेंट स्किल्स\n• 🌐 भाषाएं (Languages) व हॉबीज (Hobbies)\n\nअब आप 'Create Resume' दबाकर या '1-Click Sample' से तुरंत शुरू कर सकते हैं!"
+                              : "💼 **Business / Executive Stream Selected!**\n\n✨ Activated for you:\n• 🌟 Michael Scott 2-Column Executive Template\n• 🤝 References section & Business Management Skills\n• 🌐 Language proficiencies & Hobbies\n\nYou can now start building your executive resume!",
+                        speech: isHi
+                              ? "बिजनेस स्ट्रीम चुन लिया गया है! आपके लिए दो कॉलम एग्जीक्यूटिव टेम्पलेट और रेफरेंस टूल्स एक्टिवेट कर दिए गए हैं।"
+                              : "Business stream selected! The executive two-column template and business tools have been activated for you.",
+                        timestamp: new Date()
+                  }
+                  : {
+                        sender: 'ai',
+                        text: isHi
+                              ? "💻 **टेक (Tech / Developer) स्ट्रीम चुन लिया गया है!**\n\n✨ आपके लिए एक्टिवेट किया गया:\n• 🛡️ LeetCode, GitHub और कोड प्रोफाइल्स\n• 🚀 फुल-स्टैक और सॉफ्टवेयर प्रोजेक्ट्स\n• 🎯 90%+ ATS स्कोरिंग और टेक्निकल स्किल्स\n\nअब आप 'Create Resume' दबाकर या '1-Click Sample' से तुरंत शुरू कर सकते हैं!"
+                              : "💻 **Tech / Developer Stream Selected!**\n\n✨ Activated for you:\n• 🛡️ LeetCode, GitHub & Coding profiles\n• 🚀 Full-stack & Software engineering projects\n• 🎯 90%+ ATS scoring with technical keywords\n\nYou can now start building your developer resume!",
+                        speech: isHi
+                              ? "टेक स्ट्रीम चुन लिया गया है! आपके लिए कोडिंग प्रोफाइल्स और टेक्निकल स्किल्स एक्टिवेट कर दिए गए हैं।"
+                              : "Tech stream selected! Coding profiles and technical skills tools have been activated for you.",
+                        timestamp: new Date()
+                  };
+
+            setMessages((prev) => [...prev, confirmMsg]);
+            speakText(confirmMsg.speech, language);
       };
 
       // Setup Speech Recognition with dynamic language
@@ -185,7 +258,20 @@ function AIChatAssistant() {
                   triggerVoiceGuide(userName, language);
             };
 
+            const handleStreamWelcomeEvent = () => {
+                  triggerStreamWelcome(language);
+            };
+
             window.addEventListener('trigger-loku-ai-guide', handleGuideEvent);
+            window.addEventListener('trigger-stream-welcome', handleStreamWelcomeEvent);
+
+            // Check if stream welcome was requested in sessionStorage
+            if (sessionStorage.getItem('loku_stream_welcome_trigger')) {
+                  sessionStorage.removeItem('loku_stream_welcome_trigger');
+                  setTimeout(() => {
+                        triggerStreamWelcome(language);
+                  }, 800);
+            }
 
             // Check if user just logged in or registered
             const pendingGuide = sessionStorage.getItem('loku_ai_guide_trigger');
@@ -203,6 +289,7 @@ function AIChatAssistant() {
 
             return () => {
                   window.removeEventListener('trigger-loku-ai-guide', handleGuideEvent);
+                  window.removeEventListener('trigger-stream-welcome', handleStreamWelcomeEvent);
             };
       }, [language]);
 
@@ -271,6 +358,40 @@ function AIChatAssistant() {
       const handleSend = async (messageText) => {
             const query = (messageText || inputText).trim();
             if (!query || loading) return;
+
+            const lower = query.toLowerCase();
+
+            // Stream selection voice/chat intercept
+            if (lower.includes('business') || lower.includes('बिजनेस') || lower.includes('mba') || lower.includes('मैनेजमेंट') || lower.includes('sales')) {
+                  const userMsg = { sender: 'user', text: query, timestamp: new Date() };
+                  setMessages((prev) => [...prev, userMsg]);
+                  setInputText('');
+                  handleSelectStream('business');
+                  return;
+            }
+            if (lower.includes('tech') || lower.includes('टेक') || lower.includes('developer') || lower.includes('coding') || lower.includes('सॉफ्टवेयर') || lower.includes('इंजीनियरिंग')) {
+                  const userMsg = { sender: 'user', text: query, timestamp: new Date() };
+                  setMessages((prev) => [...prev, userMsg]);
+                  setInputText('');
+                  handleSelectStream('tech');
+                  return;
+            }
+
+            // Language switch voice/chat intercept
+            if (lower.includes('switch to hindi') || lower.includes('हिंदी में बोलो') || lower.includes('hindi please') || lower === 'हिंदी' || lower === 'hindi') {
+                  const userMsg = { sender: 'user', text: query, timestamp: new Date() };
+                  setMessages((prev) => [...prev, userMsg]);
+                  setInputText('');
+                  handleLanguageChange('hi');
+                  return;
+            }
+            if (lower.includes('switch to english') || lower.includes('speak english') || lower.includes('english please') || lower === 'english') {
+                  const userMsg = { sender: 'user', text: query, timestamp: new Date() };
+                  setMessages((prev) => [...prev, userMsg]);
+                  setInputText('');
+                  handleLanguageChange('en');
+                  return;
+            }
 
             const userMsg = {
                   sender: 'user',
@@ -355,6 +476,16 @@ function AIChatAssistant() {
                                     </div>
 
                                     <div className="ai-header-controls">
+                                           {/* Stream Track Switcher */}
+                                           <button
+                                                 type="button"
+                                                 className="lang-pill track-pill"
+                                                 onClick={() => handleSelectStream(studentTrack === 'business' ? 'tech' : 'business')}
+                                                 title={language === 'hi' ? 'ट्रैक बदलें (Tech / Business)' : 'Switch Stream (Tech / Business)'}
+                                           >
+                                                 {studentTrack === 'business' ? '💼 Biz' : '💻 Tech'}
+                                           </button>
+
                                            {/* Language Selector Switcher */}
                                           <div className="ai-lang-switcher" title="Select Voice & Chat Language">
                                                 <button
@@ -433,6 +564,34 @@ function AIChatAssistant() {
                                                                   </p>
                                                             ))}
                                                       </div>
+                                                      {m.isStreamPrompt && (
+                                                            <div className="stream-prompt-cards">
+                                                                  <button
+                                                                        type="button"
+                                                                        className={`stream-choice-card ${studentTrack === 'tech' ? 'selected' : ''}`}
+                                                                        onClick={() => handleSelectStream('tech')}
+                                                                  >
+                                                                        <span className="choice-icon">💻</span>
+                                                                        <div className="choice-info">
+                                                                              <span className="choice-title">Tech / Developer</span>
+                                                                              <span className="choice-desc">{language === 'hi' ? 'LeetCode, GitHub, कोडिंग प्रोजेक्ट्स' : 'LeetCode, GitHub, Coding Projects'}</span>
+                                                                        </div>
+                                                                        {studentTrack === 'tech' && <span className="choice-check">✓</span>}
+                                                                  </button>
+                                                                  <button
+                                                                        type="button"
+                                                                        className={`stream-choice-card ${studentTrack === 'business' ? 'selected' : ''}`}
+                                                                        onClick={() => handleSelectStream('business')}
+                                                                  >
+                                                                        <span className="choice-icon">💼</span>
+                                                                        <div className="choice-info">
+                                                                              <span className="choice-title">Business / Executive</span>
+                                                                              <span className="choice-desc">{language === 'hi' ? 'Michael Scott 2-कॉलम, रेफरेंसेज, मैनेजमेंट' : '2-Col Executive, References, Management'}</span>
+                                                                        </div>
+                                                                        {studentTrack === 'business' && <span className="choice-check">✓</span>}
+                                                                  </button>
+                                                            </div>
+                                                      )}
                                                       {m.sender === 'ai' && (
                                                             <button
                                                                   className="read-aloud-btn"
@@ -475,7 +634,7 @@ function AIChatAssistant() {
 
                               {/* Quick Suggestions Chips */}
                               <div className="ai-prompt-chips">
-                                    {langConfig.chips.map((chip, cIdx) => (
+                                    {((studentTrack === 'business' ? langConfig.chipsBusiness : langConfig.chipsTech) || []).map((chip, cIdx) => (
                                           <button
                                                 key={cIdx}
                                                 className="chip-btn"
