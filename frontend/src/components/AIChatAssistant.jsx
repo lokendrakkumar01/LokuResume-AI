@@ -106,11 +106,13 @@ function AIChatAssistant() {
       const [loading, setLoading] = useState(false);
       const [isListening, setIsListening] = useState(false);
       const [isSpeaking, setIsSpeaking] = useState(false);
+      const [speakingIdx, setSpeakingIdx] = useState(null);
       const [voiceEnabled, setVoiceEnabled] = useState(true);
 
       const messagesEndRef = useRef(null);
       const recognitionRef = useRef(null);
       const voicesRef = useRef([]);
+      const speakHeartbeatRef = useRef(null);
 
       // Preload SpeechSynthesis Voices
       useEffect(() => {
@@ -342,18 +344,32 @@ function AIChatAssistant() {
       }, [language, studentTrack, user]);
 
       // Text-to-Speech Audio Playback with voice selection
-      const speakText = (text, targetLang) => {
-            if (!voiceEnabled || !('speechSynthesis' in window) || !text) return;
+      // Text-to-Speech Audio Playback with voice selection and heartbeat
+      const stopSpeaking = () => {
+            if (typeof window !== 'undefined' && 'speechSynthesis' in window) {
+                  window.speechSynthesis.cancel();
+            }
+            if (speakHeartbeatRef.current) {
+                  clearInterval(speakHeartbeatRef.current);
+                  speakHeartbeatRef.current = null;
+            }
+            setIsSpeaking(false);
+            setSpeakingIdx(null);
+      };
+
+      const speakText = (text, targetLang, msgIndex = null) => {
+            if (!voiceEnabled || typeof window === 'undefined' || !('speechSynthesis' in window) || !text) return;
 
             try {
-                  window.speechSynthesis.cancel(); // stop any previous speech
+                  stopSpeaking(); // stop any previous speech cleanly
 
-                  // Strip markdown asterisks and bullets for smooth reading
+                  // Strip markdown asterisks, hashes, brackets and bullets for natural audio reading
                   const cleanText = text
                         .replace(/\*\*/g, '')
                         .replace(/[•#_*`]/g, '')
                         .replace(/\[([^\]]+)\]\([^)]+\)/g, '$1')
                         .replace(/\n+/g, '. ')
+                        .replace(/\s+/g, ' ')
                         .trim();
 
                   if (!cleanText) return;
@@ -384,30 +400,40 @@ function AIChatAssistant() {
                         }
                   }
 
-                  utterance.onstart = () => setIsSpeaking(true);
-                  utterance.onend = () => setIsSpeaking(false);
+                  utterance.onstart = () => {
+                        setIsSpeaking(true);
+                        setSpeakingIdx(msgIndex !== null ? msgIndex : null);
+                        // Heartbeat to prevent browser audio pause bug during long sentences
+                        if (speakHeartbeatRef.current) clearInterval(speakHeartbeatRef.current);
+                        speakHeartbeatRef.current = setInterval(() => {
+                              if (window.speechSynthesis && window.speechSynthesis.speaking) {
+                                    window.speechSynthesis.pause();
+                                    window.speechSynthesis.resume();
+                              } else {
+                                    stopSpeaking();
+                              }
+                        }, 9000);
+                  };
+
+                  utterance.onend = () => {
+                        stopSpeaking();
+                  };
+
                   utterance.onerror = (e) => {
                         console.warn('Speech synthesis ended:', e);
-                        setIsSpeaking(false);
+                        stopSpeaking();
                   };
 
                   setTimeout(() => {
                         try {
                               window.speechSynthesis.speak(utterance);
                         } catch (err) {
-                              setIsSpeaking(false);
+                              stopSpeaking();
                         }
-                  }, 40);
+                  }, 50);
             } catch (err) {
                   console.warn('Speech error:', err);
-                  setIsSpeaking(false);
-            }
-      };
-
-      const stopSpeaking = () => {
-            if ('speechSynthesis' in window) {
-                  window.speechSynthesis.cancel();
-                  setIsSpeaking(false);
+                  stopSpeaking();
             }
       };
 
@@ -430,21 +456,24 @@ function AIChatAssistant() {
       };
 
       const handleSend = async (messageText) => {
-            const query = (messageText || inputText).trim();
-            if (!query || loading) return;
+            const rawText = (messageText || inputText).trim();
+            if (!rawText || loading) return;
 
+            // Clean leading emojis and bullet symbols for clean processing
+            const cleanText = rawText.replace(/^[\p{Emoji}\s•💡⚠️🚀✍️🛡️💼🤝📊🌟🎯]+/u, '').trim();
+            const query = cleanText || rawText;
             const lower = query.toLowerCase();
 
             // Stream selection voice/chat intercept
             if (lower.includes('business') || lower.includes('बिजनेस') || lower.includes('mba') || lower.includes('मैनेजमेंट') || lower.includes('sales')) {
-                  const userMsg = { sender: 'user', text: query, timestamp: new Date() };
+                  const userMsg = { sender: 'user', text: rawText, timestamp: new Date() };
                   setMessages((prev) => [...prev, userMsg]);
                   setInputText('');
                   handleSelectStream('business');
                   return;
             }
             if (lower.includes('tech') || lower.includes('टेक') || lower.includes('developer') || lower.includes('coding') || lower.includes('सॉफ्टवेयर') || lower.includes('इंजीनियरिंग')) {
-                  const userMsg = { sender: 'user', text: query, timestamp: new Date() };
+                  const userMsg = { sender: 'user', text: rawText, timestamp: new Date() };
                   setMessages((prev) => [...prev, userMsg]);
                   setInputText('');
                   handleSelectStream('tech');
@@ -453,14 +482,14 @@ function AIChatAssistant() {
 
             // Language switch voice/chat intercept
             if (lower.includes('switch to hindi') || lower.includes('हिंदी में बोलो') || lower.includes('hindi please') || lower === 'हिंदी' || lower === 'hindi') {
-                  const userMsg = { sender: 'user', text: query, timestamp: new Date() };
+                  const userMsg = { sender: 'user', text: rawText, timestamp: new Date() };
                   setMessages((prev) => [...prev, userMsg]);
                   setInputText('');
                   handleLanguageChange('hi');
                   return;
             }
             if (lower.includes('switch to english') || lower.includes('speak english') || lower.includes('english please') || lower === 'english') {
-                  const userMsg = { sender: 'user', text: query, timestamp: new Date() };
+                  const userMsg = { sender: 'user', text: rawText, timestamp: new Date() };
                   setMessages((prev) => [...prev, userMsg]);
                   setInputText('');
                   handleLanguageChange('en');
@@ -474,7 +503,7 @@ function AIChatAssistant() {
 
             const userMsg = {
                   sender: 'user',
-                  text: query,
+                  text: rawText,
                   timestamp: new Date()
             };
 
@@ -488,51 +517,87 @@ function AIChatAssistant() {
                   const response = await axios.post(
                         `${config.API_BASE_URL}/ai/chat-assist`,
                         { message: query, language: activeLang, track: studentTrack || 'tech' },
-                        { timeout: 8000 }
+                        { timeout: 9000 }
                   );
 
                   const aiReply = response.data.reply;
+                  const aiSpeech = response.data.speech || aiReply;
                   const aiMsg = {
                         sender: 'ai',
                         text: aiReply,
+                        speech: aiSpeech,
                         suggestions: response.data.suggestions || [],
                         timestamp: new Date()
                   };
 
-                  setMessages((prev) => [...prev, aiMsg]);
-                  speakText(aiReply, activeLang);
+                  setMessages((prev) => {
+                        const newMsgs = [...prev, aiMsg];
+                        const newIdx = newMsgs.length - 1;
+                        setTimeout(() => speakText(aiSpeech, activeLang, newIdx), 60);
+                        return newMsgs;
+                  });
             } catch (error) {
-                  const fallbacks = MESSAGES_BY_LANG[activeLang];
                   const isBiz = (studentTrack || '').toLowerCase() === 'business';
-                  let fallbackReply = fallbacks.fallbackDefault;
+                  const isHi = activeLang === 'hi';
+                  let fallbackReply = "";
+                  let fallbackSpeech = "";
 
-                  if (query.toLowerCase().includes('score') || query.toLowerCase().includes('ats') || query.includes('स्कोर') || query.includes('badhaye')) {
+                  if (query.includes('वर्ब') || query.includes('एक्शन') || lower.includes('verb') || lower.includes('action')) {
                         if (isBiz) {
-                              fallbackReply = activeLang === 'hi'
-                                    ? "बिजनेस रेज़्युमे में 90%+ ATS स्कोर पाने के लिए: 1. वर्क एक्सपीरियंस में P&L और 35% सेल्स ग्रोथ जैसे आंकड़े अवश्य लिखें। 2. 50-80 शब्दों की मजबूत एग्जीक्यूटिव समरी बनाएं। 3. स्टेप 4 में स्ट्रैटेजिक प्लानिंग और CRM स्किल्स जोड़ें। 4. स्टेप 5 में प्रोफेशनल रेफरेंस जोड़ें।"
-                                    : "To achieve 90%+ ATS score in Business: 1. Quantify work experience with P&L and sales growth metrics. 2. Write a 50-80 word executive summary. 3. Add Strategic Planning, CRM, and Leadership skills. 4. Include corporate references in Step 5.";
+                              fallbackReply = isHi
+                                    ? "💼 **बिजनेस एक्शन वर्ब्स**: Spearheaded (नेतृत्व किया), Negotiated (सौदा क्लोज किया), Optimized (प्रॉफिट सुधारा), Expanded (विस्तार किया), Orchestrated (टीम संचालन किया)।"
+                                    : "💼 **Business Action Verbs**: Spearheaded, Negotiated, Optimized, Expanded, and Orchestrated.";
+                              fallbackSpeech = isHi
+                                    ? "बिजनेस के लिए 5 एक्शन वर्ब्स हैं: Spearheaded, Negotiated, Optimized, Expanded, और Orchestrated."
+                                    : "Top executive verbs are Spearheaded, Negotiated, Optimized, and Orchestrated.";
                         } else {
-                              fallbackReply = activeLang === 'hi'
-                                    ? "टेक रेज़्युमे में 90%+ ATS स्कोर पाने के लिए: 1. स्टेप 4 में React, Python, Docker जैसे कोर टेक स्किल्स जोड़ें। 2. LeetCode और GitHub प्रोफाइल्स लिंक करें। 3. प्रोजेक्ट्स में लेटेंसी कम करने और स्केल के आंकड़े लिखें।"
-                                    : "To achieve 90%+ ATS score in Tech: 1. Add core languages and frameworks in Step 4. 2. Link LeetCode and GitHub profiles. 3. Quantify project impact with metrics like 40% latency reduction.";
+                              fallbackReply = isHi
+                                    ? "💻 **टेक एक्शन वर्ब्स**: Architected (सिस्टम डिज़ाइन किया), Spearheaded (माइग्रेशन लीड किया), Automated (CI/CD ऑटोमेशन), Engineered (APIs बनाईं), Scaled (लेटेंसी कम की)।"
+                                    : "💻 **Tech Action Verbs**: Architected, Spearheaded, Automated, Engineered, and Scaled.";
+                              fallbackSpeech = isHi
+                                    ? "टेक के लिए 5 एक्शन वर्ब्स हैं: Architected, Spearheaded, Automated, Engineered, और Scaled."
+                                    : "Top technical action verbs are Architected, Spearheaded, Automated, Engineered, and Scaled.";
                         }
-                  } else if (query.toLowerCase().includes('verb') || query.toLowerCase().includes('action') || query.includes('वर्ब')) {
-                        fallbackReply = isBiz
-                              ? (activeLang === 'hi' ? "बिजनेस एक्शन वर्ब्स: Spearheaded (नेतृत्व किया), Negotiated (सौदा तय किया), Optimized (प्रॉफिट सुधारा), Expanded (विस्तार किया), Orchestrated (संचालित किया)।" : "Executive action verbs: Spearheaded, Negotiated, Optimized, Expanded, Orchestrated, and Forecasted.")
-                              : fallbacks.fallbackVerbs;
-                  } else if (query.toLowerCase().includes('summary') || query.includes('समरी')) {
-                        fallbackReply = isBiz
-                              ? (activeLang === 'hi' ? "एग्जीक्यूटिव समरी फॉर्मूला: [वर्षों का अनुभव + पद] + [P&L / ऑपरेशंस डोमेन] + [बड़ी बिजनेस सफलता]। जैसे: '10+ वर्षों के अनुभव वाले रिजल्ट-ओरिएंटेड रीजनल मैनेजर जिन्होंने ब्रांच प्रॉफिट में 140% की वृद्धि की।'" : "Executive Summary Formula: [Years of Experience / Title] + [P&L / Sales Domain] + [High-Impact Business Metric]. e.g. 'Dynamic Regional Manager with 10+ years driving branch operations and delivering 140% sales quota.'")
-                              : fallbacks.fallbackSummary;
+                  } else if (query.includes('समरी') || lower.includes('summary')) {
+                        if (isBiz) {
+                              fallbackReply = isHi
+                                    ? "👔 **बिजनेस एग्जीक्यूटिव समरी**: 'परिणाम-उन्मुख बिजनेस लीडर, जिन्हें P&L मैनेजमेंट, ब्रांच ऑपरेशंस और B2B सेल्स का 8+ वर्षों का अनुभव है। सालाना रेवेन्यू में 140% की वृद्धि दर्ज की।'"
+                                    : "👔 **Business Executive Summary**: 'Dynamic Business Executive with 8+ years experience in P&L management, branch operations, and enterprise sales delivering 140% quota.'";
+                        } else {
+                              fallbackReply = isHi
+                                    ? "💻 **सॉफ्टवेयर इंजीनियर समरी**: 'अनुभवी सॉफ्टवेयर इंजीनियर, जिन्हें स्केलेबल वेब ऐप्स, माइक्रोसर्विसेज और क्लाउड का 3+ वर्षों का अनुभव है। API लेटेंसी को 40% कम करने का ट्रैक रिकॉर्ड।'"
+                                    : "💻 **Software Engineer Summary**: 'Innovative Software Engineer with 3+ years experience engineering microservices, reducing API latency by 40% with React, Node, and Python.'";
+                        }
+                  } else if (query.includes('स्कोर') || lower.includes('score') || lower.includes('ats')) {
+                        if (isBiz) {
+                              fallbackReply = isHi
+                                    ? "🎯 **बिजनेस ATS स्कोर 90%+**: 1. P&L व 35% सेल्स ग्रोथ आंकड़े लिखें। 2. स्ट्रैटेजिक प्लानिंग व CRM स्किल्स जोड़ें। 3. Step 5 में रेफरेंसेस दें। 4. Michael Scott 2-कॉलम लेआउट चुनें।"
+                                    : "🎯 **Business 90%+ ATS Score**: 1. Quantify P&L and revenue metrics. 2. Add Strategic Planning & CRM skills. 3. Include references in Step 5.";
+                        } else {
+                              fallbackReply = isHi
+                                    ? "🎯 **टेक ATS स्कोर 90%+**: 1. Google XYZ फॉर्मूले से लेटेंसी व आंकड़े लिखें। 2. 10-15 टेक स्किल्स जोड़ें। 3. LeetCode व GitHub लिंक दें। 4. ATS मैचर टूल चलाएं।"
+                                    : "🎯 **Tech 90%+ ATS Score**: 1. Use Google XYZ formula with numbers. 2. Match 10-15 core skills. 3. Add GitHub and LeetCode links.";
+                        }
+                  } else {
+                        fallbackReply = isHi
+                              ? `💡 आपके सवाल '${query}' के लिए सलाह: रेज़्युमे में प्रासंगिक कीवर्ड्स शामिल करें, उपलब्धियों में ठोस आंकड़े (Numbers/%) जोड़ें, और साफ़ लेआउट रखें ताकि ATS स्कोर 90%+ रहे!`
+                              : `💡 Regarding '${query}': Include target keywords, back bullet points with quantifiable numbers (% growth/speed), and keep a clean ATS format!`;
                   }
+
+                  fallbackSpeech = fallbackSpeech || fallbackReply;
 
                   const aiMsg = {
                         sender: 'ai',
                         text: fallbackReply,
+                        speech: fallbackSpeech,
                         timestamp: new Date()
                   };
-                  setMessages((prev) => [...prev, aiMsg]);
-                  speakText(fallbackReply, activeLang);
+                  setMessages((prev) => {
+                        const newMsgs = [...prev, aiMsg];
+                        const newIdx = newMsgs.length - 1;
+                        setTimeout(() => speakText(fallbackSpeech, activeLang, newIdx), 60);
+                        return newMsgs;
+                  });
             } finally {
                   setLoading(false);
             }
@@ -696,11 +761,21 @@ function AIChatAssistant() {
                                                       )}
                                                       {m.sender === 'ai' && (
                                                             <button
-                                                                  className="read-aloud-btn"
-                                                                  onClick={() => speakText(m.speech || m.text, language)}
+                                                                  className={`read-aloud-btn ${speakingIdx === idx && isSpeaking ? 'playing' : ''}`}
+                                                                  onClick={() => {
+                                                                        if (speakingIdx === idx && isSpeaking) {
+                                                                              stopSpeaking();
+                                                                        } else {
+                                                                              speakText(m.speech || m.text, language, idx);
+                                                                        }
+                                                                  }}
                                                                   title={language === 'hi' ? 'आवाज में सुनें' : 'Read answer aloud'}
                                                             >
-                                                                  🔊 {language === 'hi' ? 'आवाज़ सुनें' : 'Listen Voice'}
+                                                                  {speakingIdx === idx && isSpeaking ? (
+                                                                        <>⏹️ {language === 'hi' ? 'रोकें (Stop)' : 'Stop Voice'}</>
+                                                                  ) : (
+                                                                        <>🔊 {language === 'hi' ? 'आवाज़ सुनें' : 'Listen Voice'}</>
+                                                                  )}
                                                             </button>
                                                       )}
                                                       {m.suggestions && m.suggestions.length > 0 && (
