@@ -103,6 +103,7 @@ async def analyze_job_description(request: JDAnalysisRequest, authorization: Opt
 class AIChatRequest(BaseModel):
     message: str
     language: Optional[str] = "en"  # "en" or "hi"
+    track: Optional[str] = "tech"    # "tech" or "business"
     context: Optional[dict] = None
 
 class AIChatResponse(BaseModel):
@@ -122,92 +123,172 @@ async def ai_chat_assist(request: AIChatRequest, authorization: Optional[str] = 
         raise HTTPException(status_code=400, detail="Message cannot be empty")
 
     lang = (request.language or "en").lower()
+    track = (request.track or "tech").lower()
     # Also detect Devanagari Hindi script automatically
     is_hindi = lang == "hi" or any('\u0900' <= char <= '\u097F' for char in msg) or any(w in msg for w in ["kaise", "kya", "batao", "karo", "likho", "badhaye", "tayari", "namaste"])
+    is_biz = track == "business" or any(w in msg for w in ["business", "biz", "mba", "bba", "sales", "executive", "p&l", "manager", "operations", "बिजनेस", "मैनेजमेंट", "सेल्स", "प्रॉफिट"])
 
     reply = ""
     suggestions = []
 
     # 1. ATS Score & Optimization Queries
     if any(k in msg for k in ["score", "ats", "rank", "badhaye", "improve", "increase"]):
-        if is_hindi:
-            reply = (
-                "अपना ATS स्कोर 90%+ करने के लिए ये 4 सबसे महत्वपूर्ण नियम अपनाएं:\n"
-                "1. **Google XYZ फॉर्मूला**: 'Accomplished [X] as measured by [Y], by doing [Z]'. हमेशा आंकड़े लिखें (जैसे: 'API लेटेंसी 40% कम की', '15,000+ यूज़र्स के लिए बनाया').\n"
-                "2. **10-15 मुख्य स्किल्स जोड़ें**: जॉब पोस्टिंग की अनिवार्य स्किल्स को अपने रेज़्युमे में ज़रूर शामिल करें।\n"
-                "3. **क्लीन फॉर्मेटिंग**: सिंगल-कॉलम लेआउट रखें जिसमें साफ़ हेडिंग्स (Experience, Projects, Education) हों।\n"
-                "4. **कोडिंग प्रोफाइल्स**: LeetCode, GitHub या पोर्टफोलियो का लिंक ज़रूर दें।"
-            )
-            suggestions = [
-                "सॉफ्टवेयर इंजीनियर की समरी लिखो",
-                "5 दमदार एक्शन वर्ब्स बताओ",
-                "साइबर सिक्योरिटी के लिए क्या स्किल्स चाहिए?"
-            ]
+        if is_biz:
+            if is_hindi:
+                reply = (
+                    "बिजनेस व एग्जीक्यूटिव रेज़्युमे में ATS स्कोर 90%+ करने के लिए ये 4 सबसे महत्वपूर्ण नियम अपनाएं:\n"
+                    "1. **P&L और रेवेन्यू आंकड़े (Work Experience)**: अपने वर्क एक्सपीरियंस में नंबर्स जरूर लिखें (जैसे: 'सालाना रेवेन्यू 35% बढ़ाया', '$2.5M का ऑपरेटिंग बजट मैनेज किया', 'क्लाइंट रिटेंशन 98% रखा')।\n"
+                    "2. **10-12 मुख्य बिजनेस स्किल्स**: स्ट्रैटेजिक प्लानिंग, P&L मैनेजमेंट, सेल्स नेगोशिएशन, बजटिंग, और CRM को स्टेप 4 में जोड़ें।\n"
+                    "3. **Michael Scott 2-कॉलम एग्जीक्यूटिव लेआउट**: यह लेआउट लीडरशिप और मैनेजमेंट प्रोफाइल्स के लिए ATS ऑप्टिमाइज्ड है।\n"
+                    "4. **प्रोफेशनल रेफरेंसेस व भाषाएं**: स्टेप 5 में सीनियर मैनेजर्स के रेफरेंस और स्टेप 9 में स्पोकन भाषाएं अवश्य जोड़ें।"
+                )
+                suggestions = [
+                    "बिजनेस एग्जीक्यूटिव की समरी लिखो",
+                    "P&L और सेल्स के एक्शन वर्ब्स बताओ",
+                    "रेफरेंस सेक्शन में क्या जोड़ें?"
+                ]
+            else:
+                reply = (
+                    "To achieve a 90%+ ATS score on a Business & Executive resume, follow these 4 proven rules:\n"
+                    "1. **Quantify P&L & Revenue Impact**: Always include financial metrics (e.g., 'Grew annual branch revenue by 35%', 'Managed $2.5M operating budget', 'Maintained 98% client retention').\n"
+                    "2. **Include 10-12 Core Business Skills**: Add Strategic Planning, P&L Management, CRM, Budgeting & Forecasting, and Team Leadership in Step 4.\n"
+                    "3. **Use Michael Scott 2-Column Executive Layout**: Designed specifically for MBA, sales, and executive ATS parsing.\n"
+                    "4. **Add Corporate References & Languages**: Include professional references in Step 5 and spoken languages in Step 9."
+                )
+                suggestions = [
+                    "Write summary for Business Executive",
+                    "Give me 5 strong P&L action verbs",
+                    "What to include in References section?"
+                ]
         else:
-            reply = (
-                "To achieve an ATS score above 90%+, follow these 4 proven rules:\n"
-                "1. **Use Google's XYZ Formula**: 'Accomplished [X] as measured by [Y], by doing [Z]'. Always include numbers (e.g., 'reduced latency by 45%', 'serving 15,000+ users').\n"
-                "2. **Include 10-15 Core Skills**: Match job posting requirements exactly.\n"
-                "3. **Keep Formatting Clean**: Use single-column modern layouts with clear headings (Experience, Projects, Education).\n"
-                "4. **Add Coding Profiles & Links**: Include GitHub, LeetCode, or portfolio links."
-            )
-            suggestions = [
-                "Write a summary for Full Stack Engineer",
-                "Give me 5 strong action verbs",
-                "What skills to add for Cybersecurity?"
-            ]
+            if is_hindi:
+                reply = (
+                    "अपना ATS स्कोर 90%+ करने के लिए ये 4 सबसे महत्वपूर्ण नियम अपनाएं:\n"
+                    "1. **Google XYZ फॉर्मूला**: 'Accomplished [X] as measured by [Y], by doing [Z]'. हमेशा आंकड़े लिखें (जैसे: 'API लेटेंसी 40% कम की', '15,000+ यूज़र्स के लिए बनाया').\n"
+                    "2. **10-15 मुख्य स्किल्स जोड़ें**: जॉब पोस्टिंग की अनिवार्य स्किल्स को अपने रेज़्युमे में ज़रूर शामिल करें।\n"
+                    "3. **क्लीन फॉर्मेटिंग**: सिंगल-कॉलम लेआउट रखें जिसमें साफ़ हेडिंग्स (Experience, Projects, Education) हों।\n"
+                    "4. **कोडिंग प्रोफाइल्स**: LeetCode, GitHub या पोर्टफोलियो का लिंक ज़रूर दें।"
+                )
+                suggestions = [
+                    "सॉफ्टवेयर इंजीनियर की समरी लिखो",
+                    "5 दमदार एक्शन वर्ब्स बताओ",
+                    "साइबर सिक्योरिटी के लिए क्या स्किल्स चाहिए?"
+                ]
+            else:
+                reply = (
+                    "To achieve an ATS score above 90%+, follow these 4 proven rules:\n"
+                    "1. **Use Google's XYZ Formula**: 'Accomplished [X] as measured by [Y], by doing [Z]'. Always include numbers (e.g., 'reduced latency by 45%', 'serving 15,000+ users').\n"
+                    "2. **Include 10-15 Core Skills**: Match job posting requirements exactly.\n"
+                    "3. **Keep Formatting Clean**: Use single-column modern layouts with clear headings (Experience, Projects, Education).\n"
+                    "4. **Add Coding Profiles & Links**: Include GitHub, LeetCode, or portfolio links."
+                )
+                suggestions = [
+                    "Write a summary for Full Stack Engineer",
+                    "Give me 5 strong action verbs",
+                    "What skills to add for Cybersecurity?"
+                ]
 
     # 2. Professional Summary Requests
     elif any(k in msg for k in ["summary", "about me", "intro", "parichay", "bio", "samari"]):
-        if is_hindi:
-            reply = (
-                "यह एक बेहतरीन ATS-फ्रेंडली प्रोफेशनल समरी है जिसका आप उपयोग कर सकते हैं:\n\n"
-                "\"अनुभवी और परिणाम-उन्मुख सॉफ्टवेयर इंजीनियर, जिन्हें हाई-स्केलेबल माइक्रोसर्विसेज, क्लाउड आर्किटेक्चर और आधुनिक वेब ऍप्लिकेशन्स बनाने का 4+ वर्षों का अनुभव है। API लेटेंसी को 40% कम करने और AWS क्लाउड लागत घटाने का प्रमाणित ट्रैक रिकॉर्ड। AI इंटीग्रेशन और एजाइल डेवलपमेंट में विशेषज्ञता।\""
-            )
-            suggestions = [
-                "ATS स्कोर 90%+ कैसे करें?",
-                "प्रोजेक्ट के लिए बुलेट पॉइंट्स बताओ",
-                "इंटरव्यू का STAR मेथड क्या है?"
-            ]
+        if is_biz:
+            if is_hindi:
+                reply = (
+                    "यह एक बेहतरीन ATS-फ्रेंडली बिजनेस व एग्जीक्यूटिव समरी है:\n\n"
+                    "\"परिणाम-उन्मुख और रणनीतिक बिजनेस एग्जीक्यूटिव, जिन्हें ब्रांच ऑपरेशंस, P&L मैनेजमेंट और एंटरप्राइज सेल्स स्ट्रैटेजी का 10+ वर्षों का अनुभव है। ब्रांच प्रॉफिटेबिलिटी को 140% तक बढ़ाने, उच्च-प्रदर्शन वाली 15+ सदस्यों की टीम का नेतृत्व करने और प्रमुख कॉर्पोरेट क्लाइंट्स के साथ $2M+ के अनुबंध क्लोज करने का प्रमाणित ट्रैक रिकॉर्ड।\""
+                )
+                suggestions = [
+                    "बिजनेस ATS स्कोर 90%+ कैसे करें?",
+                    "सेल्स अचीवमेंट्स कैसे लिखें?",
+                    "इंटरव्यू का STAR मेथड क्या है?"
+                ]
+            else:
+                reply = (
+                    "Here is a high-impact ATS-friendly Business Executive summary:\n\n"
+                    "\"Dynamic, result-oriented Business Executive with 10+ years of leadership across branch operations, P&L management, and enterprise sales strategy. Proven track record boosting profitability by 140%, mentoring high-performing cross-functional teams, and closing $2M+ in annual client contracts.\""
+                )
+                suggestions = [
+                    "How to get 90%+ Business ATS score?",
+                    "Suggest bullet points for sales leadership",
+                    "What is the STAR method for executive interviews?"
+                ]
         else:
-            reply = (
-                "Here is a high-converting ATS summary template you can use:\n\n"
-                "\"Innovative and results-driven Software Engineer with 4+ years of experience designing and deploying scalable microservices, cloud systems, and modern web applications. Proven track record reducing API latency by 40% and optimizing AWS cloud infrastructure costs. Passionate about AI integration and agile delivery.\""
-            )
-            suggestions = [
-                "How to improve my ATS score?",
-                "Suggest bullet points for project",
-                "What is the STAR method for interviews?"
-            ]
+            if is_hindi:
+                reply = (
+                    "यह एक बेहतरीन ATS-फ्रेंडली प्रोफेशनल समरी है जिसका आप उपयोग कर सकते हैं:\n\n"
+                    "\"अनुभवी और परिणाम-उन्मुख सॉफ्टवेयर इंजीनियर, जिन्हें हाई-स्केलेबल माइक्रोसर्विसेज, क्लाउड आर्किटेक्चर और आधुनिक वेब ऍप्लिकेशन्स बनाने का 4+ वर्षों का अनुभव है। API लेटेंसी को 40% कम करने और AWS क्लाउड लागत घटाने का प्रमाणित ट्रैक रिकॉर्ड। AI इंटीग्रेशन और एजाइल डेवलपमेंट में विशेषज्ञता।\""
+                )
+                suggestions = [
+                    "ATS स्कोर 90%+ कैसे करें?",
+                    "प्रोजेक्ट के लिए बुलेट पॉइंट्स बताओ",
+                    "इंटरव्यू का STAR मेथड क्या है?"
+                ]
+            else:
+                reply = (
+                    "Here is a high-converting ATS summary template you can use:\n\n"
+                    "\"Innovative and results-driven Software Engineer with 4+ years of experience designing and deploying scalable microservices, cloud systems, and modern web applications. Proven track record reducing API latency by 40% and optimizing AWS cloud infrastructure costs. Passionate about AI integration and agile delivery.\""
+                )
+                suggestions = [
+                    "How to improve my ATS score?",
+                    "Suggest bullet points for project",
+                    "What is the STAR method for interviews?"
+                ]
 
     # 3. Action Verbs & Bullet Points
     elif any(k in msg for k in ["verb", "bullet", "point", "project", "experience", "describe", "shabd"]):
-        if is_hindi:
-            reply = (
-                "कमज़ोर शब्दों ('helped with', 'worked on') की जगह इन प्रभावशाली एक्शन वर्ब्स का उपयोग करें:\n"
-                "• **Architected (आर्किटेक्ट किया)**: 'प्रति सेकंड 25,000 इवेंट्स प्रोसेस करने वाला डिस्ट्रीब्यूटेड पाइपलाइन आर्किटेक्ट किया।'\n"
-                "• **Spearheaded (नेतृत्व किया)**: 'React और TypeScript पर माइग्रेशन का नेतृत्व किया, जिससे पेज लोड 50% तेज़ हुआ।'\n"
-                "• **Automated (ऑटोमेट किया)**: 'CI/CD पाइपलाइन ऑटोमेट करके डिप्लॉयमेंट समय 4 घंटे से घटाकर 15 मिनट किया।'\n"
-                "• **Engineered (इंजीनियर किया)**: 'FastAPI में 99.98% अपटाइम के साथ स्केलेबल REST APIs बनाईं।'"
-            )
-            suggestions = [
-                "रेज़्युमे में प्रोजेक्ट कैसे लिखें?",
-                "फुल स्टैक डेवलपर स्किल्स",
-                "ATS स्कोर 90%+ कैसे करें?"
-            ]
+        if is_biz:
+            if is_hindi:
+                reply = (
+                    "बिजनेस और मैनेजमेंट रेज़्युमे में इन प्रभावशाली एक्शन वर्ब्स का उपयोग करें:\n"
+                    "• **Spearheaded (नेतृत्व किया)**: '12 राज्यों में नई मार्केट एक्सपेंशन स्ट्रैटेजी का नेतृत्व किया, जिससे रेवेन्यू 35% बढ़ा।'\n"
+                    "• **Negotiated (सौदा तय किया)**: 'प्रमुख सप्लायर्स के साथ $1.8M ARR के वार्षिक कॉन्ट्रैक्ट सफलतापूर्वक नेगोशिएट किए।'\n"
+                    "• **Optimized (प्रॉफिट सुधारा)**: 'ऑपरेटिंग बजट को ऑप्टिमाइज़ करके ओवरहेड लागत में 22% की बचत की।'\n"
+                    "• **Orchestrated (संचालित किया)**: '15 सदस्यीय क्रॉस-फंक्शनल सेल्स व डिस्ट्रीब्यूशन टीम का सफल संचालन किया।'"
+                )
+                suggestions = [
+                    "बिजनेस ATS स्कोर 90%+ कैसे करें?",
+                    "बिजनेस एग्जीक्यूटिव समरी लिखो",
+                    "Michael Scott टेम्पलेट क्या है?"
+                ]
+            else:
+                reply = (
+                    "Use these executive power verbs to quantify your business impact:\n"
+                    "• **Spearheaded**: 'Spearheaded regional market expansion delivering 140% of corporate revenue targets.'\n"
+                    "• **Negotiated**: 'Negotiated and closed top 5 municipal supplier contracts generating $1.8M ARR.'\n"
+                    "• **Optimized**: 'Optimized branch operational workflows reducing overhead expenditure by 22%.'\n"
+                    "• **Orchestrated**: 'Orchestrated cross-functional sales initiatives with lowest employee turnover in corporate history.'"
+                )
+                suggestions = [
+                    "How to get 90%+ Business ATS score?",
+                    "Write Business Executive summary",
+                    "What is Michael Scott template?"
+                ]
         else:
-            reply = (
-                "Replace weak phrases like 'worked on' or 'helped with' with these high-impact power verbs:\n"
-                "• **Architected & Deployed**: 'Architected distributed event streaming pipeline processing 25k events/sec.'\n"
-                "• **Spearheaded**: 'Spearheaded frontend migration to React & TypeScript, boosting page load speeds by 50%.'\n"
-                "• **Automated**: 'Automated CI/CD pipelines reducing deployment cycle time from 4 hours to 15 minutes.'\n"
-                "• **Engineered**: 'Engineered scalable REST APIs in FastAPI with 99.98% uptime SLA.'"
-            )
-            suggestions = [
-                "How to format projects for ATS?",
-                "Skills for Frontend Developer",
-                "How to get 90%+ ATS Score?"
-            ]
+            if is_hindi:
+                reply = (
+                    "कमज़ोर शब्दों ('helped with', 'worked on') की जगह इन प्रभावशाली एक्शन वर्ब्स का उपयोग करें:\n"
+                    "• **Architected (आर्किटेक्ट किया)**: 'प्रति सेकंड 25,000 इवेंट्स प्रोसेस करने वाला डिस्ट्रीब्यूटेड पाइपलाइन आर्किटेक्ट किया।'\n"
+                    "• **Spearheaded (नेतृत्व किया)**: 'React और TypeScript पर माइग्रेशन का नेतृत्व किया, जिससे पेज लोड 50% तेज़ हुआ।'\n"
+                    "• **Automated (ऑटोमेट किया)**: 'CI/CD पाइपलाइन ऑटोमेट करके डिप्लॉयमेंट समय 4 घंटे से घटाकर 15 मिनट किया।'\n"
+                    "• **Engineered (इंजीनियर किया)**: 'FastAPI में 99.98% अपटाइम के साथ स्केलेबल REST APIs बनाईं।'"
+                )
+                suggestions = [
+                    "रेज़्युमे में प्रोजेक्ट कैसे लिखें?",
+                    "फुल स्टैक डेवलपर स्किल्स",
+                    "ATS स्कोर 90%+ कैसे करें?"
+                ]
+            else:
+                reply = (
+                    "Replace weak phrases like 'worked on' or 'helped with' with these high-impact power verbs:\n"
+                    "• **Architected & Deployed**: 'Architected distributed event streaming pipeline processing 25k events/sec.'\n"
+                    "• **Spearheaded**: 'Spearheaded frontend migration to React & TypeScript, boosting page load speeds by 50%.'\n"
+                    "• **Automated**: 'Automated CI/CD pipelines reducing deployment cycle time from 4 hours to 15 minutes.'\n"
+                    "• **Engineered**: 'Engineered scalable REST APIs in FastAPI with 99.98% uptime SLA.'"
+                )
+                suggestions = [
+                    "How to format projects for ATS?",
+                    "Skills for Frontend Developer",
+                    "How to get 90%+ ATS Score?"
+                ]
 
     # 4. Cybersecurity specific
     elif any(k in msg for k in ["cyber", "security", "soc", "penetration", "ethical", "suraksha"]):

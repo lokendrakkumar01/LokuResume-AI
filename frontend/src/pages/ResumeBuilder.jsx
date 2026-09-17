@@ -20,8 +20,9 @@ const POPULAR_BUSINESS_SKILLS = [
       'Strategic Planning', 'P&L Management', 'Sales & Negotiations',
       'Team Leadership', 'Budgeting & Forecasting', 'Client Relationship (CRM)',
       'Operations Management', 'Market Analysis', 'Revenue Optimization',
+      'Financial Modeling', 'Key Account Management', 'Contract Negotiation',
       'Agile Project Management', 'Risk Management', 'Stakeholder Communication',
-      'Public Speaking & Pitching', 'Cross-Functional Collaboration'
+      'Public Speaking & Pitching', 'Cross-Functional Collaboration', 'Business Development'
 ];
 
 export const auditResumeDraft = (data) => {
@@ -229,16 +230,43 @@ function ResumeBuilder() {
       const [aiVariations, setAiVariations] = useState([]);
 
       const [formData, setFormData] = useState(() => {
-            const savedData = localStorage.getItem('resume_draft');
+            const activeTrack = (studentTrack || localStorage.getItem('student_track') || 'tech').toLowerCase() === 'business' ? 'business' : 'tech';
+            const trackDraftKey = `resume_draft_${activeTrack}`;
+            let savedData = localStorage.getItem(trackDraftKey);
+            if (!savedData) {
+                  const legacyDraft = localStorage.getItem('resume_draft');
+                  if (legacyDraft) {
+                        try {
+                              const parsed = JSON.parse(legacyDraft);
+                              if (parsed && (parsed.track || 'tech') === activeTrack) {
+                                    savedData = legacyDraft;
+                              }
+                        } catch (e) {}
+                  }
+            }
             if (savedData && !id) {
                   try {
-                        return JSON.parse(savedData);
+                        const parsed = JSON.parse(savedData);
+                        if (parsed && (parsed.track || activeTrack) === activeTrack) {
+                              const rawSkills = Array.isArray(parsed.skills) ? parsed.skills : [];
+                              return {
+                                    ...parsed,
+                                    track: activeTrack,
+                                    skills: rawSkills.length > 0 ? rawSkills : (activeTrack === 'business' ? [
+                                          'Strategic Planning', 'P&L Management', 'Sales & Negotiations',
+                                          'Team Leadership', 'Budgeting & Forecasting', 'Client Relationship (CRM)',
+                                          'Operations Management', 'Cross-Functional Collaboration'
+                                    ] : [
+                                          'React.js', 'Python', 'FastAPI', 'Node.js', 'TypeScript', 'MongoDB', 'Git'
+                                    ])
+                              };
+                        }
                   } catch (e) {
                         // ignore parsing error
                   }
             }
             return {
-                  track: studentTrack || 'tech',
+                  track: activeTrack,
                   personal_info: {
                         name: '',
                         email: '',
@@ -255,7 +283,13 @@ function ResumeBuilder() {
                   coding_profiles: [],
                   summary: '',
                   education: [],
-                  skills: [],
+                  skills: activeTrack === 'business' ? [
+                        'Strategic Planning', 'P&L Management', 'Sales & Negotiations',
+                        'Team Leadership', 'Budgeting & Forecasting', 'Client Relationship (CRM)',
+                        'Operations Management', 'Cross-Functional Collaboration'
+                  ] : [
+                        'React.js', 'Python', 'FastAPI', 'Node.js', 'TypeScript', 'MongoDB', 'Git'
+                  ],
                   projects: [],
                   experience: [],
                   references: [],
@@ -265,13 +299,46 @@ function ResumeBuilder() {
                   languages: [],
                   interests: [],
                   custom_sections: [],
-                  template_style: (studentTrack === 'business') ? 'business_executive' : 'modern',
+                  template_style: (activeTrack === 'business') ? 'business_executive' : 'modern',
                   pdf_preferences: {
                         background_color: '#ffffff',
                         accent_color: '#111827'
                   }
             };
       });
+
+      // Synchronize track if user stream changes or user logs in with different stream
+      useEffect(() => {
+            if (!id && studentTrack && formData.track !== studentTrack) {
+                  const targetTrack = studentTrack === 'business' ? 'business' : 'tech';
+                  const targetDraftKey = `resume_draft_${targetTrack}`;
+                  const saved = localStorage.getItem(targetDraftKey);
+                  if (saved) {
+                        try {
+                              const parsed = JSON.parse(saved);
+                              if (parsed && (parsed.track || targetTrack) === targetTrack) {
+                                    setFormData(parsed);
+                                    return;
+                              }
+                        } catch (e) {}
+                  }
+                  // Clean switch to target stream so skills match 100%
+                  setFormData(prev => ({
+                        ...prev,
+                        track: targetTrack,
+                        template_style: targetTrack === 'business' ? 'business_executive' : 'modern',
+                        skills: targetTrack === 'business' ? [
+                              'Strategic Planning', 'P&L Management', 'Sales & Negotiations',
+                              'Team Leadership', 'Budgeting & Forecasting', 'Client Relationship (CRM)',
+                              'Operations Management', 'Cross-Functional Collaboration'
+                        ] : [
+                              'React.js', 'Python', 'FastAPI', 'Node.js', 'TypeScript', 'MongoDB', 'Git'
+                        ],
+                        coding_profiles: targetTrack === 'business' ? [] : (prev.coding_profiles || []),
+                        references: targetTrack === 'business' ? (prev.references || []) : []
+                  }));
+            }
+      }, [studentTrack, id, formData.track]);
 
       useEffect(() => {
             if (id) {
@@ -286,14 +353,18 @@ function ResumeBuilder() {
                   return;
             }
 
+            const currentTrack = formData.track || (studentTrack === 'business' ? 'business' : 'tech');
+
             if (!formData.personal_info?.name || !formData.personal_info?.email) {
                   if (!id) {
+                        localStorage.setItem(`resume_draft_${currentTrack}`, JSON.stringify(formData));
                         localStorage.setItem('resume_draft', JSON.stringify(formData));
                   }
                   return;
             }
 
             if (!id) {
+                  localStorage.setItem(`resume_draft_${currentTrack}`, JSON.stringify(formData));
                   localStorage.setItem('resume_draft', JSON.stringify(formData));
                   return;
             }
@@ -1923,8 +1994,12 @@ function ResumeBuilder() {
                         {/* Step 4: Skills */}
                         {currentStep === 4 && (
                               <div className="form-step fade-in">
-                                    <h2>💼 Step 4: Skills &amp; Tech Stack</h2>
-                                    <p className="step-description">Type and press Enter, or click popular skills below to add them</p>
+                                    <h2>{isBusiness ? '💼 Step 4: Business & Leadership Skills' : '💻 Step 4: Technical Skills & Stack'}</h2>
+                                    <p className="step-description">
+                                          {isBusiness
+                                                ? 'Add strategic, management, financial, and operational skills that corporate and executive ATS algorithms scan for'
+                                                : 'Type and press Enter, or click popular technical skills below to add them to your developer resume'}
+                                    </p>
 
                                     {/* Inline Add Skill Input */}
                                     <div className="inline-skill-adder">
@@ -1938,7 +2013,7 @@ function ResumeBuilder() {
                                                             handleAddSkill();
                                                       }
                                                 }}
-                                                placeholder="Type skill (e.g. Next.js, Docker, Kubernetes) and press Enter..."
+                                                placeholder={isBusiness ? "Type business skill (e.g. Strategic Planning, P&L Management, CRM, Budgeting) and press Enter..." : "Type technical skill (e.g. React.js, Next.js, Docker, Python) and press Enter..."}
                                                 className="skill-input-field"
                                           />
                                           <button
@@ -1950,11 +2025,45 @@ function ResumeBuilder() {
                                           </button>
                                     </div>
 
-                                    {/* Active Skills List */}
+                                    {/* Active Skills List with Quick Loaders */}
                                     <div className="active-skills-container">
-                                          <label style={{ fontSize: '0.85rem', fontWeight: 600, color: 'var(--text-muted)' }}>
-                                                Your Skills ({formData.skills.length}):
-                                          </label>
+                                          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '8px', marginBottom: '8px' }}>
+                                                <label style={{ fontSize: '0.85rem', fontWeight: 600, color: 'var(--text-muted)' }}>
+                                                      Your {isBusiness ? 'Business' : 'Tech'} Skills ({formData.skills.length}):
+                                                </label>
+                                                <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
+                                                      <button
+                                                            type="button"
+                                                            onClick={() => {
+                                                                  const targetSkills = isBusiness ? POPULAR_BUSINESS_SKILLS.slice(0, 10) : POPULAR_TECH_SKILLS.slice(0, 10);
+                                                                  setFormData(prev => ({
+                                                                        ...prev,
+                                                                        skills: Array.from(new Set([...(prev.skills || []), ...targetSkills]))
+                                                                  }));
+                                                                  showToast(`Loaded top ${isBusiness ? 'Business' : 'Tech'} skills!`, 'success');
+                                                            }}
+                                                            className="btn btn-sm btn-secondary"
+                                                            style={{ fontSize: '0.75rem', padding: '3px 9px' }}
+                                                            title="Quick-load recommended stream skills"
+                                                      >
+                                                            ✨ + Load Top {isBusiness ? 'Business' : 'Tech'} Skills
+                                                      </button>
+                                                      {formData.skills.length > 0 && (
+                                                            <button
+                                                                  type="button"
+                                                                  onClick={() => {
+                                                                        setFormData(prev => ({ ...prev, skills: [] }));
+                                                                        showToast('Cleared all skills', 'info');
+                                                                  }}
+                                                                  className="btn btn-sm"
+                                                                  style={{ fontSize: '0.75rem', padding: '3px 8px', background: 'rgba(239, 68, 68, 0.12)', color: '#ef4444', border: '1px solid rgba(239, 68, 68, 0.3)' }}
+                                                                  title="Clear all currently listed skills"
+                                                            >
+                                                                  🗑️ Clear All
+                                                            </button>
+                                                      )}
+                                                </div>
+                                          </div>
                                           <div className="skills-list" style={{ marginTop: '8px' }}>
                                                 {formData.skills.map((skill, index) => (
                                                       <div key={index} className="skill-tag">
@@ -1964,7 +2073,7 @@ function ResumeBuilder() {
                                                 ))}
                                                 {formData.skills.length === 0 && (
                                                       <span style={{ fontSize: '0.85rem', color: 'var(--text-muted)' }}>
-                                                            No skills added yet. Add some above or click quick suggestions below!
+                                                            No skills added yet. Type above, or click "+ Load Top {isBusiness ? 'Business' : 'Tech'} Skills" or quick suggestions below!
                                                       </span>
                                                 )}
                                           </div>
@@ -1977,10 +2086,20 @@ function ResumeBuilder() {
                                                  <button
                                                        type="button"
                                                        className="btn btn-sm btn-secondary"
-                                                       onClick={() => setFormData(prev => ({ ...prev, track: isBusiness ? 'tech' : 'business' }))}
+                                                       onClick={() => {
+                                                             const nextTrack = isBusiness ? 'tech' : 'business';
+                                                             setFormData(prev => ({
+                                                                   ...prev,
+                                                                   track: nextTrack,
+                                                                   template_style: nextTrack === 'business' ? 'business_executive' : 'modern',
+                                                                   skills: nextTrack === 'business' ? POPULAR_BUSINESS_SKILLS.slice(0, 8) : POPULAR_TECH_SKILLS.slice(0, 8)
+                                                             }));
+                                                             if (setStudentTrack) setStudentTrack(nextTrack);
+                                                             showToast(`Switched to ${nextTrack === 'business' ? 'Business & Executive' : 'Tech & Developer'} Skills`, 'info');
+                                                       }}
                                                        style={{ fontSize: '0.75rem', padding: '2px 8px' }}
                                                  >
-                                                       Switch to {isBusiness ? 'Tech Skills' : 'Business Skills'}
+                                                       Switch to {isBusiness ? '💻 Tech Skills' : '💼 Business Skills'}
                                                  </button>
                                            </div>
                                            <div className="popular-skills-pills">

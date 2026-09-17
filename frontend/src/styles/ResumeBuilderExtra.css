@@ -693,3 +693,87 @@
     font-size: 1.1rem;
     margin: 0 0 8px 0;
 }
+
+/* Mobile Responsiveness for Modals & Stream Controls */
+@media (max-width: 640px) {
+    .mistakes-audit-modal {
+        width: 96% !important;
+        padding: 16px 12px !important;
+        max-height: 88vh !important;
+        border-radius: 12px !important;
+    }
+
+    .voice-controls-strip {
+        flex-direction: column;
+        align-items: stretch;
+        padding: 10px;
+        gap: 8px;
+    }
+
+    .voice-controls-strip > div {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        width: 100%;
+    }
+
+    .voice-controls-strip button {
+        flex: 1;
+        text-align: center;
+        justify-content: center;
+    }
+
+    .mistakes-list-container {
+        max-height: 52vh;
+        gap: 8px;
+    }
+
+    .mistake-item-card {
+        padding: 10px 12px;
+    }
+
+    .stream-track-banner {
+        padding: 10px 12px;
+        margin-bottom: 14px;
+        flex-direction: column;
+        align-items: stretch;
+        gap: 10px;
+    }
+
+    .stream-track-info {
+        gap: 10px;
+    }
+
+    .track-badge-icon {
+        width: 36px;
+        height: 36px;
+        font-size: 1.4rem;
+    }
+
+    .track-badge-title {
+        font-size: 0.92rem;
+    }
+
+    .stream-track-actions {
+        width: 100%;
+        display: flex;
+        justify-content: stretch;
+    }
+
+    .stream-track-actions button {
+        width: 100%;
+        justify-content: center;
+        text-align: center;
+    }
+
+    .mobile-sticky-action-bar {
+        padding: 6px 8px;
+        padding-bottom: max(8px, env(safe-area-inset-bottom, 8px));
+        gap: 4px;
+    }
+
+    .mobile-sticky-action-bar .btn {
+        padding: 7px 4px;
+        font-size: 0.74rem;
+    }
+}

@@ -256,6 +256,10 @@ export const AuthProvider = ({ children }) => {
       const logout = () => {
             localStorage.removeItem('token');
             localStorage.removeItem('user');
+            localStorage.removeItem('resume_draft');
+            localStorage.removeItem('resume_draft_tech');
+            localStorage.removeItem('resume_draft_business');
+            sessionStorage.removeItem('loku_ai_guide_trigger');
             setToken(null);
             setUser(null);
       };

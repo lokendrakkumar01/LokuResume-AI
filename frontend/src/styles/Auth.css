@@ -211,8 +211,29 @@
     color: var(--text-muted);
 }
 
+/* Auth Stream Selection Mobile Support */
+.auth-stream-pill-box {
+    display: inline-flex;
+    background: rgba(255, 255, 255, 0.05);
+    padding: 4px;
+    border-radius: 12px;
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    gap: 4px;
+    max-width: 100%;
+}
+
 @media (max-width: 480px) {
     .auth-card {
-        padding: 30px 22px;
+        padding: 24px 18px;
+    }
+    .auth-stream-pill-box {
+        width: 100%;
+        display: flex;
+    }
+    .auth-stream-pill-box button {
+        flex: 1;
+        justify-content: center;
+        padding: 7px 8px !important;
+        font-size: 0.78rem !important;
     }
 }

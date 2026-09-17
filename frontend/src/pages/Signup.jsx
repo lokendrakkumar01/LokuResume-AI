@@ -162,14 +162,7 @@ function Signup() {
                               <p style={{ fontSize: '0.82rem', color: 'var(--text-secondary, #94a3b8)', marginBottom: '8px', fontWeight: 600 }}>
                                     Select your Stream to Customize your Resume:
                               </p>
-                              <div style={{
-                                    display: 'inline-flex',
-                                    background: 'rgba(255, 255, 255, 0.05)',
-                                    padding: '4px',
-                                    borderRadius: '12px',
-                                    border: '1px solid rgba(255, 255, 255, 0.1)',
-                                    gap: '4px'
-                              }}>
+                              <div className="auth-stream-pill-box">
                                     <button
                                           type="button"
                                           onClick={() => setStudentTrack('tech')}

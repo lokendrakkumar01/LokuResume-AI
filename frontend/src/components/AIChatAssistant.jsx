@@ -55,21 +55,37 @@ const MESSAGES_BY_LANG = {
       }
 };
 
-const generateOnboardingGuide = (userName, targetLang) => {
+const generateOnboardingGuide = (userName, targetLang, track = 'tech') => {
       const isHi = targetLang === 'hi';
       const cleanName = userName ? userName.trim().split(' ')[0] : '';
+      const isBiz = (track || '').toLowerCase() === 'business';
       const salutation = cleanName ? (isHi ? `नमस्ते ${cleanName}!` : `Welcome ${cleanName}!`) : (isHi ? 'नमस्ते!' : 'Welcome!');
 
-      if (isHi) {
-            return {
-                  text: `👋 **${salutation} CVNex में आपका स्वागत है।** 🌟\n\nआइए मिलकर आपका रेज़्युमे **90%+ ATS स्कोर** वाला बनाएं! यहाँ आपके लिए 4 सबसे महत्वपूर्ण स्टेप्स हैं:\n\n1. 🚀 **शुरुआत (Start)**: Dashboard पर **'Create Resume'** दबाएं या तुरंत **'1-Click AI Sample'** लोड करें ताकि आपका समय बचे।\n2. 📝 **समरी और प्रोफाइल्स**: 40-70 शब्दों की असरदार समरी लिखें और LeetCode, GitHub या LinkedIn लिंक जोड़ें।\n3. 💼 **10-15 मुख्य स्किल्स**: अपने रोल से जुड़ी मुख्य स्किल्स जोड़ें। प्रोजेक्ट्स में आंकड़े (जैसे: '40% लेटेंसी कम की', '10,000+ यूज़र्स') जरूर लिखें।\n4. 🎯 **ATS Job Matcher**: जिस नौकरी में अप्लाई कर रहे हैं, उसकी जॉब डिस्क्रिप्शन पेस्ट करके चेक करें कि क्या मिसिंग है!\n\n🎙️ आप नीचे माइक दबाकर मुझसे कोई भी सवाल सीधे हिंदी में पूछ सकते हैं!`,
-                  speech: `${salutation} CVNex में आपका स्वागत है। आइए मिलकर आपका रेज़्युमे 90%+ ATS स्कोर वाला बनाएं। सबसे पहले Dashboard पर Create Resume पर क्लिक करें या One Click Sample लोड करें। फिर 10 से 15 मुख्य स्किल्स जोड़ें और प्रोजेक्ट्स में आंकड़े लिखें। इसके बाद ATS Job Matcher से अपनी जॉब मैचिंग चेक करें। आप मुझसे कोई भी सवाल पूछ सकते हैं!`
-            };
+      if (isBiz) {
+            if (isHi) {
+                  return {
+                        text: `👋 **${salutation} CVNex बिजनेस व एग्जीक्यूटिव ट्रैक में आपका स्वागत है।** 💼\n\nआइए मिलकर आपका बिजनेस रेज़्युमे **90%+ ATS स्कोर** वाला बनाएं! यहाँ आपके लिए 4 सबसे महत्वपूर्ण नियम हैं:\n\n1. 📊 **P&L व रेवेन्यू आंकड़े (Experience)**: वर्क एक्सपीरियंस में आंकड़े ज़रूर लिखें—जैसे 'सालाना सेल्स 35% बढ़ाई', '$1.5M बजट मैनेज किया' या 'क्लाइंट रिटेंशन 98% पहुंचाया'।\n2. 📝 **एग्जीक्यूटिव समरी**: 50-80 शब्दों की लीडरशिप समरी लिखें जिसमें आपकी इंडस्ट्री, टीम लीडरशिप और मुख्य उपलब्धि दर्ज हो।\n3. 💼 **बिजनेस व मैनेजमेंट स्किल्स**: स्टेप 4 में स्ट्रैटेजिक प्लानिंग, P&L, सेल्स नेगोशिएशन, CRM और बजटिंग जैसी 10-12 मुख्य स्किल्स जोड़ें।\n4. 🤝 **रेफरेंसेस व भाषाएं**: स्टेप 5 में प्रोफेशनल रेफरेंसेस और स्टेप 9 में स्पोकन भाषाएं जोड़कर अपने प्रोफाइल को कॉर्पोरेट लीडर्स के लिए तैयार करें!\n\n🎙️ आप नीचे माइक दबाकर बिजनेस रेज़्युमे या इंटरव्यू के सवाल सीधे हिंदी में पूछ सकते हैं!`,
+                        speech: `${salutation} CVNex के बिजनेस व एग्जीक्यूटिव ट्रैक में आपका स्वागत है। बिजनेस रेज़्युमे में 90%+ ATS स्कोर पाने के लिए: पहले, वर्क एक्सपीरियंस में P&L और रेवेन्यू के आंकड़े जैसे 35% सेल्स ग्रोथ अवश्य लिखें। दूसरे, समरी में टीम लीडरशिप का जिक्र करें। तीसरे, स्टेप 4 में बिजनेस स्किल्स, स्टेप 5 में प्रोफेशनल रेफरेंसेस और स्टेप 9 में भाषाएं जोड़ें। आप मुझसे कोई भी सवाल पूछ सकते हैं!`
+                  };
+            } else {
+                  return {
+                        text: `👋 **${salutation} Welcome to CVNex Business & Executive Track!** 💼\n\nLet's build a **90%+ ATS Executive Resume** that wins corporate interviews! Here are your 4 essential steps:\n\n1. 📊 **Quantify Business Impact**: In Work Experience, always include P&L figures, revenue growth % (e.g. 'boosted sales by 35%'), or budget sizes.\n2. 📝 **Executive Summary**: Add a 50-80 word leadership summary highlighting your industry domain and key career wins.\n3. 💼 **10-12 Business Skills**: In Step 4, add Strategic Planning, P&L Management, CRM, Team Leadership, and Budgeting.\n4. 🤝 **References & Languages**: Add corporate references in Step 5 and spoken languages in Step 9 to impress hiring managers!\n\n🎙️ Ask me anything anytime using the mic button or chat!`,
+                        speech: `${salutation} Welcome to CVNex Business and Executive track! To achieve a 90%+ ATS score: First, quantify your experience with revenue and P&L metrics like 35% sales growth. Second, highlight team leadership in your summary. Third, include corporate references in Step 5 and spoken languages in Step 9. Let's create your executive resume!`
+                  };
+            }
       } else {
-            return {
-                  text: `👋 **${salutation} Welcome to CVNex!** 🌟\n\nLet's build a **90%+ ATS resume** that lands interviews! Here are your 4 essential steps:\n\n1. 🚀 **Get Started**: Click **'Create Resume'** or load the **'1-Click AI Sample'** on your dashboard.\n2. 📝 **Summary & Links**: Add a 40-70 word summary with numbers, plus your GitHub, LeetCode, or LinkedIn links.\n3. 💼 **10-15 Core Skills**: Include in-demand technical skills. In project bullet points, always quantify your impact (e.g. 'reduced latency by 40%').\n4. 🎯 **ATS Job Matcher**: Paste your target job post into the ATS Analyzer to verify matching keywords and score!\n\n🎙️ Ask me anything anytime using the mic button or chat!`,
-                  speech: `${salutation} Welcome to CVNex! Let's build a 90%+ ATS resume that lands interviews. Start by clicking Create Resume or loading the One Click Sample. Add 10 to 15 core skills and quantify your project achievements with numbers. Then run ATS Job Matcher to check keyword alignment. Feel free to ask me anything with voice or chat!`
-            };
+            // Tech Track
+            if (isHi) {
+                  return {
+                        text: `👋 **${salutation} CVNex टेक व सॉफ्टवेयर डेवलपर ट्रैक में आपका स्वागत है।** 💻\n\nआइए मिलकर आपका टेक रेज़्युमे **90%+ ATS स्कोर** वाला बनाएं! यहाँ आपके लिए 4 सबसे महत्वपूर्ण नियम हैं:\n\n1. 💻 **कोर टेक स्टैक**: स्टेप 4 में अपनी मुख्य प्रोग्रामिंग लैंग्वेजेस और टूल्स (React, Python, Docker, AWS) जोड़ें।\n2. 🛡️ **LeetCode और GitHub लिंक्स**: स्टेप 1 में अपने एक्टिव कोडिंग प्रोफाइल्स और GitHub प्रोजेक्ट लिंक्स अवश्य जोड़ें।\n3. 🚀 **प्रोजेक्ट्स में सिस्टम आंकड़े**: प्रोजेक्ट्स में Google XYZ फॉर्मूले से लिखें (जैसे: 'API लेटेंसी 40% कम की', '10,000+ यूज़र्स')।\n4. 🎯 **ATS Job Matcher**: अपनी टारगेट जॉब डिस्क्रिप्शन पेस्ट करके मिसिंग टेक्निकल कीवर्ड्स तुरंत चेक करें!\n\n🎙️ आप नीचे माइक दबाकर मुझसे कोडिंग या रेज़्युमे पर कोई भी सवाल सीधे हिंदी में पूछ सकते हैं!`,
+                        speech: `${salutation} CVNex के टेक व सॉफ्टवेयर डेवलपर ट्रैक में आपका स्वागत है। टेक रेज़्युमे में 90%+ ATS स्कोर पाने के लिए: पहले, स्टेप 4 में अपने कोर टेक स्टैक जोड़ें। दूसरे, LeetCode और GitHub प्रोफाइल्स लिंक करें। तीसरे, प्रोजेक्ट्स में लेटेंसी और स्केल के आंकड़े लिखें। चलिए आपका डेवलपर रेज़्युमे तैयार करते हैं!`
+                  };
+            } else {
+                  return {
+                        text: `👋 **${salutation} Welcome to CVNex Tech & Developer Track!** 💻\n\nLet's build a **90%+ ATS Engineering Resume** that gets you shortlisted! Here are your 4 essential steps:\n\n1. 💻 **Core Tech Stack**: In Step 4, list your core languages and frameworks (React, Node.js, Python, Docker, AWS).\n2. 🛡️ **LeetCode & GitHub**: Add your live GitHub projects and LeetCode problem-solving profiles in Step 1.\n3. 🚀 **System Impact & Metrics**: Quantify your project achievements (e.g. 'reduced latency by 42%', '10k+ daily users').\n4. 🎯 **ATS Job Matcher**: Paste target job descriptions into the ATS Analyzer to identify missing engineering keywords!\n\n🎙️ Ask me anything anytime using the mic button or chat!`,
+                        speech: `${salutation} Welcome to CVNex Tech and Developer track! To achieve a 90%+ ATS score: First, add your core tech stack in Step 4. Second, link your GitHub and LeetCode profiles in Step 1. Third, quantify your project impact with numbers like 40% latency reduction. Let's build your developer resume!`
+                  };
+            }
       }
 };
 
@@ -236,9 +252,12 @@ function AIChatAssistant() {
       }, [language]);
 
       // Trigger Onboarding Voice & Chat Guide
-      const triggerVoiceGuide = (userName, targetLang) => {
+      // Trigger Onboarding Voice & Chat Guide with stream awareness
+      const triggerVoiceGuide = (userName, targetLang, chosenTrack) => {
             const currentLang = targetLang || language;
-            const guide = generateOnboardingGuide(userName, currentLang);
+            const activeTrack = chosenTrack || studentTrack || (user && user.track) || 'tech';
+            const guide = generateOnboardingGuide(userName, currentLang, activeTrack);
+            const isBiz = activeTrack === 'business';
 
             setIsOpen(true);
             const guideMsg = {
@@ -246,17 +265,27 @@ function AIChatAssistant() {
                   text: guide.text,
                   speech: guide.speech,
                   isGuide: true,
-                  suggestions: currentLang === 'hi' ? [
-                        "🎯 ATS स्कोर 90%+ कैसे करें?",
-                        "✍️ 1-Click AI Sample कैसे इस्तेमाल करें?",
+                  suggestions: isBiz ? (currentLang === 'hi' ? [
+                        "📊 Business Resume में 90%+ ATS स्कोर कैसे पाएं?",
+                        "💼 Michael Scott 2-कॉलम टेम्पलेट कैसे इस्तेमाल करें?",
+                        "📝 P&L और Sales Metrics कैसे लिखें?",
+                        "🤝 References Section में क्या भरें?"
+                  ] : [
+                        "📊 How to get 90%+ ATS score for Business?",
+                        "💼 How to use Michael Scott 2-Column Template?",
+                        "📝 How to write P&L and Sales Metrics?",
+                        "🤝 What to put in References Section?"
+                  ]) : (currentLang === 'hi' ? [
+                        "🎯 Tech Resume में 90%+ ATS स्कोर कैसे पाएं?",
                         "💡 Google XYZ फॉर्मूला क्या है?",
+                        "🛡️ LeetCode और GitHub Links कैसे जोड़ें?",
                         "🔍 ATS Job Matcher कैसे इस्तेमाल करें?"
                   ] : [
-                        "🎯 How to get 90%+ ATS Score?",
-                        "✍️ How to use 1-Click AI Sample?",
+                        "🎯 How to get 90%+ ATS Score for Tech?",
                         "💡 What is Google XYZ formula?",
+                        "🛡️ How to link GitHub & LeetCode?",
                         "🔍 How to use ATS Job Matcher?"
-                  ],
+                  ]),
                   timestamp: new Date()
             };
 
@@ -271,11 +300,13 @@ function AIChatAssistant() {
       // Listen for login/signup triggers or manual guide requests
       useEffect(() => {
             const handleGuideEvent = (e) => {
-                  const userName = e.detail?.name || '';
-                  triggerVoiceGuide(userName, language);
+                  const userName = e.detail?.name || (user && user.name) || '';
+                  const trackFromEvent = e.detail?.track || studentTrack || (user && user.track) || 'tech';
+                  triggerVoiceGuide(userName, language, trackFromEvent);
             };
 
-            const handleStreamWelcomeEvent = () => {
+            const handleStreamWelcomeEvent = (e) => {
+                  const trackFromEvent = e.detail?.track || studentTrack || 'tech';
                   triggerStreamWelcome(language);
             };
 
@@ -297,7 +328,7 @@ function AIChatAssistant() {
                         const parsed = JSON.parse(pendingGuide);
                         sessionStorage.removeItem('loku_ai_guide_trigger');
                         setTimeout(() => {
-                              triggerVoiceGuide(parsed.name, language);
+                              triggerVoiceGuide(parsed.name, language, parsed.track || studentTrack);
                         }, 800);
                   } catch (e) {
                         sessionStorage.removeItem('loku_ai_guide_trigger');
@@ -308,7 +339,7 @@ function AIChatAssistant() {
                   window.removeEventListener('trigger-loku-ai-guide', handleGuideEvent);
                   window.removeEventListener('trigger-stream-welcome', handleStreamWelcomeEvent);
             };
-      }, [language]);
+      }, [language, studentTrack, user]);
 
       // Text-to-Speech Audio Playback with voice selection
       const speakText = (text, targetLang) => {
@@ -456,7 +487,7 @@ function AIChatAssistant() {
             try {
                   const response = await axios.post(
                         `${config.API_BASE_URL}/ai/chat-assist`,
-                        { message: query, language: activeLang },
+                        { message: query, language: activeLang, track: studentTrack || 'tech' },
                         { timeout: 8000 }
                   );
 
@@ -472,12 +503,27 @@ function AIChatAssistant() {
                   speakText(aiReply, activeLang);
             } catch (error) {
                   const fallbacks = MESSAGES_BY_LANG[activeLang];
+                  const isBiz = (studentTrack || '').toLowerCase() === 'business';
                   let fallbackReply = fallbacks.fallbackDefault;
 
-                  if (query.toLowerCase().includes('verb') || query.toLowerCase().includes('action') || query.includes('वर्ब')) {
-                        fallbackReply = fallbacks.fallbackVerbs;
+                  if (query.toLowerCase().includes('score') || query.toLowerCase().includes('ats') || query.includes('स्कोर') || query.includes('badhaye')) {
+                        if (isBiz) {
+                              fallbackReply = activeLang === 'hi'
+                                    ? "बिजनेस रेज़्युमे में 90%+ ATS स्कोर पाने के लिए: 1. वर्क एक्सपीरियंस में P&L और 35% सेल्स ग्रोथ जैसे आंकड़े अवश्य लिखें। 2. 50-80 शब्दों की मजबूत एग्जीक्यूटिव समरी बनाएं। 3. स्टेप 4 में स्ट्रैटेजिक प्लानिंग और CRM स्किल्स जोड़ें। 4. स्टेप 5 में प्रोफेशनल रेफरेंस जोड़ें।"
+                                    : "To achieve 90%+ ATS score in Business: 1. Quantify work experience with P&L and sales growth metrics. 2. Write a 50-80 word executive summary. 3. Add Strategic Planning, CRM, and Leadership skills. 4. Include corporate references in Step 5.";
+                        } else {
+                              fallbackReply = activeLang === 'hi'
+                                    ? "टेक रेज़्युमे में 90%+ ATS स्कोर पाने के लिए: 1. स्टेप 4 में React, Python, Docker जैसे कोर टेक स्किल्स जोड़ें। 2. LeetCode और GitHub प्रोफाइल्स लिंक करें। 3. प्रोजेक्ट्स में लेटेंसी कम करने और स्केल के आंकड़े लिखें।"
+                                    : "To achieve 90%+ ATS score in Tech: 1. Add core languages and frameworks in Step 4. 2. Link LeetCode and GitHub profiles. 3. Quantify project impact with metrics like 40% latency reduction.";
+                        }
+                  } else if (query.toLowerCase().includes('verb') || query.toLowerCase().includes('action') || query.includes('वर्ब')) {
+                        fallbackReply = isBiz
+                              ? (activeLang === 'hi' ? "बिजनेस एक्शन वर्ब्स: Spearheaded (नेतृत्व किया), Negotiated (सौदा तय किया), Optimized (प्रॉफिट सुधारा), Expanded (विस्तार किया), Orchestrated (संचालित किया)।" : "Executive action verbs: Spearheaded, Negotiated, Optimized, Expanded, Orchestrated, and Forecasted.")
+                              : fallbacks.fallbackVerbs;
                   } else if (query.toLowerCase().includes('summary') || query.includes('समरी')) {
-                        fallbackReply = fallbacks.fallbackSummary;
+                        fallbackReply = isBiz
+                              ? (activeLang === 'hi' ? "एग्जीक्यूटिव समरी फॉर्मूला: [वर्षों का अनुभव + पद] + [P&L / ऑपरेशंस डोमेन] + [बड़ी बिजनेस सफलता]। जैसे: '10+ वर्षों के अनुभव वाले रिजल्ट-ओरिएंटेड रीजनल मैनेजर जिन्होंने ब्रांच प्रॉफिट में 140% की वृद्धि की।'" : "Executive Summary Formula: [Years of Experience / Title] + [P&L / Sales Domain] + [High-Impact Business Metric]. e.g. 'Dynamic Regional Manager with 10+ years driving branch operations and delivering 140% sales quota.'")
+                              : fallbacks.fallbackSummary;
                   }
 
                   const aiMsg = {

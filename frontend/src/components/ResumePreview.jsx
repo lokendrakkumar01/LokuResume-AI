@@ -781,7 +781,7 @@ function ResumePreview({ formData = {}, score, onDownloadPDF, onUpdatePreference
                                                                         )}
                                                                         {hardSkills.length === 0 && softSkills.length === 0 && (
                                                                               <p style={{ margin: '3px 0' }}>
-                                                                                    <strong>Technical Skills:</strong> {rawSkillsList.join(', ')}
+                                                                                    <strong>{safeFormData?.track === 'business' ? 'Business Skills & Competencies:' : 'Technical Skills:'}</strong> {rawSkillsList.join(', ')}
                                                                               </p>
                                                                         )}
                                                                   </div>
