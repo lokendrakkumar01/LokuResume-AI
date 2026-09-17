@@ -6,6 +6,34 @@ import config from '../config';
 import '../styles/Auth.css';
 
 // Professional SVG Icons
+const SparkleLogoIcon = () => (
+      <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" style={{ color: '#e11d48' }}>
+            <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"></polygon>
+      </svg>
+);
+
+const TechStudentIcon = () => (
+      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+            <polyline points="16 18 22 12 16 6"></polyline>
+            <polyline points="8 6 2 12 8 18"></polyline>
+      </svg>
+);
+
+const BusinessStudentIcon = () => (
+      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+            <rect x="2" y="7" width="20" height="14" rx="2" ry="2"></rect>
+            <path d="M16 21V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16"></path>
+      </svg>
+);
+
+const AlertIcon = () => (
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" style={{ flexShrink: 0 }}>
+            <circle cx="12" cy="12" r="10"></circle>
+            <line x1="12" y1="8" x2="12" y2="12"></line>
+            <line x1="12" y1="16" x2="12.01" y2="16"></line>
+      </svg>
+);
+
 const UserIcon = () => (
       <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ opacity: 0.75 }}>
             <path d="M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2"></path>
@@ -121,7 +149,8 @@ function Signup() {
                   <div className="auth-card">
                         <div className="auth-header">
                               <div className="auth-brand-logo">
-                                    <span>✨</span> {config.APP_NAME}
+                                    <SparkleLogoIcon />
+                                    <span>{config.APP_NAME}</span>
                               </div>
                               <p className="auth-tagline">{config.TAGLINE}</p>
                         </div>
@@ -145,6 +174,9 @@ function Signup() {
                                           type="button"
                                           onClick={() => setStudentTrack('tech')}
                                           style={{
+                                                display: 'inline-flex',
+                                                alignItems: 'center',
+                                                gap: '6px',
                                                 padding: '6px 14px',
                                                 borderRadius: '8px',
                                                 border: 'none',
@@ -156,12 +188,16 @@ function Signup() {
                                                 color: studentTrack === 'tech' ? '#ffffff' : 'var(--text-secondary, #94a3b8)'
                                           }}
                                     >
-                                          💻 Tech Student
+                                          <TechStudentIcon />
+                                          <span>Tech Student</span>
                                     </button>
                                     <button
                                           type="button"
                                           onClick={() => setStudentTrack('business')}
                                           style={{
+                                                display: 'inline-flex',
+                                                alignItems: 'center',
+                                                gap: '6px',
                                                 padding: '6px 14px',
                                                 borderRadius: '8px',
                                                 border: 'none',
@@ -173,12 +209,18 @@ function Signup() {
                                                 color: studentTrack === 'business' ? '#ffffff' : 'var(--text-secondary, #94a3b8)'
                                           }}
                                     >
-                                          💼 Business Student
+                                          <BusinessStudentIcon />
+                                          <span>Business Student</span>
                                     </button>
                               </div>
                         </div>
 
-                        {error && <div className="error-message">⚠️ {error}</div>}
+                        {error && (
+                              <div className="error-message">
+                                    <AlertIcon />
+                                    <span>{error}</span>
+                              </div>
+                        )}
 
                         <form onSubmit={handleSubmit} className="auth-form">
                               <div className="form-group">

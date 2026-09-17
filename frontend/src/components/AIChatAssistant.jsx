@@ -6,7 +6,7 @@ import '../styles/AIChatAssistant.css';
 
 const MESSAGES_BY_LANG = {
       hi: {
-            welcome: "👋 नमस्ते! मैं आपका **LokiResume AI करियर और ATS कोच** हूँ।\n\nमैं आपकी मदद कर सकता हूँ:\n• 🎯 अपना ATS स्कोर 90%+ तक ले जाने में\n• ✍️ Google XYZ फॉर्मूला से असरदार बुलेट पॉइंट्स लिखने में\n• 💼 Tech और Business दोनों के लिए कस्टमाइज्ड टूल्स\n• 🎙️ आप नीचे दिए गए माइक बटन को दबाकर हिंदी में बोलकर भी सवाल पूछ सकते हैं!",
+            welcome: "👋 नमस्ते! मैं आपका **LokuResume AI करियर और ATS कोच** हूँ।\n\nमैं आपकी मदद कर सकता हूँ:\n• 🎯 अपना ATS स्कोर 90%+ तक ले जाने में\n• ✍️ Google XYZ फॉर्मूला से असरदार बुलेट पॉइंट्स लिखने में\n• 💼 Tech और Business दोनों के लिए कस्टमाइज्ड टूल्स\n• 🎙️ आप नीचे दिए गए माइक बटन को दबाकर हिंदी में बोलकर भी सवाल पूछ सकते हैं!",
             placeholder: "माइक 🎙️ दबाकर बोलें या सवाल टाइप करें...",
             listening: "सुन रहा हूँ... अब बोलिए (हिंदी या इंग्लिश)",
             chipsTech: [
@@ -30,7 +30,7 @@ const MESSAGES_BY_LANG = {
             fallbackSummary: "समरी फॉर्मूला: [अनुभव के वर्ष / रोल] + [प्रमुख टेक्नोलॉजीज़ या बिजनेस डोमेन] + [ठोस उपलब्धि]। 40 से 80 शब्दों में रखें।"
       },
       en: {
-            welcome: "👋 Hi! I'm your **LokiResume AI Career & ATS Coach**.\n\nI can help you:\n• 🎯 Optimize your ATS Score to 90%+\n• ✍️ Write high-impact bullet points with numbers\n• 💼 Tailor tools for Tech & Business students\n• 🎙️ You can also speak to me in English using the microphone button!",
+            welcome: "👋 Hi! I'm your **LokuResume AI Career & ATS Coach**.\n\nI can help you:\n• 🎯 Optimize your ATS Score to 90%+\n• ✍️ Write high-impact bullet points with numbers\n• 💼 Tailor tools for Tech & Business students\n• 🎙️ You can also speak to me in English using the microphone button!",
             placeholder: "Speak with mic 🎙️ or type your question...",
             listening: "Listening... Speak your question now",
             chipsTech: [
@@ -94,6 +94,23 @@ function AIChatAssistant() {
 
       const messagesEndRef = useRef(null);
       const recognitionRef = useRef(null);
+      const voicesRef = useRef([]);
+
+      // Preload SpeechSynthesis Voices
+      useEffect(() => {
+            if (typeof window !== 'undefined' && 'speechSynthesis' in window) {
+                  const updateVoices = () => {
+                        try {
+                              const v = window.speechSynthesis.getVoices();
+                              if (v && v.length > 0) {
+                                    voicesRef.current = v;
+                              }
+                        } catch (e) {}
+                  };
+                  updateVoices();
+                  window.speechSynthesis.onvoiceschanged = updateVoices;
+            }
+      }, []);
 
       // Auto scroll to bottom
       const scrollToBottom = () => {
@@ -295,39 +312,65 @@ function AIChatAssistant() {
 
       // Text-to-Speech Audio Playback with voice selection
       const speakText = (text, targetLang) => {
-            if (!voiceEnabled || !('speechSynthesis' in window)) return;
+            if (!voiceEnabled || !('speechSynthesis' in window) || !text) return;
 
-            window.speechSynthesis.cancel(); // stop any previous speech
+            try {
+                  window.speechSynthesis.cancel(); // stop any previous speech
 
-            // Strip markdown asterisks and bullets for smooth reading
-            const cleanText = text
-                  .replace(/\*\*/g, '')
-                  .replace(/[•#_*]/g, '')
-                  .replace(/\n+/g, '. ');
+                  // Strip markdown asterisks and bullets for smooth reading
+                  const cleanText = text
+                        .replace(/\*\*/g, '')
+                        .replace(/[•#_*`]/g, '')
+                        .replace(/\[([^\]]+)\]\([^)]+\)/g, '$1')
+                        .replace(/\n+/g, '. ')
+                        .trim();
 
-            const utterance = new SpeechSynthesisUtterance(cleanText);
-            const currentLang = targetLang || language;
-            utterance.lang = currentLang === 'hi' ? 'hi-IN' : 'en-US';
-            utterance.rate = currentLang === 'hi' ? 0.95 : 1.05;
-            utterance.pitch = 1.0;
+                  if (!cleanText) return;
 
-            // Try to find a matching native voice
-            const voices = window.speechSynthesis.getVoices();
-            if (voices && voices.length > 0) {
-                  if (currentLang === 'hi') {
-                        const hiVoice = voices.find(v => v.lang.startsWith('hi') || v.name.toLowerCase().includes('hindi'));
-                        if (hiVoice) utterance.voice = hiVoice;
-                  } else {
-                        const enVoice = voices.find(v => v.lang.startsWith('en'));
-                        if (enVoice) utterance.voice = enVoice;
+                  const utterance = new SpeechSynthesisUtterance(cleanText);
+                  const currentLang = targetLang || language;
+                  utterance.lang = currentLang === 'hi' ? 'hi-IN' : 'en-US';
+                  utterance.rate = currentLang === 'hi' ? 0.95 : 1.02;
+                  utterance.pitch = 1.0;
+
+                  // Try to find a matching native voice using cached or live voices
+                  let voices = voicesRef.current;
+                  if (!voices || voices.length === 0) {
+                        voices = window.speechSynthesis.getVoices();
+                        voicesRef.current = voices;
                   }
+
+                  if (voices && voices.length > 0) {
+                        if (currentLang === 'hi') {
+                              const hiVoice = voices.find(v => (v.lang && (v.lang.startsWith('hi') || v.lang.includes('IN'))) && v.name.toLowerCase().includes('hindi'))
+                                           || voices.find(v => v.lang && v.lang.startsWith('hi'))
+                                           || voices.find(v => v.name.toLowerCase().includes('hindi'));
+                              if (hiVoice) utterance.voice = hiVoice;
+                        } else {
+                              const enVoice = voices.find(v => v.lang && (v.lang === 'en-US' || v.lang === 'en-GB'))
+                                           || voices.find(v => v.lang && v.lang.startsWith('en'));
+                              if (enVoice) utterance.voice = enVoice;
+                        }
+                  }
+
+                  utterance.onstart = () => setIsSpeaking(true);
+                  utterance.onend = () => setIsSpeaking(false);
+                  utterance.onerror = (e) => {
+                        console.warn('Speech synthesis ended:', e);
+                        setIsSpeaking(false);
+                  };
+
+                  setTimeout(() => {
+                        try {
+                              window.speechSynthesis.speak(utterance);
+                        } catch (err) {
+                              setIsSpeaking(false);
+                        }
+                  }, 40);
+            } catch (err) {
+                  console.warn('Speech error:', err);
+                  setIsSpeaking(false);
             }
-
-            utterance.onstart = () => setIsSpeaking(true);
-            utterance.onend = () => setIsSpeaking(false);
-            utterance.onerror = () => setIsSpeaking(false);
-
-            window.speechSynthesis.speak(utterance);
       };
 
       const stopSpeaking = () => {
@@ -470,78 +513,86 @@ function AIChatAssistant() {
                                     <div className="ai-chat-header-info">
                                           <div className="ai-status-indicator online"></div>
                                           <div>
-                                                <h4>LokiAI Career Coach</h4>
+                                                <h4>LokuAI Career Coach</h4>
                                                 <p className="ai-subtitle">Voice &amp; ATS Assistant</p>
                                           </div>
                                     </div>
 
                                     <div className="ai-header-controls">
-                                           {/* Stream Track Switcher */}
-                                           <button
-                                                 type="button"
-                                                 className="lang-pill track-pill"
-                                                 onClick={() => handleSelectStream(studentTrack === 'business' ? 'tech' : 'business')}
-                                                 title={language === 'hi' ? 'ट्रैक बदलें (Tech / Business)' : 'Switch Stream (Tech / Business)'}
-                                           >
-                                                 {studentTrack === 'business' ? '💼 Biz' : '💻 Tech'}
-                                           </button>
-
-                                           {/* Language Selector Switcher */}
-                                          <div className="ai-lang-switcher" title="Select Voice & Chat Language">
-                                                <button
-                                                      type="button"
-                                                      className={`lang-pill ${language === 'hi' ? 'active' : ''}`}
-                                                      onClick={() => handleLanguageChange('hi')}
-                                                >
-                                                      🇮🇳 हिं
-                                                </button>
-                                                <button
-                                                      type="button"
-                                                      className={`lang-pill ${language === 'en' ? 'active' : ''}`}
-                                                      onClick={() => handleLanguageChange('en')}
-                                                >
-                                                      🇺🇸 En
-                                                </button>
-                                          </div>
-
-                                          {/* Step-by-Step Guide Trigger */}
+                                          {/* Stream Track Switcher */}
                                           <button
                                                 type="button"
-                                                className="ai-icon-btn guide-btn"
+                                                className="ai-ctrl-btn track-btn"
+                                                onClick={() => handleSelectStream(studentTrack === 'business' ? 'tech' : 'business')}
+                                                title={language === 'hi' ? 'स्ट्रीम बदलें (Tech / Business)' : 'Switch Stream (Tech / Business)'}
+                                          >
+                                                {studentTrack === 'business' ? (
+                                                      <>
+                                                            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2"><rect x="2" y="7" width="20" height="14" rx="2" ry="2"></rect><path d="M16 21V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16"></path></svg>
+                                                            <span>Biz</span>
+                                                      </>
+                                                ) : (
+                                                      <>
+                                                            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><polyline points="16 18 22 12 16 6"></polyline><polyline points="8 6 2 12 8 18"></polyline></svg>
+                                                            <span>Tech</span>
+                                                      </>
+                                                )}
+                                          </button>
+
+                                          {/* Single-Click Compact Language Switcher */}
+                                          <button
+                                                type="button"
+                                                className="ai-ctrl-btn lang-btn"
+                                                onClick={() => handleLanguageChange(language === 'hi' ? 'en' : 'hi')}
+                                                title={language === 'hi' ? 'Switch to English' : 'हिंदी में बदलें'}
+                                          >
+                                                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><circle cx="12" cy="12" r="10"></circle><line x1="2" y1="12" x2="22" y2="12"></line><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"></path></svg>
+                                                <span>{language === 'hi' ? 'हिं' : 'EN'}</span>
+                                          </button>
+
+                                          {/* Voice Guide Trigger */}
+                                          <button
+                                                type="button"
+                                                className="ai-ctrl-btn"
                                                 onClick={() => triggerVoiceGuide('', language)}
                                                 title={language === 'hi' ? 'स्टेप-बाय-स्टेप गाइड सुनें' : 'Restart Voice Guide'}
                                           >
-                                                🎙️ {language === 'hi' ? 'गाइड' : 'Guide'}
+                                                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"></path><path d="M19 10v2a7 7 0 0 1-14 0v-2"></path><line x1="12" y1="19" x2="12" y2="23"></line><line x1="8" y1="23" x2="16" y2="23"></line></svg>
                                           </button>
 
-                                          {isSpeaking && (
-                                                <button
-                                                      className="ai-icon-btn active-voice"
-                                                      onClick={stopSpeaking}
-                                                      title="Stop Voice Playback"
-                                                >
-                                                      🔊 Stop
-                                                </button>
-                                          )}
+                                          {/* Voice Output Toggle */}
                                           <button
-                                                className={`ai-icon-btn ${voiceEnabled ? 'voice-on' : 'voice-off'}`}
+                                                type="button"
+                                                className={`ai-ctrl-btn ${isSpeaking ? 'speaking-active' : ''}`}
                                                 onClick={() => {
-                                                      if (isSpeaking) stopSpeaking();
-                                                      setVoiceEnabled(!voiceEnabled);
+                                                      if (isSpeaking) {
+                                                            stopSpeaking();
+                                                      } else {
+                                                            setVoiceEnabled(!voiceEnabled);
+                                                      }
                                                 }}
-                                                title={voiceEnabled ? 'Voice output ON (Click to mute)' : 'Voice output OFF'}
+                                                title={isSpeaking ? 'Stop speaking' : voiceEnabled ? 'Voice output ON (Click to mute)' : 'Voice output OFF'}
                                           >
-                                                {voiceEnabled ? '🔊' : '🔇'}
+                                                {isSpeaking ? (
+                                                      <svg width="13" height="13" viewBox="0 0 24 24" fill="currentColor" stroke="none"><rect x="6" y="6" width="12" height="12" rx="2"></rect></svg>
+                                                ) : voiceEnabled ? (
+                                                      <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"></polygon><path d="M19.07 4.93a10 10 0 0 1 0 14.14M15.54 8.46a5 5 0 0 1 0 7.07"></path></svg>
+                                                ) : (
+                                                      <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"></polygon><line x1="23" y1="9" x2="17" y2="15"></line><line x1="17" y1="9" x2="23" y2="15"></line></svg>
+                                                )}
                                           </button>
+
+                                          {/* Close Chat Button */}
                                           <button
-                                                className="ai-icon-btn close-btn"
+                                                type="button"
+                                                className="ai-ctrl-btn close-btn"
                                                 onClick={() => {
                                                       stopSpeaking();
                                                       setIsOpen(false);
                                                 }}
                                                 title="Close Chat"
                                           >
-                                                ✕
+                                                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
                                           </button>
                                     </div>
                               </div>
@@ -682,7 +733,7 @@ function AIChatAssistant() {
                                           className="ai-send-btn"
                                           title="Send Message"
                                     >
-                                          ➤
+                                          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><line x1="22" y1="2" x2="11" y2="13"></line><polygon points="22 2 15 22 11 13 2 9 22 2"></polygon></svg>
                                     </button>
                               </form>
                         </div>

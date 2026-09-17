@@ -24,4 +24,6 @@ Thumbs.db
 # Node modules & build
 node_modules/
 dist/
+scratch/
+
 

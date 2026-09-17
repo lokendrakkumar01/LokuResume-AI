@@ -119,38 +119,72 @@
 .ai-header-controls {
     display: flex;
     align-items: center;
-    gap: 6px;
+    gap: 5px;
+    flex-shrink: 0;
 }
 
-.ai-lang-switcher {
-    display: flex;
-    background: rgba(99, 102, 241, 0.12);
-    border: 1px solid var(--card-border);
-    border-radius: var(--radius-full);
-    padding: 2px;
-    gap: 2px;
-}
-
-.lang-pill {
-    background: transparent;
-    border: none;
-    padding: 3px 8px;
-    border-radius: var(--radius-full);
-    font-size: 0.72rem;
-    font-weight: 700;
-    color: var(--text-muted);
-    cursor: pointer;
-    transition: var(--transition);
-}
-
-.lang-pill:hover {
+.ai-ctrl-btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 4px;
+    background: rgba(255, 255, 255, 0.06);
+    border: 1px solid rgba(255, 255, 255, 0.12);
+    border-radius: 8px;
+    padding: 5px 8px;
     color: var(--text-main);
+    font-size: 0.75rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    white-space: nowrap;
+    line-height: 1;
 }
 
-.lang-pill.active {
-    background: var(--primary-color);
-    color: #ffffff;
-    box-shadow: 0 2px 6px rgba(99, 102, 241, 0.3);
+.ai-ctrl-btn:hover {
+    background: rgba(255, 255, 255, 0.14);
+    border-color: rgba(255, 255, 255, 0.25);
+}
+
+.ai-ctrl-btn.track-btn {
+    background: rgba(59, 130, 246, 0.15);
+    border-color: rgba(59, 130, 246, 0.35);
+    color: #60a5fa;
+    font-weight: 700;
+}
+
+.ai-ctrl-btn.track-btn:hover {
+    background: rgba(59, 130, 246, 0.25);
+}
+
+.ai-ctrl-btn.lang-btn {
+    background: rgba(168, 85, 247, 0.12);
+    border-color: rgba(168, 85, 247, 0.3);
+    color: #c084fc;
+}
+
+.ai-ctrl-btn.lang-btn:hover {
+    background: rgba(168, 85, 247, 0.22);
+}
+
+.ai-ctrl-btn.speaking-active {
+    background: rgba(239, 68, 68, 0.2);
+    border-color: rgba(239, 68, 68, 0.4);
+    color: #ef4444;
+    animation: pulseRed 1.5s infinite;
+}
+
+.ai-ctrl-btn.close-btn {
+    padding: 5px 6px;
+    background: transparent;
+    border-color: transparent;
+    color: var(--text-muted);
+}
+
+.ai-ctrl-btn.close-btn:hover {
+    background: rgba(239, 68, 68, 0.15);
+    border-color: rgba(239, 68, 68, 0.3);
+    color: #ef4444;
 }
 
 .ai-icon-btn {

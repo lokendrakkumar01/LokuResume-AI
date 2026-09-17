@@ -85,7 +85,9 @@ DEFAULT_TEMPLATES = [
     {"id": "modern", "name": "Modern Minimalist", "description": "Clean, left-aligned layout with bold accent headers", "active": True, "is_premium": False},
     {"id": "executive", "name": "Executive Leadership", "description": "Centered elegant header with top accent bar", "active": True, "is_premium": False},
     {"id": "tech", "name": "Tech Specialist", "description": "Structured developer layout with skills focus", "active": True, "is_premium": False},
-    {"id": "compact", "name": "Compact One-Pager", "description": "Tight margins and dense typography for single page", "active": True, "is_premium": False}
+    {"id": "compact", "name": "Compact One-Pager", "description": "Tight margins and dense typography for single page", "active": True, "is_premium": False},
+    {"id": "business_executive", "name": "Business Executive (Michael Scott)", "description": "2-column executive layout with photo, references, and skills", "active": True, "is_premium": False},
+    {"id": "business_timeline", "name": "Business Timeline (Tyler Vader)", "description": "Modern executive 2-column layout with timeline and skills", "active": True, "is_premium": False}
 ]
 
 # --------------------------------------------------------------------------
@@ -136,7 +138,13 @@ async def log_admin_action(admin_id: str, action: str, target_type: str, target_
 
 async def check_feature_access(user_id: Optional[str], feature_id: str):
     """Enforces feature flag status on backend API calls"""
-    db = await get_database()
+    try:
+        db = await get_database()
+        if db is None:
+            return True
+    except Exception:
+        return True
+
     # 1. Check user-specific override
     if user_id:
         try:
@@ -162,15 +170,20 @@ async def check_feature_access(user_id: Optional[str], feature_id: str):
             pass
 
     # 2. Check global setting
-    setting = await db.platform_settings.find_one({"key": "features"})
-    if setting and setting.get("features"):
-        feat = setting["features"].get(feature_id, {})
-        status_val = feat.get("status", "public")
-        if status_val == "disabled":
-            raise HTTPException(
-                status_code=status.HTTP_403_FORBIDDEN,
-                detail=f"FEATURE_DISABLED: Feature '{feat.get('name', feature_id)}' is currently disabled."
-            )
+    try:
+        setting = await db.platform_settings.find_one({"key": "features"})
+        if setting and setting.get("features"):
+            feat = setting["features"].get(feature_id, {})
+            status_val = feat.get("status", "public")
+            if status_val == "disabled":
+                raise HTTPException(
+                    status_code=status.HTTP_403_FORBIDDEN,
+                    detail=f"FEATURE_DISABLED: Feature '{feat.get('name', feature_id)}' is currently disabled."
+                )
+    except HTTPException:
+        raise
+    except Exception:
+        pass
     return True
 
 # --------------------------------------------------------------------------
@@ -705,11 +718,24 @@ async def update_admin_features(req: FeatureFlagsUpdateRequest, admin_id: str = 
 
 @router.get("/templates")
 async def get_templates(admin_id: str = Depends(get_current_admin)):
-    """Get active and available resume layout templates"""
+    """Get active and available resume layout templates, merged with platform defaults"""
     db = await get_database()
     setting = await db.platform_settings.find_one({"key": "templates"})
-    templates = setting.get("templates", DEFAULT_TEMPLATES) if setting else DEFAULT_TEMPLATES
-    return {"templates": templates}
+    saved_templates = setting.get("templates", []) if setting else []
+
+    saved_map = {t["id"]: t for t in saved_templates if isinstance(t, dict) and "id" in t}
+    merged_templates = []
+    for dt in DEFAULT_TEMPLATES:
+        if dt["id"] in saved_map:
+            merged_templates.append({**dt, **saved_map[dt["id"]]})
+        else:
+            merged_templates.append(dt)
+
+    for st_id, st in saved_map.items():
+        if not any(t["id"] == st_id for t in merged_templates):
+            merged_templates.append(st)
+
+    return {"templates": merged_templates}
 
 @router.post("/templates")
 async def update_templates(templates: List[TemplateConfigItem], admin_id: str = Depends(get_current_admin)):

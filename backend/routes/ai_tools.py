@@ -33,7 +33,7 @@ class JDAnalysisResponse(BaseModel):
 async def enhance_bullet(request: BulletEnhanceRequest, authorization: Optional[str] = Header(None)):
     """Generate high-impact ATS optimized bullet variations for project or experience descriptions"""
     user_id = None
-    if authorization:
+    if authorization and isinstance(authorization, str):
         token = authorization.replace("Bearer ", "").strip()
         user_id = get_user_from_token(token)
     await check_feature_access(user_id, "ai_bullet_generator")
@@ -60,7 +60,7 @@ async def enhance_bullet(request: BulletEnhanceRequest, authorization: Optional[
 async def analyze_job_description(request: JDAnalysisRequest, authorization: Optional[str] = Header(None)):
     """Analyze resume skills and summary against a target Job Description to compute ATS match score"""
     user_id = None
-    if authorization:
+    if authorization and isinstance(authorization, str):
         token = authorization.replace("Bearer ", "").strip()
         user_id = get_user_from_token(token)
     await check_feature_access(user_id, "ai_ats_deep_audit")
@@ -113,7 +113,7 @@ class AIChatResponse(BaseModel):
 async def ai_chat_assist(request: AIChatRequest, authorization: Optional[str] = Header(None)):
     """Interactive AI Career & ATS Coach chatbot answering questions via text or voice in selected language"""
     user_id = None
-    if authorization:
+    if authorization and isinstance(authorization, str):
         token = authorization.replace("Bearer ", "").strip()
         user_id = get_user_from_token(token)
     await check_feature_access(user_id, "ai_voice_assistant")
@@ -265,7 +265,38 @@ async def ai_chat_assist(request: AIChatRequest, authorization: Optional[str] = 
                 "Give me 5 strong action verbs"
             ]
 
-    # 6. Step-by-Step Guidance & How to Build Resume
+    # 6. Business & Executive Specific
+    elif any(k in msg for k in ["business", "biz", "management", "mba", "michael scott", "reference", "executive", "sales", "finance", "p&l", "leadership", "बिजनेस", "व्यापार", "प्रबंधन", "रेफरेंस"]):
+        if is_hindi:
+            reply = (
+                "💼 **बिजनेस व एग्जीक्यूटिव रेज़्युमे के लिए खास सुझाव:**\n\n"
+                "1. **Michael Scott 2-कॉलम लेआउट**: साइडबार में प्रोफाइल फोटो, अबाउट मी, लिंक्स, रेफरेंसेज और हॉबीज; मुख्य कॉलम में वर्क एक्सपीरियंस और एजुकेशन।\n"
+                "2. **ठोस आंकड़े (P&L & Metrics)**: रेवेन्यू ग्रोथ, कॉस्ट रिडक्शन, टीम साइज और बजट मैनेजमेंट (जैसे: '15 सदस्यों की टीम का नेतृत्व किया और 22% बिक्री बढ़ाई')।\n"
+                "3. **रेफरेंसेज (References)**: अपने मेंटर्स, मैनेजर्स या प्रोफेसरों के नाम, कंपनी और संपर्क विवरण जोड़ें।\n"
+                "4. **भाषाएं और हॉबीज**: प्रोफिशिएंसी बार के साथ अपनी बहुभाषी क्षमता और लीडरशिप हॉबीज शामिल करें।"
+            )
+            suggestions = [
+                "बिजनेस समरी कैसे लिखें?",
+                "रेफरेंसेज कैसे जोड़ें?",
+                "टॉप 10 बिजनेस स्किल्स",
+                "ATS स्कोर 90%+ कैसे करें?"
+            ]
+        else:
+            reply = (
+                "💼 **Key Strategies for a Standout Business & Executive Resume:**\n\n"
+                "1. **Michael Scott 2-Column Template**: Charcoal sidebar for Photo, About Me, References, and Hobbies; main column for Career Timeline and Education.\n"
+                "2. **Quantify Business Impact**: Emphasize revenue growth, P&L ownership, team leadership, and cost reductions (e.g. 'Led 15-person team, increasing sales by 22%').\n"
+                "3. **Professional References**: Include credible mentors/executives with their title, organization, and direct contact info.\n"
+                "4. **Languages & Leadership Hobbies**: Showcase multicultural proficiencies and team-oriented interests."
+            )
+            suggestions = [
+                "How to write Executive Summary?",
+                "How to format References properly?",
+                "Top 10 Business & Management Skills",
+                "How to get 90%+ ATS Score?"
+            ]
+
+    # 7. Step-by-Step Guidance & How to Build Resume
     elif any(k in msg for k in ["guide", "start", "shuru", "madad", "help", "kese", "kaise", "step", "banao", "create", "onboard", "new", "tour", "batao"]):
         if is_hindi:
             reply = (
@@ -300,7 +331,7 @@ async def ai_chat_assist(request: AIChatRequest, authorization: Optional[str] = 
                 "How to use ATS Job Matcher?"
             ]
 
-    # 7. Interview Preparation & STAR Method
+    # 8. Interview Preparation & STAR Method
     elif any(k in msg for k in ["interview", "star method", "star technique", "question", "tayari", "hr interview", "hr round", "mock interview"]):
         if is_hindi:
             reply = (
@@ -331,31 +362,31 @@ async def ai_chat_assist(request: AIChatRequest, authorization: Optional[str] = 
                 "Skills for Cybersecurity"
             ]
 
-    # 8. Default / Conversational
+    # 9. Default / Conversational
     else:
         if is_hindi:
             reply = (
-                "नमस्ते! मैं आपका LokiResume AI करियर और ATS कोच हूँ। "
-                "मैं आपके रेज़्युमे का ATS स्कोर बढ़ाने, Google XYZ फॉर्मूला से बुलेट पॉइंट्स लिखने, या जॉब के अनुसार स्किल्स चुनने में मदद कर सकता हूँ। "
+                "नमस्ते! मैं आपका LokuResume AI करियर और ATS कोच हूँ। "
+                "मैं आपके रेज़्युमे का ATS स्कोर बढ़ाने, Google XYZ फॉर्मूला से बुलेट पॉइंट्स लिखने, या Tech और Business दोनों फील्ड्स में मदद कर सकता हूँ। "
                 "आप माइक 🎙️ बटन दबाकर हिंदी में बोलकर भी सवाल पूछ सकते हैं!"
             )
             suggestions = [
                 "ATS स्कोर 90%+ कैसे करें?",
                 "सॉफ्टवेयर इंजीनियर की समरी लिखो",
-                "5 दमदार एक्शन वर्ब्स बताओ",
-                "साइबर सिक्योरिटी स्किल्स"
+                "बिजनेस समरी कैसे लिखें?",
+                "5 दमदार एक्शन वर्ब्स बताओ"
             ]
         else:
             reply = (
-                "Hello! I am your LokiResume AI Career & ATS Coach. "
-                "I can help you boost your ATS score, write impactful Google XYZ bullet points, recommend high-demand skills, or tailor your resume to any job posting. "
+                "Hello! I am your LokuResume AI Career & ATS Coach. "
+                "I can help you boost your ATS score, write impactful Google XYZ bullet points, recommend high-demand skills, or tailor your resume for Tech & Business roles. "
                 "You can also use the microphone icon 🎙️ to ask me anything with your voice!"
             )
             suggestions = [
                 "How to improve my ATS score?",
                 "Write a summary for Full Stack Engineer",
-                "Give me 5 strong action verbs",
-                "What skills to add for Cybersecurity?"
+                "How to write Executive Summary?",
+                "Give me 5 strong action verbs"
             ]
 
     return AIChatResponse(reply=reply, suggestions=suggestions)
