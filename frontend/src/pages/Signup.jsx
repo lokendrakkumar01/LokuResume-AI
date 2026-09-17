@@ -97,7 +97,7 @@ function Signup() {
                   }));
             }, 800);
             return () => clearTimeout(timer);
-      }, [studentTrack]);
+      }, []);
 
       const handleSubmit = async (e) => {
             e.preventDefault();

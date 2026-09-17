@@ -1,5 +1,12 @@
 import os
-import httpx
+try:
+    import httpx
+except ImportError:
+    httpx = None
+import json
+import urllib.request
+import urllib.error
+import asyncio
 import logging
 import re
 from fastapi import APIRouter, HTTPException, Depends, status, Header
@@ -148,14 +155,31 @@ async def try_gemini_chat(prompt: str, language: str, track: str) -> Optional[di
     }
     
     try:
-        async with httpx.AsyncClient(timeout=5.0) as client:
-            resp = await client.post(url, json=payload)
-            if resp.status_code == 200:
-                data = resp.json()
-                text = data["candidates"][0]["content"]["parts"][0]["text"].strip()
-                clean_speech = re.sub(r'[*#_`\[\]]', '', text)
-                clean_speech = re.sub(r'\n+', '. ', clean_speech).strip()
-                return {"reply": text, "speech": clean_speech}
+        if httpx is not None:
+            async with httpx.AsyncClient(timeout=5.0) as client:
+                resp = await client.post(url, json=payload)
+                if resp.status_code == 200:
+                    data = resp.json()
+                    text = data["candidates"][0]["content"]["parts"][0]["text"].strip()
+                    clean_speech = re.sub(r'[*#_`\[\]]', '', text)
+                    clean_speech = re.sub(r'\n+', '. ', clean_speech).strip()
+                    return {"reply": text, "speech": clean_speech}
+        else:
+            def _sync_post():
+                req = urllib.request.Request(
+                    url,
+                    data=json.dumps(payload).encode("utf-8"),
+                    headers={"Content-Type": "application/json"}
+                )
+                with urllib.request.urlopen(req, timeout=5.0) as resp:
+                    if resp.status == 200:
+                        data = json.loads(resp.read().decode("utf-8"))
+                        text = data["candidates"][0]["content"]["parts"][0]["text"].strip()
+                        clean_speech = re.sub(r'[*#_`\[\]]', '', text)
+                        clean_speech = re.sub(r'\n+', '. ', clean_speech).strip()
+                        return {"reply": text, "speech": clean_speech}
+                    return None
+            return await asyncio.to_thread(_sync_post)
     except Exception as e:
         logger.warning(f"Gemini API chat fallback: {e}")
     return None

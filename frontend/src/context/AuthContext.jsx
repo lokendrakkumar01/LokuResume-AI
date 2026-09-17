@@ -56,17 +56,29 @@ export const AuthProvider = ({ children }) => {
       });
 
       const [studentTrack, setStudentTrackState] = useState(() => {
-            const saved = localStorage.getItem('student_track');
-            if (saved === 'business' || saved === 'tech') return saved;
             try {
                   const savedUser = localStorage.getItem('user');
                   if (savedUser) {
                         const parsed = JSON.parse(savedUser);
-                        if (parsed.track) return parsed.track;
+                        if (parsed && (parsed.track === 'business' || parsed.track === 'tech')) {
+                              return parsed.track;
+                        }
                   }
             } catch (e) {}
+            const saved = localStorage.getItem('student_track');
+            if (saved === 'business' || saved === 'tech') return saved;
             return 'tech';
       });
+
+      // Synchronize student track whenever authenticated user profile loads
+      useEffect(() => {
+            if (user && user.track && (user.track === 'business' || user.track === 'tech')) {
+                  if (studentTrack !== user.track) {
+                        setStudentTrackState(user.track);
+                        localStorage.setItem('student_track', user.track);
+                  }
+            }
+      }, [user]);
 
       const setStudentTrack = async (newTrack) => {
             const clean = (newTrack || 'tech').toLowerCase() === 'business' ? 'business' : 'tech';

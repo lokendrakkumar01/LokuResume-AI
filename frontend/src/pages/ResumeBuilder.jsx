@@ -2083,24 +2083,6 @@ function ResumeBuilder() {
                                      <div className="skill-suggestions-box">
                                            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px', flexWrap: 'wrap', gap: '6px' }}>
                                                  <span className="suggestions-label">💡 Popular {isBusiness ? 'Business & Executive' : 'Tech Developer'} Skills (Click to add):</span>
-                                                 <button
-                                                       type="button"
-                                                       className="btn btn-sm btn-secondary"
-                                                       onClick={() => {
-                                                             const nextTrack = isBusiness ? 'tech' : 'business';
-                                                             setFormData(prev => ({
-                                                                   ...prev,
-                                                                   track: nextTrack,
-                                                                   template_style: nextTrack === 'business' ? 'business_executive' : 'modern',
-                                                                   skills: nextTrack === 'business' ? POPULAR_BUSINESS_SKILLS.slice(0, 8) : POPULAR_TECH_SKILLS.slice(0, 8)
-                                                             }));
-                                                             if (setStudentTrack) setStudentTrack(nextTrack);
-                                                             showToast(`Switched to ${nextTrack === 'business' ? 'Business & Executive' : 'Tech & Developer'} Skills`, 'info');
-                                                       }}
-                                                       style={{ fontSize: '0.75rem', padding: '2px 8px' }}
-                                                 >
-                                                       Switch to {isBusiness ? '💻 Tech Skills' : '💼 Business Skills'}
-                                                 </button>
                                            </div>
                                            <div className="popular-skills-pills">
                                                  {(isBusiness ? POPULAR_BUSINESS_SKILLS : POPULAR_TECH_SKILLS).map((sk) => {

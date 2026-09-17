@@ -404,27 +404,32 @@ function Dashboard() {
                                           <span>Admin Portal</span>
                                     </Link>
                               )}
-                              <button
-                                    type="button"
-                                    onClick={() => setStudentTrack && setStudentTrack(studentTrack === 'business' ? 'tech' : 'business')}
+                              <div
                                     style={{
                                           display: 'inline-flex',
                                           alignItems: 'center',
-                                          gap: '6px',
+                                          gap: '8px',
                                           padding: '5px 12px',
                                           borderRadius: '9999px',
-                                          background: studentTrack === 'business' ? 'rgba(245, 158, 11, 0.15)' : 'rgba(59, 130, 246, 0.15)',
-                                          border: `1px solid ${studentTrack === 'business' ? 'rgba(245, 158, 11, 0.4)' : 'rgba(59, 130, 246, 0.4)'}`,
-                                          color: studentTrack === 'business' ? '#fbbf24' : '#60a5fa',
+                                          background: isBiz ? 'rgba(245, 158, 11, 0.15)' : 'rgba(59, 130, 246, 0.15)',
+                                          border: `1px solid ${isBiz ? 'rgba(245, 158, 11, 0.4)' : 'rgba(59, 130, 246, 0.4)'}`,
+                                          color: isBiz ? '#fbbf24' : '#60a5fa',
                                           fontSize: '0.8rem',
                                           fontWeight: '700',
-                                          cursor: 'pointer'
+                                          whiteSpace: 'nowrap'
                                     }}
-                                    title="Click to toggle your active stream track"
+                                    title={`Registered active stream: ${isBiz ? 'Business & Executive' : 'Tech & Developer'}`}
                               >
-                                    <span>{studentTrack === 'business' ? '💼 Business Stream' : '💻 Tech Stream'}</span>
-                                    <span style={{ fontSize: '0.7rem', opacity: 0.8 }}>(Switch)</span>
-                              </button>
+                                    <span>{isBiz ? '💼 Business Stream' : '💻 Tech Stream'}</span>
+                                    <span style={{
+                                          fontSize: '0.65rem',
+                                          fontWeight: '800',
+                                          padding: '1px 6px',
+                                          borderRadius: '9999px',
+                                          background: isBiz ? 'rgba(245, 158, 11, 0.25)' : 'rgba(59, 130, 246, 0.25)',
+                                          color: isBiz ? '#fef3c7' : '#dbeafe'
+                                    }}>Active</span>
+                              </div>
                               <div className="user-welcome-badge">
                                     <span>👤</span>
                                     <span>{user?.name}</span>
