@@ -299,3 +299,22 @@
   justify-content: center;
   gap: 0.4rem;
 }
+
+@media (max-width: 480px) {
+  .admin-login-wrapper {
+    padding: 1rem;
+  }
+  .admin-card {
+    padding: 2rem 1.25rem;
+    border-radius: 16px;
+  }
+  .admin-badge-shield {
+    width: 56px;
+    height: 56px;
+    margin-bottom: 1rem;
+  }
+  .admin-title {
+    font-size: 1.4rem;
+  }
+}
+

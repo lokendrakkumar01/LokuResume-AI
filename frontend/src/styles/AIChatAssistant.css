@@ -646,12 +646,28 @@
 /* Mobile Screen Adaptations */
 @media (max-width: 768px) {
     .ai-chat-assistant-root {
-        bottom: calc(5.2rem + env(safe-area-inset-bottom, 0px)); /* Above mobile sticky navigation */
-        right: 1rem;
+        bottom: 1.25rem;
+        right: 1.25rem;
+        z-index: 1050;
     }
     .ai-chat-trigger-btn {
-        padding: 9px 13px;
-        font-size: 0.82rem;
+        width: 48px;
+        height: 48px;
+        padding: 0;
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        box-shadow: 0 8px 24px rgba(225, 29, 72, 0.5);
+    }
+    .ai-chat-trigger-btn .trigger-label,
+    .ai-chat-trigger-btn .trigger-mic-badge {
+        display: none; /* Transforms into sleek circular FAB on mobile */
+    }
+    .ai-chat-trigger-btn .trigger-icon {
+        display: flex;
+        align-items: center;
+        justify-content: center;
     }
     .ai-chat-window {
         bottom: 0;
