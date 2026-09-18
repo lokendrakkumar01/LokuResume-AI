@@ -63,6 +63,7 @@ function Dashboard() {
       const [deleteTarget, setDeleteTarget] = useState(null); // { id, name }
       const [broadcast, setBroadcast] = useState(null);
       const [features, setFeatures] = useState({});
+      const [duplicatingId, setDuplicatingId] = useState(null);
 
       const saveResumesCache = (data) => {
             try {
@@ -179,14 +180,23 @@ function Dashboard() {
       };
 
       const handleDuplicate = async (id) => {
+            if (duplicatingId) return;
+            setDuplicatingId(id);
+            showToast('Creating duplicate copy of resume...', 'info');
             try {
-                  await axios.post(`${config.API_BASE_URL}/resumes/${id}/duplicate`, {}, {
+                  const res = await axios.post(`${config.API_BASE_URL}/resumes/${id}/duplicate`, {}, {
                         headers: getAuthHeader()
                   });
                   showToast('Resume duplicated successfully!', 'success');
-                  fetchResumes();
+                  if (res.data) {
+                        setResumes(prev => [res.data, ...prev.filter(r => r.id !== res.data.id)]);
+                        saveResumesCache([res.data, ...resumes.filter(r => r.id !== res.data.id)]);
+                  }
+                  await fetchResumes();
             } catch (error) {
                   showToast(error.response?.data?.detail || 'Failed to duplicate resume', 'error');
+            } finally {
+                  setDuplicatingId(null);
             }
       };
 
@@ -723,16 +733,15 @@ function Dashboard() {
                                                             <span>ATS Match</span>
                                                       </button>
 
-                                                      {resume.score >= 50 && (
-                                                            <button
-                                                                  onClick={() => handleDuplicate(resume.id)}
-                                                                  className="action-btn action-copy"
-                                                                  title="Duplicate Resume"
-                                                            >
-                                                                  <IconCopy size={14} />
-                                                                  <span>Copy</span>
-                                                            </button>
-                                                      )}
+                                                      <button
+                                                            onClick={() => handleDuplicate(resume.id)}
+                                                            className="action-btn action-copy"
+                                                            title="Duplicate Resume (Copy)"
+                                                            disabled={duplicatingId === resume.id}
+                                                      >
+                                                            <IconCopy size={14} />
+                                                            <span>{duplicatingId === resume.id ? 'Copying...' : 'Copy'}</span>
+                                                      </button>
 
                                                       <button
                                                             onClick={() => setDeleteTarget({ id: resume.id, name: resume.personal_info?.name || 'Untitled' })}

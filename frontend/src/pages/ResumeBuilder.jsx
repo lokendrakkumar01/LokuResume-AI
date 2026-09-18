@@ -956,8 +956,23 @@ function ResumeBuilder() {
             showToast('Loaded complete sample resume data!', 'success');
       };
 
-      const nextStep = () => { if (currentStep < 10) setCurrentStep(currentStep + 1); };
-      const prevStep = () => { if (currentStep > 1) setCurrentStep(currentStep - 1); };
+      const nextStep = () => {
+            if (currentStep < 10) {
+                  setCurrentStep(currentStep + 1);
+                  window.scrollTo({ top: 0, behavior: 'smooth' });
+            }
+      };
+      const prevStep = () => {
+            if (currentStep > 1) {
+                  setCurrentStep(currentStep - 1);
+                  window.scrollTo({ top: 0, behavior: 'smooth' });
+            }
+      };
+      const goToStep = (stepNum) => {
+            const target = Math.max(1, Math.min(10, Number(stepNum)));
+            setCurrentStep(target);
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+      };
 
       // Reorder items in lists (Move Up / Down)
       const moveItem = (listName, index, direction) => {
@@ -1597,8 +1612,8 @@ function ResumeBuilder() {
                               <div
                                     key={step.num}
                                     id={`step-badge-${step.num}`}
-                                    className={`progress-step ${currentStep >= step.num ? 'active' : ''}`}
-                                    onClick={() => setCurrentStep(step.num)}
+                                    className={`progress-step ${currentStep === step.num ? 'active current' : currentStep > step.num ? 'completed' : ''}`}
+                                    onClick={() => goToStep(step.num)}
                                     title={step.label}
                                     style={{ cursor: 'pointer' }}
                               >
@@ -1606,6 +1621,54 @@ function ResumeBuilder() {
                                     <span className="step-badge-label">{step.label.split(' ')[1]}</span>
                               </div>
                         ))}
+                  </div>
+
+                  {/* Top Step / Option Quick Navigation Bar */}
+                  <div className="step-quick-nav-bar">
+                        <button
+                              type="button"
+                              className="btn btn-step-nav btn-backward"
+                              onClick={prevStep}
+                              disabled={currentStep === 1}
+                              title="Go backward to previous option/step (पिछला विकल्प)"
+                        >
+                              <span>← Backward</span>
+                        </button>
+
+                        <div className="step-selector-container">
+                              <label htmlFor="top-step-jump-dropdown" className="step-selector-label">
+                                    Option / Section:
+                              </label>
+                              <select
+                                    id="top-step-jump-dropdown"
+                                    className="step-jump-select"
+                                    value={currentStep}
+                                    onChange={(e) => goToStep(e.target.value)}
+                                    aria-label="Select resume section or option"
+                              >
+                                    {stepsList.map(step => (
+                                          <option key={step.num} value={step.num}>
+                                                Step {step.num}: {step.label.replace(/^[^\s]+\s/, '')} {currentStep === step.num ? '★ Active' : ''}
+                                          </option>
+                                    ))}
+                              </select>
+                              <span className="step-indicator-pill">{currentStep}/10</span>
+                        </div>
+
+                        <button
+                              type="button"
+                              className="btn btn-step-nav btn-forward-ok"
+                              onClick={() => {
+                                    if (currentStep < 10) {
+                                          nextStep();
+                                    } else {
+                                          handleSave();
+                                    }
+                              }}
+                              title={currentStep < 10 ? "Next option / Confirm OK (अगला विकल्प)" : "Save resume"}
+                        >
+                              <span>{currentStep < 10 ? 'Next (OK) →' : 'Save & OK ✓'}</span>
+                        </button>
                   </div>
 
                   {/* Builder Steps */}
@@ -3105,19 +3168,48 @@ function ResumeBuilder() {
 
                         {/* Navigation Footer */}
                         <div className="form-navigation">
-                              {currentStep > 1 && (
-                                    <button onClick={prevStep} type="button" className="btn btn-secondary">
-                                          ← Previous
+                              <button
+                                    onClick={prevStep}
+                                    type="button"
+                                    className="btn btn-secondary btn-backward-footer"
+                                    disabled={currentStep === 1}
+                                    title="Go backward to previous option (पिछला विकल्प)"
+                              >
+                                    ← Backward
+                              </button>
+
+                              <div className="footer-step-jump-container">
+                                    <select
+                                          className="step-jump-select footer-step-select"
+                                          value={currentStep}
+                                          onChange={(e) => goToStep(e.target.value)}
+                                          aria-label="Switch option/section"
+                                    >
+                                          {stepsList.map(step => (
+                                                <option key={step.num} value={step.num}>
+                                                      Step {step.num}: {step.label.replace(/^[^\s]+\s/, '')} {currentStep === step.num ? '★ Active' : ''}
+                                                </option>
+                                          ))}
+                                    </select>
+                              </div>
+
+                              <div className="footer-action-buttons">
+                                    <button
+                                          onClick={() => {
+                                                if (currentStep < 10) {
+                                                      nextStep();
+                                                } else {
+                                                      handleSave();
+                                                }
+                                          }}
+                                          type="button"
+                                          className="btn btn-primary btn-forward-footer"
+                                          title={currentStep < 10 ? "Next option / OK (अगला विकल्प)" : "Save resume"}
+                                    >
+                                          {currentStep < 10 ? 'Next (OK) →' : 'Save & OK ✓'}
                                     </button>
-                              )}
-                              <div style={{ marginLeft: 'auto', display: 'flex', gap: '12px' }}>
-                                    {currentStep < 10 && (
-                                          <button onClick={nextStep} type="button" className="btn btn-primary">
-                                                Next →
-                                          </button>
-                                    )}
                                     <button onClick={handleSave} disabled={loading} type="button" className="btn btn-success">
-                                          {loading ? 'Saving...' : '💾 Save Resume'}
+                                          {loading ? 'Saving...' : '💾 Save'}
                                     </button>
                               </div>
                         </div>
@@ -3129,26 +3221,46 @@ function ResumeBuilder() {
                               onClick={prevStep}
                               disabled={currentStep === 1}
                               type="button"
-                              className="btn btn-secondary btn-sm"
+                              className="btn btn-secondary btn-sm mobile-nav-btn"
+                              title="Go backward (पिछला विकल्प)"
                         >
-                              ◀ Prev
+                              ◀ Back
                         </button>
-                        <span className="mobile-step-indicator">
-                              Step {currentStep}/10
-                        </span>
+
+                        <div className="mobile-step-dropdown-wrapper">
+                              <select
+                                    className="mobile-step-select"
+                                    value={currentStep}
+                                    onChange={(e) => goToStep(e.target.value)}
+                                    aria-label="Jump to option/step"
+                              >
+                                    {stepsList.map(step => (
+                                          <option key={step.num} value={step.num}>
+                                                {step.num}. {step.label.replace(/^[^\s]+\s/, '')}
+                                          </option>
+                                    ))}
+                              </select>
+                        </div>
+
                         <button
-                              onClick={nextStep}
-                              disabled={currentStep === 10}
+                              onClick={() => {
+                                    if (currentStep < 10) {
+                                          nextStep();
+                                    } else {
+                                          handleSave();
+                                    }
+                              }}
                               type="button"
-                              className="btn btn-primary btn-sm"
+                              className="btn btn-primary btn-sm mobile-nav-btn"
+                              title={currentStep < 10 ? "Next option / OK (अगला विकल्प)" : "Save and complete"}
                         >
-                              Next ▶
+                              {currentStep < 10 ? 'OK ▶' : 'OK ✓'}
                         </button>
                         <button
                               onClick={handleSave}
                               disabled={loading}
                               type="button"
-                              className="btn btn-success btn-sm"
+                              className="btn btn-success btn-sm mobile-save-btn"
                         >
                               {loading ? '...' : (
                                     <>
@@ -3160,7 +3272,7 @@ function ResumeBuilder() {
                         <button
                               onClick={handleDownloadPDF}
                               type="button"
-                              className={`btn btn-sm ${liveATSScore >= 50 ? 'btn-success' : 'btn-secondary'}`}
+                              className={`btn btn-sm mobile-pdf-btn ${liveATSScore >= 50 ? 'btn-success' : 'btn-secondary'}`}
                               title={liveATSScore >= 50 ? 'Download PDF' : 'Score must be at least 50% to download'}
                         >
                               {liveATSScore >= 50 ? (

@@ -118,6 +118,19 @@
     box-shadow: 0 4px 12px rgba(99, 102, 241, 0.35);
 }
 
+.progress-step.current {
+    background: var(--primary-gradient);
+    color: #ffffff;
+    box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.4), 0 4px 14px rgba(99, 102, 241, 0.5);
+    transform: scale(1.08);
+}
+
+.progress-step.completed {
+    background: rgba(16, 185, 129, 0.2);
+    color: #10b981;
+    border-color: rgba(16, 185, 129, 0.5);
+}
+
 /* Form Container */
 .builder-form {
     padding: 32px;

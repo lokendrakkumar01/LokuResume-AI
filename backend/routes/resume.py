@@ -1,7 +1,8 @@
 from fastapi import APIRouter, HTTPException, Depends, status, Header
 from fastapi.responses import StreamingResponse, Response, HTMLResponse, RedirectResponse
 from pydantic import BaseModel
-from models.resume import ResumeCreate, ResumeUpdate, ResumeResponse, PDFPreferences
+import copy
+from models.resume import ResumeCreate, ResumeUpdate, ResumeResponse, PDFPreferences, ScoreBreakdown
 from auth.jwt_handler import get_user_from_token
 from database import get_database
 from services.resume_scorer import scorer
@@ -21,6 +22,67 @@ class PreferencesUpdateRequest(BaseModel):
     accent_color: Optional[str] = None
     background_color: Optional[str] = None
     include_photo: Optional[bool] = None
+
+def to_resume_response(r: dict) -> ResumeResponse:
+    """Safely converts a MongoDB resume dictionary into a Pydantic ResumeResponse model."""
+    sb = r.get("score_breakdown")
+    if not isinstance(sb, dict):
+        sb = {}
+    score_breakdown = ScoreBreakdown(
+        summary=float(sb.get("summary", 0) or 0),
+        skills=float(sb.get("skills", 0) or 0),
+        projects=float(sb.get("projects", 0) or 0),
+        experience=float(sb.get("experience", 0) or 0),
+        keywords=float(sb.get("keywords", 0) or 0),
+        formatting=float(sb.get("formatting", 0) or 0)
+    )
+    
+    raw_certs = r.get("certifications", [])
+    clean_certs = []
+    if isinstance(raw_certs, list):
+        for c in raw_certs:
+            if isinstance(c, dict):
+                clean_certs.append({
+                    "name": c.get("name") or "",
+                    "issued_by": c.get("issued_by") or c.get("issuer") or "",
+                    "date": c.get("date") or c.get("issue_date") or "",
+                    "link": c.get("link") or c.get("credential_url") or "",
+                    "skills_learned": c.get("skills_learned") or "",
+                    "file_data": c.get("file_data") or "",
+                    "file_url": c.get("file_url") or ""
+                })
+            elif hasattr(c, "model_dump"):
+                clean_certs.append(c.model_dump())
+            elif isinstance(c, str):
+                clean_certs.append({"name": c, "issued_by": "", "date": "", "link": "", "skills_learned": "", "file_data": "", "file_url": ""})
+
+    return ResumeResponse(
+        id=str(r.get("_id", "")),
+        user_id=str(r.get("user_id", "")),
+        track=r.get("track", "tech") or "tech",
+        personal_info=r.get("personal_info", {}),
+        summary=r.get("summary", "") or "",
+        education=r.get("education", []) or [],
+        skills=r.get("skills", []) or [],
+        projects=r.get("projects", []) or [],
+        experience=r.get("experience", []) or [],
+        certifications=clean_certs,
+        achievements=r.get("achievements", []) or [],
+        coding_profiles=r.get("coding_profiles", []) or [],
+        references=r.get("references", []) or [],
+        hobbies=r.get("hobbies", []) or [],
+        languages=r.get("languages", []) or [],
+        interests=r.get("interests", []) or [],
+        custom_sections=r.get("custom_sections", []) or [],
+        template_style=r.get("template_style", "modern") or "modern",
+        pdf_preferences=r.get("pdf_preferences") or DEFAULT_PDF_PREFERENCES,
+        score=float(r.get("score", 0) or 0),
+        score_breakdown=score_breakdown,
+        suggestions=r.get("suggestions", []) or [],
+        missing_keywords=r.get("missing_keywords", []) or [],
+        created_at=r.get("created_at", datetime.now(timezone.utc)),
+        updated_at=r.get("updated_at", datetime.now(timezone.utc))
+    )
 
 async def get_current_user(authorization: str = Header(None)):
     """Dependency to extract and verify user from JWT token"""
@@ -123,33 +185,9 @@ async def get_all_resumes(user_id: str = Depends(get_current_user)):
             if "file_data" in c_copy:
                 c_copy["file_data"] = ""
             clean_certs.append(c_copy)
+        resume["certifications"] = clean_certs
 
-        result_list.append(
-            ResumeResponse(
-                id=str(resume["_id"]),
-                user_id=resume["user_id"],
-                personal_info=resume["personal_info"],
-                summary=resume["summary"],
-                education=resume["education"],
-                skills=resume["skills"],
-                projects=resume["projects"],
-                experience=resume["experience"],
-                certifications=clean_certs,
-                achievements=resume.get("achievements", []),
-                coding_profiles=resume.get("coding_profiles", []),
-                languages=resume.get("languages", []),
-                interests=resume.get("interests", []),
-                custom_sections=resume.get("custom_sections", []),
-                template_style=resume.get("template_style", "modern"),
-                pdf_preferences=resume.get("pdf_preferences") or DEFAULT_PDF_PREFERENCES,
-                score=resume["score"],
-                score_breakdown=resume["score_breakdown"],
-                suggestions=resume["suggestions"],
-                missing_keywords=resume["missing_keywords"],
-                created_at=resume["created_at"],
-                updated_at=resume["updated_at"]
-            )
-        )
+        result_list.append(to_resume_response(resume))
     
     return result_list
 
@@ -168,30 +206,7 @@ async def get_resume(resume_id: str, user_id: str = Depends(get_current_user)):
     if not resume:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Resume not found")
     
-    return ResumeResponse(
-        id=str(resume["_id"]),
-        user_id=resume["user_id"],
-        personal_info=resume["personal_info"],
-        summary=resume["summary"],
-        education=resume["education"],
-        skills=resume["skills"],
-        projects=resume["projects"],
-        experience=resume["experience"],
-        certifications=resume["certifications"],
-        achievements=resume.get("achievements", []),
-        coding_profiles=resume.get("coding_profiles", []),
-        languages=resume.get("languages", []),
-        interests=resume.get("interests", []),
-        custom_sections=resume.get("custom_sections", []),
-        template_style=resume.get("template_style", "modern"),
-        pdf_preferences=resume.get("pdf_preferences") or DEFAULT_PDF_PREFERENCES,
-        score=resume["score"],
-        score_breakdown=resume["score_breakdown"],
-        suggestions=resume["suggestions"],
-        missing_keywords=resume["missing_keywords"],
-        created_at=resume["created_at"],
-        updated_at=resume["updated_at"]
-    )
+    return to_resume_response(resume)
 
 @router.put("/{resume_id}", response_model=ResumeResponse)
 async def update_resume(resume_id: str, resume_update: ResumeUpdate, user_id: str = Depends(get_current_user)):
@@ -227,30 +242,7 @@ async def update_resume(resume_id: str, resume_update: ResumeUpdate, user_id: st
     
     await db.resumes.replace_one({"_id": obj_id}, existing_resume)
     
-    return ResumeResponse(
-        id=str(existing_resume["_id"]),
-        user_id=existing_resume["user_id"],
-        personal_info=existing_resume["personal_info"],
-        summary=existing_resume["summary"],
-        education=existing_resume["education"],
-        skills=existing_resume["skills"],
-        projects=existing_resume["projects"],
-        experience=existing_resume["experience"],
-        certifications=existing_resume["certifications"],
-        achievements=existing_resume.get("achievements", []),
-        coding_profiles=existing_resume.get("coding_profiles", []),
-        languages=existing_resume.get("languages", []),
-        interests=existing_resume.get("interests", []),
-        custom_sections=existing_resume.get("custom_sections", []),
-        template_style=existing_resume.get("template_style", "modern"),
-        pdf_preferences=existing_resume.get("pdf_preferences") or DEFAULT_PDF_PREFERENCES,
-        score=existing_resume["score"],
-        score_breakdown=breakdown,
-        suggestions=existing_resume["suggestions"],
-        missing_keywords=existing_resume["missing_keywords"],
-        created_at=existing_resume["created_at"],
-        updated_at=existing_resume["updated_at"]
-    )
+    return to_resume_response(existing_resume)
 
 @router.delete("/{resume_id}", status_code=status.HTTP_204_NO_CONTENT)
 async def delete_resume(resume_id: str, user_id: str = Depends(get_current_user)):
@@ -271,68 +263,34 @@ async def delete_resume(resume_id: str, user_id: str = Depends(get_current_user)
 
 @router.post("/{resume_id}/duplicate", response_model=ResumeResponse)
 async def duplicate_resume(resume_id: str, user_id: str = Depends(get_current_user)):
-    """Duplicate a resume (requires score >= 50%)"""
+    """Duplicate a resume (creates a complete copy for any resume draft or completed resume)"""
     db = await get_database()
     
     try:
         obj_id = ObjectId(resume_id)
     except InvalidId:
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Invalid resume ID")
-    
-    # Check feature flag for HD PDF Export
-    setting = await db.platform_settings.find_one({"key": "features"})
-    if setting and setting.get("features"):
-        pdf_feat = setting["features"].get("hd_pdf_export", {})
-        if pdf_feat.get("status") == "disabled":
-            raise HTTPException(
-                status_code=status.HTTP_403_FORBIDDEN,
-                detail="FEATURE_DISABLED: High-Definition PDF Export is currently disabled by administrator."
-            )
 
     resume = await db.resumes.find_one({"_id": obj_id, "user_id": user_id})
     if not resume:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Resume not found")
     
-    # Check score requirement
-    if resume.get("score", 0) < 50:
-        raise HTTPException(
-            status_code=status.HTTP_403_FORBIDDEN,
-            detail="Resume score must be 50% or higher to duplicate"
-        )
-    
-    # Create duplicate
-    new_resume = resume.copy()
+    # Create complete deep copy
+    new_resume = copy.deepcopy(resume)
     del new_resume["_id"]
     new_resume["created_at"] = datetime.now(timezone.utc)
     new_resume["updated_at"] = datetime.now(timezone.utc)
     
+    # Update title/name so the duplicate is easy to recognize
+    if "personal_info" in new_resume and isinstance(new_resume["personal_info"], dict):
+        base_name = new_resume["personal_info"].get("name", "Resume")
+        if "(Copy)" not in base_name:
+            new_resume["personal_info"]["name"] = f"{base_name} (Copy)"
+
     result = await db.resumes.insert_one(new_resume)
     new_resume["_id"] = result.inserted_id
     
-    return ResumeResponse(
-        id=str(new_resume["_id"]),
-        user_id=new_resume["user_id"],
-        personal_info=new_resume["personal_info"],
-        summary=new_resume["summary"],
-        education=new_resume["education"],
-        skills=new_resume["skills"],
-        projects=new_resume["projects"],
-        experience=new_resume["experience"],
-        certifications=new_resume["certifications"],
-        achievements=new_resume.get("achievements", []),
-        coding_profiles=new_resume.get("coding_profiles", []),
-        languages=new_resume.get("languages", []),
-        interests=new_resume.get("interests", []),
-        custom_sections=new_resume.get("custom_sections", []),
-        template_style=new_resume.get("template_style", "modern"),
-        pdf_preferences=new_resume.get("pdf_preferences") or DEFAULT_PDF_PREFERENCES,
-        score=new_resume["score"],
-        score_breakdown=new_resume["score_breakdown"],
-        suggestions=new_resume["suggestions"],
-        missing_keywords=new_resume["missing_keywords"],
-        created_at=new_resume["created_at"],
-        updated_at=new_resume["updated_at"]
-    )
+    return to_resume_response(new_resume)
 
 @router.post("/{resume_id}/generate", response_model=ResumeResponse)
 async def generate_ai_resume(resume_id: str, user_id: str = Depends(get_current_user)):

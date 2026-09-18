@@ -646,8 +646,8 @@
 /* Mobile Screen Adaptations */
 @media (max-width: 768px) {
     .ai-chat-assistant-root {
-        bottom: 1.25rem;
-        right: 1.25rem;
+        bottom: 4.5rem;
+        right: 1rem;
         z-index: 1050;
     }
     .ai-chat-trigger-btn {
