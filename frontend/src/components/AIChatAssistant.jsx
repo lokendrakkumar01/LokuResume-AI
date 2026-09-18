@@ -2,7 +2,20 @@ import React, { useState, useEffect, useRef } from 'react';
 import axios from 'axios';
 import { useAuth } from '../context/AuthContext';
 import config from '../config';
+import {
+      IconBot,
+      IconMic,
+      IconSparkles,
+      IconBriefcase,
+      IconLaptop,
+      IconVolume,
+      IconVolumeX,
+      IconSquare,
+      IconSend,
+      IconCheck
+} from './Icons';
 import '../styles/AIChatAssistant.css';
+
 
 const MESSAGES_BY_LANG = {
       hi: {
@@ -615,8 +628,9 @@ function AIChatAssistant() {
                               title="Ask AI Career Coach"
                               aria-label="Open AI Career Assistant"
                         >
-                              <span className="trigger-icon">🤖</span>
-                              <span className="trigger-label">{language === 'hi' ? 'AI कोच 🎙️' : 'AI Coach 🎙️'}</span>
+                              <span className="trigger-icon"><IconBot size={20} /></span>
+                              <span className="trigger-label">{language === 'hi' ? 'AI कोच' : 'AI Coach'}</span>
+                              <span className="trigger-mic-badge"><IconMic size={12} /></span>
                               <span className="trigger-pulse-ring"></span>
                         </button>
                   )}
@@ -644,12 +658,12 @@ function AIChatAssistant() {
                                           >
                                                 {studentTrack === 'business' ? (
                                                       <>
-                                                            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2"><rect x="2" y="7" width="20" height="14" rx="2" ry="2"></rect><path d="M16 21V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16"></path></svg>
+                                                            <IconBriefcase size={13} />
                                                             <span>Biz</span>
                                                       </>
                                                 ) : (
                                                       <>
-                                                            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><polyline points="16 18 22 12 16 6"></polyline><polyline points="8 6 2 12 8 18"></polyline></svg>
+                                                            <IconLaptop size={13} />
                                                             <span>Tech</span>
                                                       </>
                                                 )}
@@ -673,7 +687,7 @@ function AIChatAssistant() {
                                                 onClick={() => triggerVoiceGuide('', language)}
                                                 title={language === 'hi' ? 'स्टेप-बाय-स्टेप गाइड सुनें' : 'Restart Voice Guide'}
                                           >
-                                                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"></path><path d="M19 10v2a7 7 0 0 1-14 0v-2"></path><line x1="12" y1="19" x2="12" y2="23"></line><line x1="8" y1="23" x2="16" y2="23"></line></svg>
+                                                <IconMic size={13} />
                                           </button>
 
                                           {/* Voice Output Toggle */}
@@ -690,11 +704,11 @@ function AIChatAssistant() {
                                                 title={isSpeaking ? 'Stop speaking' : voiceEnabled ? 'Voice output ON (Click to mute)' : 'Voice output OFF'}
                                           >
                                                 {isSpeaking ? (
-                                                      <svg width="13" height="13" viewBox="0 0 24 24" fill="currentColor" stroke="none"><rect x="6" y="6" width="12" height="12" rx="2"></rect></svg>
+                                                      <IconSquare size={13} fill="currentColor" />
                                                 ) : voiceEnabled ? (
-                                                      <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"></polygon><path d="M19.07 4.93a10 10 0 0 1 0 14.14M15.54 8.46a5 5 0 0 1 0 7.07"></path></svg>
+                                                      <IconVolume size={13} />
                                                 ) : (
-                                                      <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"></polygon><line x1="23" y1="9" x2="17" y2="15"></line><line x1="17" y1="9" x2="23" y2="15"></line></svg>
+                                                      <IconVolumeX size={13} />
                                                 )}
                                           </button>
 
@@ -717,11 +731,12 @@ function AIChatAssistant() {
                               <div className="ai-chat-body">
                                     {messages.map((m, idx) => (
                                           <div key={idx} className={`ai-message-row ${m.sender} ${m.isGuide ? 'guide-message' : ''}`}>
-                                                {m.sender === 'ai' && <div className="ai-msg-avatar">🤖</div>}
+                                                {m.sender === 'ai' && <div className="ai-msg-avatar"><IconBot size={16} /></div>}
                                                 <div className="ai-msg-bubble">
                                                       {m.isGuide && (
                                                             <div className="guide-indicator-badge">
-                                                                  <span>🌟 {language === 'hi' ? 'स्टेप-बाय-स्टेप 90%+ ATS गाइड' : 'Step-by-Step ATS Guide'}</span>
+                                                                  <IconSparkles size={13} />
+                                                                  <span>{language === 'hi' ? 'स्टेप-बाय-स्टेप 90%+ ATS गाइड' : 'Step-by-Step ATS Guide'}</span>
                                                             </div>
                                                       )}
                                                       <div className="ai-msg-text">
@@ -738,24 +753,24 @@ function AIChatAssistant() {
                                                                         className={`stream-choice-card ${studentTrack === 'tech' ? 'selected' : ''}`}
                                                                         onClick={() => handleSelectStream('tech')}
                                                                   >
-                                                                        <span className="choice-icon">💻</span>
+                                                                        <span className="choice-icon"><IconLaptop size={22} /></span>
                                                                         <div className="choice-info">
                                                                               <span className="choice-title">Tech / Developer</span>
                                                                               <span className="choice-desc">{language === 'hi' ? 'LeetCode, GitHub, कोडिंग प्रोजेक्ट्स' : 'LeetCode, GitHub, Coding Projects'}</span>
                                                                         </div>
-                                                                        {studentTrack === 'tech' && <span className="choice-check">✓</span>}
+                                                                        {studentTrack === 'tech' && <span className="choice-check"><IconCheck size={12} strokeWidth={3} /></span>}
                                                                   </button>
                                                                   <button
                                                                         type="button"
                                                                         className={`stream-choice-card ${studentTrack === 'business' ? 'selected' : ''}`}
                                                                         onClick={() => handleSelectStream('business')}
                                                                   >
-                                                                        <span className="choice-icon">💼</span>
+                                                                        <span className="choice-icon"><IconBriefcase size={22} /></span>
                                                                         <div className="choice-info">
                                                                               <span className="choice-title">Business / Executive</span>
                                                                               <span className="choice-desc">{language === 'hi' ? 'Michael Scott 2-कॉलम, रेफरेंसेज, मैनेजमेंट' : '2-Col Executive, References, Management'}</span>
                                                                         </div>
-                                                                        {studentTrack === 'business' && <span className="choice-check">✓</span>}
+                                                                        {studentTrack === 'business' && <span className="choice-check"><IconCheck size={12} strokeWidth={3} /></span>}
                                                                   </button>
                                                             </div>
                                                       )}
@@ -772,9 +787,15 @@ function AIChatAssistant() {
                                                                   title={language === 'hi' ? 'आवाज में सुनें' : 'Read answer aloud'}
                                                             >
                                                                   {speakingIdx === idx && isSpeaking ? (
-                                                                        <>⏹️ {language === 'hi' ? 'रोकें (Stop)' : 'Stop Voice'}</>
+                                                                        <>
+                                                                              <IconSquare size={11} fill="currentColor" />
+                                                                              <span>{language === 'hi' ? 'रोकें (Stop)' : 'Stop Voice'}</span>
+                                                                        </>
                                                                   ) : (
-                                                                        <>🔊 {language === 'hi' ? 'आवाज़ सुनें' : 'Listen Voice'}</>
+                                                                        <>
+                                                                              <IconVolume size={13} />
+                                                                              <span>{language === 'hi' ? 'आवाज़ सुनें' : 'Listen Voice'}</span>
+                                                                        </>
                                                                   )}
                                                             </button>
                                                       )}
@@ -797,7 +818,7 @@ function AIChatAssistant() {
 
                                     {loading && (
                                           <div className="ai-message-row ai">
-                                                <div className="ai-msg-avatar">🤖</div>
+                                                <div className="ai-msg-avatar"><IconBot size={16} /></div>
                                                 <div className="ai-msg-bubble typing-bubble">
                                                       <span className="typing-dot"></span>
                                                       <span className="typing-dot"></span>
@@ -825,7 +846,7 @@ function AIChatAssistant() {
                               {/* Active Listening Indicator */}
                               {isListening && (
                                     <div className="voice-listening-banner">
-                                          <span className="mic-pulse-anim">🎙️</span>
+                                          <span className="mic-pulse-anim"><IconMic size={16} /></span>
                                           <span>{langConfig.listening}</span>
                                     </div>
                               )}
@@ -844,7 +865,7 @@ function AIChatAssistant() {
                                           onClick={toggleListening}
                                           title={isListening ? 'Stop Listening' : (language === 'hi' ? 'हिंदी में बोलें' : 'Speak in English')}
                                     >
-                                          🎙️
+                                          <IconMic size={17} />
                                     </button>
                                     <input
                                           type="text"
@@ -859,7 +880,7 @@ function AIChatAssistant() {
                                           className="ai-send-btn"
                                           title="Send Message"
                                     >
-                                          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><line x1="22" y1="2" x2="11" y2="13"></line><polygon points="22 2 15 22 11 13 2 9 22 2"></polygon></svg>
+                                          <IconSend size={15} />
                                     </button>
                               </form>
                         </div>

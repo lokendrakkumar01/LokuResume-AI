@@ -12,18 +12,22 @@
     display: flex;
     align-items: center;
     justify-content: space-between;
-    padding: 16px 36px;
+    padding: 14px 32px;
     background: var(--card-bg);
     backdrop-filter: blur(16px);
     -webkit-backdrop-filter: blur(16px);
     border-bottom: 1px solid var(--card-border);
     box-shadow: var(--shadow-sm);
+    box-sizing: border-box;
+    width: 100%;
 }
 
 .nav-brand {
     display: flex;
     align-items: center;
     gap: 10px;
+    min-width: 0;
+    flex-shrink: 1;
 }
 
 .nav-brand h2 {
@@ -33,12 +37,39 @@
     -webkit-background-clip: text;
     -webkit-text-fill-color: transparent;
     letter-spacing: -0.5px;
+    margin: 0;
+}
+
+.stream-pill-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 4px 12px;
+    border-radius: var(--radius-full);
+    font-size: 0.8rem;
+    font-weight: 700;
+    letter-spacing: 0.2px;
+    white-space: nowrap;
+    transition: all 0.2s ease;
+}
+
+.stream-pill-badge.stream-business {
+    background: rgba(245, 158, 11, 0.12);
+    color: #f59e0b;
+    border: 1px solid rgba(245, 158, 11, 0.3);
+}
+
+.stream-pill-badge.stream-tech {
+    background: rgba(59, 130, 246, 0.12);
+    color: #3b82f6;
+    border: 1px solid rgba(59, 130, 246, 0.3);
 }
 
 .nav-right {
     display: flex;
     align-items: center;
-    gap: 16px;
+    gap: 12px;
+    flex-shrink: 0;
 }
 
 .user-welcome-badge {
@@ -140,27 +171,68 @@
 .controls-bar {
     display: flex;
     align-items: center;
-    gap: 14px;
+    gap: 12px;
     flex-wrap: wrap;
 }
 
 .search-wrapper {
     position: relative;
-    min-width: 240px;
+    min-width: 260px;
+    display: flex;
+    align-items: center;
 }
 
+.search-wrapper input[type="text"],
 .search-wrapper input {
-    padding-left: 38px;
+    width: 100%;
+    padding-left: 44px !important;
+    padding-right: 16px !important;
+    height: 42px;
+    border-radius: var(--radius-full);
+    border: 1px solid var(--card-border);
+    background: var(--card-bg);
+    color: var(--text-main);
+    font-size: 0.9rem;
+    box-shadow: var(--shadow-sm);
+    transition: all 0.2s ease;
+    box-sizing: border-box;
+}
+
+.search-wrapper input:focus {
+    border-color: #6366f1;
+    box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.18);
 }
 
 .search-icon {
     position: absolute;
-    left: 12px;
+    left: 15px;
     top: 50%;
     transform: translateY(-50%);
     color: var(--text-muted);
-    font-size: 0.9rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
     pointer-events: none;
+    z-index: 2;
+}
+
+.controls-bar select {
+    height: 42px;
+    border-radius: var(--radius-full);
+    padding: 0 16px;
+    font-size: 0.88rem;
+    font-weight: 600;
+    cursor: pointer;
+    background: var(--card-bg);
+    border: 1px solid var(--card-border);
+    color: var(--text-main);
+    box-shadow: var(--shadow-sm);
+    transition: all 0.2s ease;
+}
+
+.controls-bar select:focus {
+    border-color: #6366f1;
+    box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.18);
 }
 
 /* Empty State */
@@ -332,10 +404,140 @@
     font-weight: 500;
 }
 
+/* Resume Card Action Buttons - Modern SaaS Pill Design */
 .resume-actions {
     display: flex;
     flex-wrap: wrap;
+    align-items: center;
     gap: 8px;
+    margin-top: 4px;
+    padding-top: 14px;
+    border-top: 1px solid var(--card-border);
+}
+
+.action-btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    padding: 7px 12px;
+    border-radius: var(--radius-sm);
+    font-size: 0.82rem;
+    font-weight: 600;
+    cursor: pointer;
+    border: 1px solid transparent;
+    transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+    background: rgba(148, 163, 184, 0.08);
+    color: var(--text-main);
+    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.04);
+    text-decoration: none;
+}
+
+.action-btn:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+}
+
+.action-btn:active {
+    transform: translateY(0);
+}
+
+/* Action Button Variants */
+.action-btn.action-view {
+    background: rgba(6, 182, 212, 0.1);
+    border-color: rgba(6, 182, 212, 0.25);
+    color: #0891b2;
+}
+[data-theme='dark'] .action-btn.action-view {
+    color: #22d3ee;
+    background: rgba(6, 182, 212, 0.15);
+}
+.action-btn.action-view:hover {
+    background: rgba(6, 182, 212, 0.2);
+    border-color: rgba(6, 182, 212, 0.5);
+    box-shadow: 0 4px 12px rgba(6, 182, 212, 0.25);
+}
+
+.action-btn.action-edit {
+    background: rgba(99, 102, 241, 0.1);
+    border-color: rgba(99, 102, 241, 0.25);
+    color: #4f46e5;
+}
+[data-theme='dark'] .action-btn.action-edit {
+    color: #818cf8;
+    background: rgba(99, 102, 241, 0.15);
+}
+.action-btn.action-edit:hover {
+    background: rgba(99, 102, 241, 0.2);
+    border-color: rgba(99, 102, 241, 0.5);
+    box-shadow: 0 4px 12px rgba(99, 102, 241, 0.25);
+}
+
+.action-btn.action-download {
+    background: rgba(16, 185, 129, 0.1);
+    border-color: rgba(16, 185, 129, 0.3);
+    color: #059669;
+}
+[data-theme='dark'] .action-btn.action-download {
+    color: #34d399;
+    background: rgba(16, 185, 129, 0.15);
+}
+.action-btn.action-download:hover {
+    background: rgba(16, 185, 129, 0.2);
+    border-color: rgba(16, 185, 129, 0.5);
+    box-shadow: 0 4px 12px rgba(16, 185, 129, 0.25);
+}
+
+.action-btn.action-locked {
+    background: rgba(245, 158, 11, 0.1);
+    border-color: rgba(245, 158, 11, 0.25);
+    color: #d97706;
+}
+[data-theme='dark'] .action-btn.action-locked {
+    color: #fbbf24;
+    background: rgba(245, 158, 11, 0.15);
+}
+.action-btn.action-locked:hover {
+    background: rgba(245, 158, 11, 0.2);
+    border-color: rgba(245, 158, 11, 0.5);
+}
+
+.action-btn.action-ats {
+    background: rgba(168, 85, 247, 0.1);
+    border-color: rgba(168, 85, 247, 0.25);
+    color: #9333ea;
+}
+[data-theme='dark'] .action-btn.action-ats {
+    color: #c084fc;
+    background: rgba(168, 85, 247, 0.15);
+}
+.action-btn.action-ats:hover {
+    background: rgba(168, 85, 247, 0.2);
+    border-color: rgba(168, 85, 247, 0.5);
+    box-shadow: 0 4px 12px rgba(168, 85, 247, 0.25);
+}
+
+.action-btn.action-copy {
+    background: rgba(100, 116, 139, 0.1);
+    border-color: rgba(100, 116, 139, 0.25);
+    color: var(--text-main);
+}
+.action-btn.action-copy:hover {
+    background: rgba(100, 116, 139, 0.2);
+    border-color: rgba(100, 116, 139, 0.4);
+}
+
+.action-btn.action-delete {
+    background: rgba(239, 68, 68, 0.08);
+    border-color: rgba(239, 68, 68, 0.2);
+    color: #ef4444;
+    padding: 7px 10px;
+    margin-left: auto;
+}
+.action-btn.action-delete:hover {
+    background: rgba(239, 68, 68, 0.18);
+    border-color: rgba(239, 68, 68, 0.45);
+    box-shadow: 0 4px 12px rgba(239, 68, 68, 0.25);
 }
 
 .dashboard-footer {
@@ -349,17 +551,26 @@
 
 @media (max-width: 768px) {
     .dashboard-nav {
-        padding: 12px 16px;
+        padding: 10px 16px;
+        gap: 8px;
     }
     .nav-brand h2 {
-        font-size: 1.15rem;
+        font-size: 1.2rem;
+    }
+    .stream-pill-badge {
+        padding: 3px 8px;
+        font-size: 0.74rem;
     }
     .user-welcome-badge {
         display: none;
     }
+    .btn-logout {
+        padding: 6px 10px !important;
+        font-size: 0.8rem !important;
+    }
     .dashboard-container {
         padding: 16px 12px;
-        gap: 20px;
+        gap: 18px;
     }
     .dashboard-header {
         flex-direction: column;
@@ -367,15 +578,15 @@
         gap: 12px;
     }
     .dashboard-header h1 {
-        font-size: 1.4rem;
+        font-size: 1.35rem;
     }
     .metrics-grid {
         grid-template-columns: repeat(2, 1fr);
         gap: 10px;
     }
     .metric-card {
-        padding: 14px 14px;
-        gap: 12px;
+        padding: 14px 12px;
+        gap: 10px;
     }
     .metric-icon-bg {
         width: 38px;
@@ -400,6 +611,7 @@
         width: 100% !important;
         padding: 8px 10px;
         font-size: 0.85rem;
+        height: 38px;
     }
     .controls-bar .btn {
         width: 100%;
@@ -407,6 +619,7 @@
         text-align: center;
         font-size: 0.82rem;
         padding: 8px 10px;
+        height: 38px;
     }
     .resumes-grid {
         grid-template-columns: 1fr;
@@ -417,39 +630,79 @@
     }
     .resume-actions {
         display: grid;
-        grid-template-columns: 1fr 1fr;
+        grid-template-columns: repeat(3, 1fr);
         gap: 6px;
     }
-    .resume-actions .btn {
+    .resume-actions .action-btn {
         width: 100%;
         justify-content: center;
         text-align: center;
         font-size: 0.78rem;
-        padding: 6px 8px;
+        padding: 7px 4px;
+        margin-left: 0;
     }
 }
 
 @media (max-width: 480px) {
+    .dashboard-nav {
+        padding: 8px 10px;
+    }
+    .nav-brand {
+        gap: 6px;
+    }
+    .nav-brand h2 {
+        font-size: 1.05rem;
+    }
+    .stream-pill-badge {
+        padding: 2px 6px;
+        font-size: 0.68rem;
+        gap: 3px;
+    }
     .metrics-grid {
-        grid-template-columns: 1fr;
+        grid-template-columns: repeat(2, 1fr);
+        gap: 8px;
+    }
+    .metric-card {
+        padding: 10px 10px;
+        gap: 8px;
+    }
+    .metric-icon-bg {
+        width: 32px;
+        height: 32px;
+        border-radius: 8px;
+    }
+    .metric-info h4 {
+        font-size: 0.72rem;
+    }
+    .metric-info .metric-value {
+        font-size: 1.15rem;
     }
     .controls-bar {
-        grid-template-columns: 1fr;
+        grid-template-columns: 1fr 1fr;
+        gap: 6px;
     }
     .resume-card-header {
-        flex-direction: column;
-        gap: 6px;
+        flex-direction: row;
+        justify-content: space-between;
         align-items: flex-start;
     }
-    .score-badge {
-        align-self: flex-start;
+    .resume-card-header h3 {
+        font-size: 1.05rem;
     }
     .resume-stats {
-        flex-direction: column;
+        display: flex;
+        justify-content: space-between;
+        padding: 8px 10px;
         gap: 6px;
     }
     .resume-actions {
-        grid-template-columns: 1fr;
+        grid-template-columns: repeat(3, 1fr);
+        gap: 5px;
+    }
+    .resume-actions .action-btn {
+        padding: 6px 3px;
+        font-size: 0.74rem;
+        gap: 3px;
     }
 }
 

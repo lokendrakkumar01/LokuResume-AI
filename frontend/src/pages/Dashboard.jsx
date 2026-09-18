@@ -7,6 +7,30 @@ import ResumePreview from '../components/ResumePreview';
 import ErrorBoundary from '../components/ErrorBoundary';
 import axios from 'axios';
 import config from '../config';
+import {
+      IconSparkles,
+      IconShieldCheck,
+      IconBriefcase,
+      IconLaptop,
+      IconUser,
+      IconLogOut,
+      IconFileText,
+      IconBarChart,
+      IconTrophy,
+      IconLock,
+      IconUnlock,
+      IconBot,
+      IconMic,
+      IconSearch,
+      IconPlus,
+      IconEye,
+      IconEdit,
+      IconDownload,
+      IconTarget,
+      IconCopy,
+      IconTrash
+} from '../components/Icons';
+import { ThemeToggleInline } from '../components/ThemeToggle';
 import '../styles/Dashboard.css';
 
 function Dashboard() {
@@ -382,59 +406,39 @@ function Dashboard() {
             <div className="dashboard">
                   <nav className="dashboard-nav">
                         <div className="nav-brand">
-                              <span>✨</span>
+                              <div className="brand-logo-icon">
+                                    <IconSparkles size={20} color="#f43f5e" />
+                              </div>
                               <h2>{config.APP_NAME}</h2>
                         </div>
                         <div className="nav-right">
                               {isAdmin && (
                                     <Link
                                           to="/admin"
-                                          className="btn btn-secondary btn-sm"
-                                          style={{
-                                                borderColor: 'rgba(225, 29, 72, 0.4)',
-                                                color: '#fda4af',
-                                                background: 'rgba(225, 29, 72, 0.12)',
-                                                display: 'flex',
-                                                alignItems: 'center',
-                                                gap: '0.4rem',
-                                                fontWeight: '700'
-                                          }}
+                                          className="nav-admin-badge"
+                                          title="Master Admin Portal"
                                     >
-                                          <span>🛡️</span>
+                                          <IconShieldCheck size={16} />
                                           <span>Admin Portal</span>
                                     </Link>
                               )}
                               <div
-                                    style={{
-                                          display: 'inline-flex',
-                                          alignItems: 'center',
-                                          gap: '8px',
-                                          padding: '5px 12px',
-                                          borderRadius: '9999px',
-                                          background: isBiz ? 'rgba(245, 158, 11, 0.15)' : 'rgba(59, 130, 246, 0.15)',
-                                          border: `1px solid ${isBiz ? 'rgba(245, 158, 11, 0.4)' : 'rgba(59, 130, 246, 0.4)'}`,
-                                          color: isBiz ? '#fbbf24' : '#60a5fa',
-                                          fontSize: '0.8rem',
-                                          fontWeight: '700',
-                                          whiteSpace: 'nowrap'
-                                    }}
+                                    className={`stream-pill-badge ${isBiz ? 'stream-business' : 'stream-tech'}`}
                                     title={`Registered active stream: ${isBiz ? 'Business & Executive' : 'Tech & Developer'}`}
                               >
-                                    <span>{isBiz ? '💼 Business Stream' : '💻 Tech Stream'}</span>
-                                    <span style={{
-                                          fontSize: '0.65rem',
-                                          fontWeight: '800',
-                                          padding: '1px 6px',
-                                          borderRadius: '9999px',
-                                          background: isBiz ? 'rgba(245, 158, 11, 0.25)' : 'rgba(59, 130, 246, 0.25)',
-                                          color: isBiz ? '#fef3c7' : '#dbeafe'
-                                    }}>Active</span>
+                                    {isBiz ? <IconBriefcase size={15} /> : <IconLaptop size={15} />}
+                                    <span>{isBiz ? 'Business Stream' : 'Tech Stream'}</span>
+                                    <span className="stream-status-dot">Active</span>
                               </div>
                               <div className="user-welcome-badge">
-                                    <span>👤</span>
-                                    <span>{user?.name}</span>
+                                    <IconUser size={15} />
+                                    <span>{user?.name || 'Candidate'}</span>
                               </div>
-                              <button onClick={logout} className="btn btn-secondary btn-sm">Logout</button>
+                              <ThemeToggleInline />
+                              <button onClick={logout} className="nav-logout-btn" title="Sign out from your account">
+                                    <IconLogOut size={16} />
+                                    <span className="logout-text">Logout</span>
+                              </button>
                         </div>
                   </nav>
 
@@ -468,28 +472,36 @@ function Dashboard() {
                         {/* Metrics Bar */}
                         <div className="metrics-grid">
                               <div className="metric-card">
-                                    <div className="metric-icon-bg icon-purple">📄</div>
+                                    <div className="metric-icon-bg icon-purple">
+                                          <IconFileText size={22} />
+                                    </div>
                                     <div className="metric-info">
                                           <h4>Total Resumes</h4>
                                           <div className="metric-value">{totalResumes}</div>
                                     </div>
                               </div>
                               <div className="metric-card">
-                                    <div className="metric-icon-bg icon-blue">📊</div>
+                                    <div className="metric-icon-bg icon-blue">
+                                          <IconBarChart size={22} />
+                                    </div>
                                     <div className="metric-info">
                                           <h4>Average ATS Score</h4>
                                           <div className="metric-value">{avgScore}%</div>
                                     </div>
                               </div>
                               <div className="metric-card">
-                                    <div className="metric-icon-bg icon-green">🏆</div>
+                                    <div className="metric-icon-bg icon-green">
+                                          <IconTrophy size={22} />
+                                    </div>
                                     <div className="metric-info">
                                           <h4>High Score</h4>
                                           <div className="metric-value">{highScore}%</div>
                                     </div>
                               </div>
                               <div className="metric-card">
-                                    <div className="metric-icon-bg icon-orange">🔓</div>
+                                    <div className="metric-icon-bg icon-orange">
+                                          {unlockedCount > 0 ? <IconUnlock size={22} /> : <IconLock size={22} />}
+                                    </div>
                                     <div className="metric-info">
                                           <h4>Unlocked Tier (65%+)</h4>
                                           <div className="metric-value">{unlockedCount} / {totalResumes}</div>
@@ -500,29 +512,34 @@ function Dashboard() {
                         {/* AI Career Coach Guidance Banner */}
                         <div className="ai-coach-banner">
                               <div className="ai-coach-banner-left">
-                                    <div className="ai-coach-avatar">🎙️</div>
+                                    <div className="ai-coach-avatar">
+                                          <IconBot size={26} />
+                                    </div>
                                     <div>
                                           <h3>AI Resume Career Coach &amp; Voice Guide</h3>
                                           <p>Step-by-step guidance on reaching 90%+ ATS score, Google XYZ formula, and in-demand skills.</p>
                                     </div>
                               </div>
-                              <div className="ai-coach-banner-actions" style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', flexWrap: 'wrap' }}>
+                              <div className="ai-coach-banner-actions">
                                     {features?.ai_voice_assistant?.status === 'public' && (
-                                          <span style={{ fontSize: '0.75rem', fontWeight: '800', background: 'rgba(16, 185, 129, 0.2)', color: '#34d399', border: '1px solid rgba(16, 185, 129, 0.4)', padding: '0.25rem 0.65rem', borderRadius: '20px' }}>
-                                                ✨ Free for All (Unlocked by Admin)
+                                          <span className="coach-badge-public">
+                                                <IconSparkles size={13} />
+                                                <span>Free for All</span>
                                           </span>
                                     )}
                                     {features?.ai_voice_assistant?.status === 'premium' && (
-                                          <span style={{ fontSize: '0.75rem', fontWeight: '800', background: 'rgba(245, 158, 11, 0.2)', color: '#fbbf24', border: '1px solid rgba(245, 158, 11, 0.4)', padding: '0.25rem 0.65rem', borderRadius: '20px' }}>
-                                                💎 Pro VIP Feature
+                                          <span className="coach-badge-vip">
+                                                <IconSparkles size={13} />
+                                                <span>Pro VIP Feature</span>
                                           </span>
                                     )}
                                     <button
                                           type="button"
-                                          className="btn btn-primary btn-sm"
+                                          className="btn btn-primary btn-sm coach-start-btn"
                                           onClick={() => window.dispatchEvent(new CustomEvent('trigger-loku-ai-guide', { detail: { name: user?.name, action: 'manual' } }))}
                                     >
-                                          🎙️ Start AI Voice Guide
+                                          <IconMic size={15} />
+                                          <span>Start AI Voice Guide</span>
                                     </button>
                               </div>
                         </div>
@@ -540,7 +557,9 @@ function Dashboard() {
                               </div>
                               <div className="controls-bar">
                                     <div className="search-wrapper">
-                                          <span className="search-icon">🔍</span>
+                                          <span className="search-icon">
+                                                <IconSearch size={16} />
+                                          </span>
                                           <input
                                                 type="text"
                                                 placeholder="Search resumes by name..."
@@ -559,12 +578,14 @@ function Dashboard() {
                                           <option value="improving">Needs Work (&lt;50%)</option>
                                     </select>
 
-                                    <button onClick={createSampleResume} className="btn btn-secondary" title="Auto-populate with high ATS score demo data">
-                                          ✨ Try AI Sample
+                                    <button onClick={createSampleResume} className="btn btn-secondary btn-sample" title="Auto-populate with high ATS score demo data">
+                                          <IconSparkles size={15} />
+                                          <span>Try AI Sample</span>
                                     </button>
 
-                                    <Link to="/resume/create" className="btn btn-primary">
-                                          + Create New Resume
+                                    <Link to="/resume/create" className="btn btn-primary btn-create">
+                                          <IconPlus size={16} />
+                                          <span>Create New Resume</span>
                                     </Link>
                               </div>
                         </div>
@@ -586,7 +607,9 @@ function Dashboard() {
                               </div>
                         ) : filteredResumes.length === 0 ? (
                               <div className="empty-state">
-                                    <div className="empty-icon">📄</div>
+                                    <div className="empty-icon-wrapper">
+                                          <IconFileText size={48} color="#6366f1" />
+                                    </div>
                                     <h3>{resumes.length === 0 ? 'No resumes yet' : 'No matching resumes'}</h3>
                                     <p>
                                           {resumes.length === 0
@@ -595,10 +618,12 @@ function Dashboard() {
                                     </p>
                                     <div style={{ display: 'flex', gap: '12px', justifyContent: 'center', flexWrap: 'wrap', marginTop: '16px' }}>
                                           <button onClick={createSampleResume} className="btn btn-secondary">
-                                                ✨ Generate AI Sample Resume
+                                                <IconSparkles size={16} />
+                                                <span>Generate AI Sample Resume</span>
                                           </button>
                                           <Link to="/resume/create" className="btn btn-primary">
-                                                + Build from Scratch
+                                                <IconPlus size={16} />
+                                                <span>Build from Scratch</span>
                                           </Link>
                                     </div>
                               </div>
@@ -612,7 +637,8 @@ function Dashboard() {
                                                             <p className="resume-email">{resume.personal_info?.headline || resume.personal_info?.email}</p>
                                                       </div>
                                                       <span className={`score-badge ${getScoreColor(resume.score)}`}>
-                                                            🎯 {resume.score}%
+                                                            <IconTarget size={13} />
+                                                            <span>{resume.score}%</span>
                                                       </span>
                                                 </div>
 
@@ -644,71 +670,76 @@ function Dashboard() {
 
                                                 {resume.score < 50 && (
                                                       <div className="resume-locked">
-                                                            🔒 Score 50%+ to unlock PDF download ({resume.score}% / 50%)
+                                                            <IconLock size={14} />
+                                                            <span>Score 50%+ to unlock PDF download ({resume.score}% / 50%)</span>
                                                       </div>
                                                 )}
 
                                                 <div className="resume-actions">
                                                       <button
                                                             onClick={() => setPreviewResume(resume)}
-                                                            className="btn btn-sm btn-secondary"
+                                                            className="action-btn action-view"
                                                             title="Quick Live Preview"
                                                       >
-                                                            👁️ View
+                                                            <IconEye size={14} />
+                                                            <span>View</span>
                                                       </button>
 
                                                       <button
                                                             onClick={() => navigate(`/resume/edit/${resume.id}`)}
-                                                            className="btn btn-sm btn-secondary"
+                                                            className="action-btn action-edit"
                                                             title="Edit Resume"
                                                       >
-                                                            ✏️ Edit
+                                                            <IconEdit size={14} />
+                                                            <span>Edit</span>
                                                       </button>
 
                                                       {resume.score >= 50 ? (
                                                             <button
                                                                   onClick={() => handleDownload(resume.id, resume.personal_info?.name || 'My', resume.score)}
-                                                                  className="btn btn-sm btn-primary"
-                                                                  style={{ background: 'linear-gradient(135deg, #10b981 0%, #059669 100%)', border: 'none', color: '#fff', fontWeight: 600 }}
+                                                                  className="action-btn action-download"
                                                                   title="Download Official PDF"
                                                             >
-                                                                  📄 PDF
+                                                                  <IconDownload size={14} />
+                                                                  <span>PDF</span>
                                                             </button>
                                                       ) : (
                                                             <button
                                                                   onClick={() => handleDownload(resume.id, resume.personal_info?.name || 'My', resume.score)}
-                                                                  className="btn btn-sm btn-secondary"
-                                                                  style={{ opacity: 0.65, cursor: 'not-allowed' }}
+                                                                  className="action-btn action-locked"
                                                                   title={`Resume score is ${resume.score}%. Reach 50% to unlock PDF download`}
                                                             >
-                                                                  🔒 {resume.score}%
+                                                                  <IconLock size={14} />
+                                                                  <span>{resume.score}%</span>
                                                             </button>
                                                       )}
 
                                                       <button
                                                             onClick={() => setSelectedResumeForATS(resume)}
-                                                            className="btn btn-sm btn-secondary"
+                                                            className="action-btn action-ats"
                                                             title="Analyze against Job Description"
                                                       >
-                                                            🎯 ATS Match
+                                                            <IconTarget size={14} />
+                                                            <span>ATS Match</span>
                                                       </button>
 
                                                       {resume.score >= 50 && (
                                                             <button
                                                                   onClick={() => handleDuplicate(resume.id)}
-                                                                  className="btn btn-sm btn-success"
+                                                                  className="action-btn action-copy"
                                                                   title="Duplicate Resume"
                                                             >
-                                                                  📋 Copy
+                                                                  <IconCopy size={14} />
+                                                                  <span>Copy</span>
                                                             </button>
                                                       )}
 
                                                       <button
                                                             onClick={() => setDeleteTarget({ id: resume.id, name: resume.personal_info?.name || 'Untitled' })}
-                                                            className="btn btn-sm btn-danger"
+                                                            className="action-btn action-delete"
                                                             title="Delete Resume"
                                                       >
-                                                            🗑️
+                                                            <IconTrash size={14} />
                                                       </button>
                                                 </div>
                                           </div>

@@ -41,3 +41,32 @@
             height: 42px;
       }
 }
+
+/* Inline Navbar Theme Toggle */
+.theme-toggle-inline {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      width: 36px;
+      height: 36px;
+      border-radius: 50%;
+      background: rgba(255, 255, 255, 0.08);
+      border: 1px solid var(--card-border);
+      color: var(--text-main);
+      cursor: pointer;
+      transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+      backdrop-filter: blur(8px);
+      -webkit-backdrop-filter: blur(8px);
+      flex-shrink: 0;
+}
+
+.theme-toggle-inline:hover {
+      background: rgba(99, 102, 241, 0.15);
+      border-color: var(--primary-color);
+      transform: scale(1.08) rotate(12deg);
+      color: var(--primary-color);
+}
+
+.theme-toggle-inline:active {
+      transform: scale(0.92);
+}

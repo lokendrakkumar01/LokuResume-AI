@@ -5,10 +5,22 @@ import { useToast } from '../context/ToastContext';
 import ATSAnalyzerModal from '../components/ATSAnalyzerModal';
 import ResumePreview from '../components/ResumePreview';
 import ErrorBoundary from '../components/ErrorBoundary';
+import {
+      IconSparkles,
+      IconSearch,
+      IconMic,
+      IconTarget,
+      IconEye,
+      IconDownload,
+      IconLock,
+      IconSave,
+      IconCheck
+} from '../components/Icons';
 import axios from 'axios';
 import config from '../config';
 import '../styles/ResumeBuilder.css';
 import '../styles/ResumeBuilderExtra.css';
+
 
 const POPULAR_TECH_SKILLS = [
       'React.js', 'TypeScript', 'JavaScript', 'Node.js', 'Python', 'FastAPI',
@@ -1450,7 +1462,8 @@ function ResumeBuilder() {
                                     onClick={handleAuditResume}
                                     title="Check common fatal resume mistakes with voice assistant (गलतियाँ चेक करें)"
                               >
-                                    🔍 Mistakes {detectedMistakes.length > 0 ? `(${detectedMistakes.length})` : '✓'}
+                                    <IconSearch size={14} />
+                                    <span>Mistakes {detectedMistakes.length > 0 ? `(${detectedMistakes.length})` : '✓'}</span>
                               </button>
                               <button
                                     type="button"
@@ -1458,16 +1471,20 @@ function ResumeBuilder() {
                                     onClick={() => window.dispatchEvent(new CustomEvent('trigger-loku-ai-guide', { detail: { name: formData?.personal_info?.name || '' } }))}
                                     title="Get AI voice and step-by-step guidance"
                               >
-                                    🎙️ AI Guide
+                                    <IconMic size={14} />
+                                    <span>AI Guide</span>
                               </button>
                               <button onClick={handleAutoFill} type="button" className="btn btn-secondary btn-sm" title="Fill all fields with sample profile">
-                                    ⚡ Sample Data
+                                    <IconSparkles size={14} />
+                                    <span>Sample Data</span>
                               </button>
                               <button onClick={() => setShowATSModal(true)} type="button" className="btn btn-secondary btn-sm">
-                                    🎯 ATS Matcher
+                                    <IconTarget size={14} />
+                                    <span>ATS Matcher</span>
                               </button>
                               <button onClick={() => setShowPreview(true)} type="button" className="btn btn-primary btn-sm">
-                                    👁️ Preview
+                                    <IconEye size={14} />
+                                    <span>Preview</span>
                               </button>
                               <button
                                     onClick={handleDownloadPDF}
@@ -1476,10 +1493,25 @@ function ResumeBuilder() {
                                     title={liveATSScore >= 50 ? "Download Official PDF" : `Complete at least 50% of your resume to unlock PDF download (Current: ${Math.round(liveATSScore)}%)`}
                                     style={liveATSScore >= 50 ? { background: 'linear-gradient(135deg, #10b981 0%, #059669 100%)', color: '#fff', border: 'none', fontWeight: 600 } : { opacity: 0.85 }}
                               >
-                                    {liveATSScore >= 50 ? '📥 Download PDF' : `🔒 PDF (${Math.round(liveATSScore)}% / 50%)`}
+                                    {liveATSScore >= 50 ? (
+                                          <>
+                                                <IconDownload size={14} />
+                                                <span>Download PDF</span>
+                                          </>
+                                    ) : (
+                                          <>
+                                                <IconLock size={14} />
+                                                <span>PDF ({Math.round(liveATSScore)}% / 50%)</span>
+                                          </>
+                                    )}
                               </button>
                               <button onClick={handleSave} disabled={loading} type="button" className="btn btn-success btn-sm">
-                                    {loading ? 'Saving...' : '💾 Save'}
+                                    {loading ? 'Saving...' : (
+                                          <>
+                                                <IconSave size={14} />
+                                                <span>Save</span>
+                                          </>
+                                    )}
                               </button>
                               <button onClick={() => navigate('/dashboard')} type="button" className="btn btn-secondary btn-sm">
                                     Dashboard
@@ -1489,7 +1521,10 @@ function ResumeBuilder() {
 
                   {/* PDF & Template Style Customization */}
                   <div className="pdf-customization">
-                        <h4>🎨 Template &amp; Design Styling</h4>
+                        <h4 style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                              <IconSparkles size={16} />
+                              <span>Template &amp; Design Styling</span>
+                        </h4>
                         <div style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
                               <div>
                                     <label style={{ fontSize: '0.88rem', fontWeight: 600, display: 'block', marginBottom: '6px' }}>Resume Layout Template:</label>
@@ -3115,7 +3150,12 @@ function ResumeBuilder() {
                               type="button"
                               className="btn btn-success btn-sm"
                         >
-                              {loading ? '...' : '💾 Save'}
+                              {loading ? '...' : (
+                                    <>
+                                          <IconSave size={13} />
+                                          <span>Save</span>
+                                    </>
+                              )}
                         </button>
                         <button
                               onClick={handleDownloadPDF}
@@ -3123,7 +3163,17 @@ function ResumeBuilder() {
                               className={`btn btn-sm ${liveATSScore >= 50 ? 'btn-success' : 'btn-secondary'}`}
                               title={liveATSScore >= 50 ? 'Download PDF' : 'Score must be at least 50% to download'}
                         >
-                              {liveATSScore >= 50 ? '📄 PDF' : '🔒 50%'}
+                              {liveATSScore >= 50 ? (
+                                    <>
+                                          <IconDownload size={13} />
+                                          <span>PDF</span>
+                                    </>
+                              ) : (
+                                    <>
+                                          <IconLock size={13} />
+                                          <span>50%</span>
+                                    </>
+                              )}
                         </button>
                   </div>
 
@@ -3135,7 +3185,8 @@ function ResumeBuilder() {
                                     <div className="modal-header-row">
                                           <div>
                                                 <h3 style={{ margin: 0, display: 'flex', alignItems: 'center', gap: '8px' }}>
-                                                      <span>🔍 Resume Mistake Audit</span>
+                                                      <IconSearch size={17} />
+                                                      <span>Resume Mistake Audit</span>
                                                       <span className="mistake-count-badge" style={{
                                                             background: detectedMistakes.length > 0 ? '#ef4444' : '#10b981',
                                                             color: '#fff',
